@@ -12,8 +12,8 @@ jobs:
       - name: Build base image
         run: docker build -t hdapp:latest .
   build-web2-backend:
-    concurrency: build-projects
     runs-on: [master]
+    needs: [build-base]
     steps:
       - uses: actions/checkout@v3
       - name: Build base image
@@ -34,6 +34,8 @@ jobs:
   #       run: docker build -t hdapp-web3-frontend:latest ./packages/js/web3/frontend
   deploy:
     name: Deploy with docker-compose
+    runs-on: [master]
+    needs: [build-web2-backend]
     env:
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
