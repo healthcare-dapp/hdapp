@@ -1,0 +1,56 @@
+name: deploy
+run-name: Build and deploy HDAPP
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build-base:
+    runs-on: [master]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build base image
+        run: docker build -t hdapp:latest .
+  build-web2-backend:
+    concurrency: build-projects
+    runs-on: [master]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build base image
+        run: docker build -t hdapp-web2-backend:latest ./packages/js/web2/backend
+  # build-web2-frontend:
+  #   concurrency: build-projects
+  #   runs-on: [master]
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Build base image
+  #       run: docker build -t hdapp-web2-frontend:latest ./packages/js/web2/frontend
+  # build-web3-frontend:
+  #   concurrency: build-projects
+  #   runs-on: [master]
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Build base image
+  #       run: docker build -t hdapp-web3-frontend:latest ./packages/js/web3/frontend
+  deploy:
+    - name: Deploy with docker-compose
+      env:
+        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+        POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+        POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        SMTP_URL: ${{ secrets.SMTP_URL }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        REDIS_URL: ${{ secrets.REDIS_URL }}
+        MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT }}
+        MINIO_PORT: ${{ secrets.MINIO_PORT }}
+        MINIO_SSL: ${{ secrets.MINIO_SSL }}
+        MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+        MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
+        MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+        MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+        WEB3_JSON_RPC_URL: ${{ secrets.WEB3_JSON_RPC_URL }}
+        WEB3_PRIVATE_KEY: ${{ secrets.WEB3_PRIVATE_KEY }}
+        WEB3_USER_VERIFICATION_ADDRESS: ${{ secrets.WEB3_USER_VERIFICATION_ADDRESS }}
+      run: docker-compose up -d --build

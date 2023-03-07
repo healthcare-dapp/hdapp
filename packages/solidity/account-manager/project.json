@@ -4,43 +4,6 @@
   "sourceRoot": "packages/solidity/account-manager/src",
   "projectType": "application",
   "targets": {
-    "build": {
-      "executor": "@nrwl/esbuild:esbuild",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "platform": "node",
-        "outputPath": "dist/packages/solidity/account-manager",
-        "format": ["cjs"],
-        "bundle": false,
-        "main": "packages/solidity/account-manager/src/main.ts",
-        "tsConfig": "packages/solidity/account-manager/tsconfig.app.json",
-        "assets": ["packages/solidity/account-manager/src/assets"],
-        "esbuildOptions": {
-          "sourcemap": true,
-          "outExtension": {
-            ".js": ".js"
-          }
-        }
-      },
-      "configurations": {
-        "production": {
-          "esbuildOptions": {
-            "sourcemap": false
-          }
-        }
-      }
-    },
-    "serve": {
-      "executor": "@nrwl/js:node",
-      "options": {
-        "buildTarget": "solidity-account-manager:build"
-      },
-      "configurations": {
-        "production": {
-          "buildTarget": "solidity-account-manager:build:production"
-        }
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

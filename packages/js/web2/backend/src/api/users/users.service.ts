@@ -5,7 +5,7 @@ import { EmailAddress, Web3Address, web3AddressType } from "@hdapp/shared/web2-c
 import { FriendlyErrorClass, Logger } from "@hdapp/shared/web2-common/utils";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Wallet } from "ethers";
+import { HDNodeWallet, Wallet } from "ethers";
 import { Repository, FindManyOptions, DeepPartial, EntityNotFoundError, QueryFailedError, Brackets } from "typeorm";
 import { PagedResponse } from "../../utils/paged-response";
 import { Web3AccountManagerService } from "../../web3/account-manager.service";
@@ -29,7 +29,7 @@ export class UsersService {
         return await this.users.find(options);
     }
 
-    async createWalletForUser(user: UserEntity): Promise<Wallet> {
+    async createWalletForUser(user: UserEntity): Promise<HDNodeWallet> {
         const wallet = Wallet.createRandom();
         const web3Address = getRightOrFail(web3AddressType.decode(wallet.address));
 
@@ -50,7 +50,7 @@ export class UsersService {
             user.email,
             web3Address,
             wallet.privateKey.replace("0x", ""),
-            wallet.mnemonic.phrase,
+            wallet.mnemonic!.phrase,
         );
 
         return wallet;

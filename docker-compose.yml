@@ -1,0 +1,56 @@
+version: '3'
+
+networks:
+  hdapp:
+  nginx:
+    external: true
+
+services:
+  hdapp-redis:
+    image: redis
+    container_name: hdapp-redis2
+    command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - hdapp
+    restart: unless-stopped
+  hdapp-minio:
+    container_name: hdapp-minio2
+    image: minio/minio
+    networks:
+      - hdapp
+    environment:
+      - MINIO_ENDPOINT
+      - MINIO_PORT
+      - MINIO_SSL
+      - MINIO_ACCESS_KEY
+      - MINIO_ROOT_USER
+      - MINIO_SECRET_KEY
+      - MINIO_ROOT_PASSWORD
+    restart: unless-stopped
+    command: "server /data"
+  hdapp-web2-backend:
+    image: hdapp-web2-backend:latest
+    container_name: hdapp-web2-backend2
+    environment:
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_HOST
+      - POSTGRES_PORT
+      - POSTGRES_DB
+      - SMTP_URL
+      - JWT_SECRET
+      - REDIS_URL
+      - MINIO_ENDPOINT
+      - MINIO_PORT
+      - MINIO_SSL
+      - MINIO_ACCESS_KEY
+      - MINIO_ROOT_USER
+      - MINIO_SECRET_KEY
+      - MINIO_ROOT_PASSWORD
+      - WEB3_JSON_RPC_URL
+      - WEB3_PRIVATE_KEY
+      - WEB3_USER_VERIFICATION_ADDRESS
+    networks:
+      - hdapp
+      - nginx
+    restart: unless-stopped

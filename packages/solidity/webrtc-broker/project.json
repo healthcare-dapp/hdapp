@@ -4,32 +4,6 @@
   "sourceRoot": "packages/solidity/webrtc-broker/src",
   "projectType": "application",
   "targets": {
-    "build": {
-      "executor": "@nrwl/esbuild:esbuild",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "platform": "node",
-        "outputPath": "dist/packages/solidity/webrtc-broker",
-        "format": ["cjs"],
-        "bundle": false,
-        "main": "packages/solidity/webrtc-broker/src/main.ts",
-        "tsConfig": "packages/solidity/webrtc-broker/tsconfig.app.json",
-        "assets": ["packages/solidity/webrtc-broker/src/assets"],
-        "esbuildOptions": {
-          "sourcemap": true,
-          "outExtension": {
-            ".js": ".js"
-          }
-        }
-      },
-      "configurations": {
-        "production": {
-          "esbuildOptions": {
-            "sourcemap": false
-          }
-        }
-      }
-    },
     "serve": {
       "executor": "@nrwl/js:node",
       "options": {

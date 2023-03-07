@@ -4,43 +4,6 @@
   "sourceRoot": "packages/solidity/access-control-manager/src",
   "projectType": "application",
   "targets": {
-    "build": {
-      "executor": "@nrwl/esbuild:esbuild",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "platform": "node",
-        "outputPath": "dist/packages/solidity/access-control-manager",
-        "format": ["cjs"],
-        "bundle": false,
-        "main": "packages/solidity/access-control-manager/src/main.ts",
-        "tsConfig": "packages/solidity/access-control-manager/tsconfig.app.json",
-        "assets": ["packages/solidity/access-control-manager/src/assets"],
-        "esbuildOptions": {
-          "sourcemap": true,
-          "outExtension": {
-            ".js": ".js"
-          }
-        }
-      },
-      "configurations": {
-        "production": {
-          "esbuildOptions": {
-            "sourcemap": false
-          }
-        }
-      }
-    },
-    "serve": {
-      "executor": "@nrwl/js:node",
-      "options": {
-        "buildTarget": "solidity-access-control-manager:build"
-      },
-      "configurations": {
-        "production": {
-          "buildTarget": "solidity-access-control-manager:build:production"
-        }
-      }
-    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],

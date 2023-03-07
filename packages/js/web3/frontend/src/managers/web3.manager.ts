@@ -1,7 +1,6 @@
 import { Buffer } from "buffer";
 import { AES, enc } from "crypto-js";
-import { BigNumber, ethers, Event } from "ethers";
-import { hexZeroPad } from "ethers/lib/utils";
+import { ethers } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable } from "mobx";
 import { HDMAccessControlAddress, HDMAccessControlABI, WEB3_JSON_RPC_URL } from "../contract";
@@ -47,7 +46,7 @@ export class Web3Manager {
 
         makeAutoObservable(this);
 
-        const provider = new ethers.providers.StaticJsonRpcProvider(WEB3_JSON_RPC_URL);
+        const provider = new ethers.JsonRpcProvider(WEB3_JSON_RPC_URL);
 
         switch (wallet.type) {
             case WalletType.PrivateKey:
@@ -87,7 +86,7 @@ export class Web3Manager {
 
     static async testPrivateKey(privateKey: string): Promise<string> {
         try {
-            const provider = new ethers.providers.StaticJsonRpcProvider(WEB3_JSON_RPC_URL);
+            const provider = new ethers.JsonRpcProvider(WEB3_JSON_RPC_URL);
             const signer = new ethers.Wallet(privateKey, provider);
             return await signer.getAddress();
         } catch (e) {
@@ -108,25 +107,23 @@ export class Web3Manager {
 
         const myAddress = await this._signer!.getAddress();
 
-        this._accessControl.on({
-            topics: [
-                ethers.utils.id("DataRequested(address,address,uint256)"),
-                null!,
-                hexZeroPad(myAddress, 32)
-            ]
-        }, async (event: ethers.Event) => {
+        void this._accessControl.on([
+            ethers.id("DataRequested(address,address,uint256)"),
+            null!,
+            ethers.zeroPadBytes(myAddress, 32)
+        ], async (event: ethers.EventLog) => {
             this._notifications.push(await this._eventToNotification(event));
         });
     }
 
-    private async _eventToNotification(event: ethers.Event): Promise<Notification> {
-        switch (event.event) {
+    private async _eventToNotification(event: ethers.EventLog): Promise<Notification> {
+        switch (event.eventName) {
             case "DataRequested": {
                 const info = await this._accessControl!.getDataRequestInfo(
                     event.args!.requester,
                     event.args!.requestIndex
                 );
-                const encryptedData = BigNumber.from(info.data).toHexString().replace("0x", "");
+                const encryptedData = ethers.toBigInt(info.data).toString(16).replace("0x", "");
                 const decryptedData = AES.decrypt(Buffer.from(encryptedData, "hex").toString("base64"), this._password!);
                 return {
                     title: `User ${(event.args!.requester + "").substr(-4)} requested access to your data`,
@@ -145,7 +142,7 @@ export class Web3Manager {
                 };
 
             default:
-                return { title: event.event ?? "", description: event.args?.join(", ") ?? "" };
+                return { title: event.eventName ?? "", description: event.args?.join(", ") ?? "" };
         }
     }
 
@@ -154,35 +151,26 @@ export class Web3Manager {
             return;
 
         const myAddress = await this._signer!.getAddress();
-        const dataRequestedEvents = await this._accessControl.queryFilter(
-            {
-                topics: [
-                    ethers.utils.id("DataRequested(address,address,uint256)"),
-                    null!,
-                    hexZeroPad(myAddress, 32)
-                ]
-            },
-            this._lastBlockNumber
+        const dataRequestedEvents = await this._accessControl.queryFilter([
+            ethers.id("DataRequested(address,address,uint256)"),
+            null!,
+            ethers.zeroPadBytes(myAddress, 32)
+        ],
+        this._lastBlockNumber
         );
 
-        const dataPermissionsGrantedEvents = await this._accessControl.queryFilter(
-            {
-                topics: [
-                    ethers.utils.id("DataPermissionsGranted(address,address,uint256,uint256)"),
-                    hexZeroPad(myAddress, 32)
-                ]
-            },
-            this._lastBlockNumber
+        const dataPermissionsGrantedEvents = await this._accessControl.queryFilter([
+            ethers.id("DataPermissionsGranted(address,address,uint256,uint256)"),
+            ethers.zeroPadBytes(myAddress, 32)
+        ],
+        this._lastBlockNumber
         );
 
-        const dataPermissionsRevokedEvents = await this._accessControl.queryFilter(
-            {
-                topics: [
-                    ethers.utils.id("DataPermissionsRevoked(address,address,uint256)"),
-                    hexZeroPad(myAddress, 32)
-                ]
-            },
-            this._lastBlockNumber
+        const dataPermissionsRevokedEvents = await this._accessControl.queryFilter([
+            ethers.id("DataPermissionsRevoked(address,address,uint256)"),
+            ethers.zeroPadBytes(myAddress, 32)
+        ],
+        this._lastBlockNumber
         );
 
         const events = [...dataRequestedEvents, ...dataPermissionsGrantedEvents, ...dataPermissionsRevokedEvents]
@@ -190,7 +178,7 @@ export class Web3Manager {
 
         this._notifications = await Promise.all(
             events.map((event): Promise<Notification> => {
-                return this._eventToNotification(event);
+                return this._eventToNotification(event as unknown as ethers.EventLog);
             })
         );
     }
@@ -204,7 +192,7 @@ export class Web3Manager {
         this._ownedData = await Promise.all(dataIds.map(async (id: string) => {
             const data = await this._accessControl!.getDataPermissionsInfo(id);
             return {
-                title: BigNumber.from(id).toHexString(),
+                title: ethers.toBigInt(id).toString(16),
                 description: `Shared with: ${data.user}, is revoked: ${data.isRevoked}`
             };
         }));
@@ -219,7 +207,7 @@ export class Web3Manager {
         this._usedData = await Promise.all(dataIds.map(async (id: string) => {
             const data = await this._accessControl!.getDataPermissionsInfo(id);
             return {
-                title: BigNumber.from(id).toHexString(),
+                title: ethers.toBigInt(id).toString(16),
                 description: `Owner: ${data.owner}, is revoked: ${data.isRevoked}`
             };
         }));
@@ -235,7 +223,7 @@ export class Web3Manager {
 
         await this._accessControl.requestPermissions(
             requestee,
-            BigNumber.from("0x" + encryptedData)
+            ethers.toBigInt("0x" + encryptedData)
         );
     }
 
@@ -246,7 +234,7 @@ export class Web3Manager {
         await this._accessControl.grantPermissionsFromRequest(
             requester,
             +requestIndex,
-            BigNumber.from("0x" + dataHash)
+            ethers.toBigInt("0x" + dataHash)
         );
     }
 
@@ -254,6 +242,6 @@ export class Web3Manager {
         if (!this._accessControl)
             return;
 
-        await this._accessControl.revokePermissions(BigNumber.from("0x" + dataHash));
+        await this._accessControl.revokePermissions(ethers.toBigInt("0x" + dataHash));
     }
 }

@@ -1,6 +1,5 @@
 import { Logger } from "@hdapp/shared/web2-common/utils";
-import { BytesLike, ethers, Event, utils } from "ethers";
-import { hexZeroPad } from "ethers/lib/utils";
+import { ethers } from "ethers";
 import { makeAutoObservable } from "mobx";
 import { HDMHandshakeAddress, HDMHandshakeABI } from "../contract";
 
@@ -48,16 +47,14 @@ export class WebRTCManager {
         if (!this._web3Address)
             throw new Error("no web3 address");
 
-        this._web3Contract.on({
-            topics: [
-                ethers.utils.id("Message(address,address,bytes)"),
-                null!,
-                hexZeroPad(this._web3Address, 32)
-            ]
-        }, async (sender: string, receiver: string, dataBytes: BytesLike, event: Event) => {
+        void this._web3Contract.on([
+            ethers.id("Message(address,address,bytes)"),
+            null!,
+            ethers.zeroPadBytes(this._web3Address, 32)
+        ], async (sender: string, receiver: string, dataBytes: ethers.BytesLike, event: ethers.EventLog) => {
             const txn = await event.getTransaction();
             const txnDescription = this._web3Contract!.interface.parseTransaction(txn);
-            const data = JSON.parse(utils.toUtf8String(txnDescription.args[1]));
+            const data = JSON.parse(ethers.toUtf8String(txnDescription!.args[1]));
             await this._handleWeb3Event({ receiver, sender, data });
         });
     }
@@ -126,7 +123,7 @@ export class WebRTCManager {
             if (!this._web3Contract)
                 return;
             debug("Sending to handshake SC", { address, data });
-            const response: ethers.providers.TransactionResponse = await this._web3Contract.send(
+            const response: ethers.TransactionResponse = await this._web3Contract.send(
                 address,
                 Buffer.from(JSON.stringify(data), "utf8")
             );

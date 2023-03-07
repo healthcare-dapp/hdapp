@@ -11,7 +11,7 @@ const {
 
 @Injectable()
 export class Web3AccountManagerService implements OnModuleInit {
-    private _provider: ethers.providers.Provider | null = null;
+    private _provider: ethers.Provider | null = null;
 
     private _signer: ethers.Signer | null = null;
 
