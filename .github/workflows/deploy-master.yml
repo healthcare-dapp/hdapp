@@ -6,36 +6,40 @@ on:
       - master
 jobs:
   build-base:
+    name: Build base images with dependencies
     runs-on: [master]
     steps:
       - uses: actions/checkout@v3
       - name: Build base image
         run: docker build -t hdapp:latest .
   build-web2-backend:
+    name: Build Web2 Backend
     runs-on: [master]
     needs: [build-base]
     steps:
       - uses: actions/checkout@v3
-      - name: Build base image
+      - name: Build image
         run: docker build -t hdapp-web2-backend:latest ./packages/js/web2/backend
-  # build-web2-frontend:
-  #   concurrency: build-projects
-  #   runs-on: [master]
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - name: Build base image
-  #       run: docker build -t hdapp-web2-frontend:latest ./packages/js/web2/frontend
-  # build-web3-frontend:
-  #   concurrency: build-projects
-  #   runs-on: [master]
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - name: Build base image
-  #       run: docker build -t hdapp-web3-frontend:latest ./packages/js/web3/frontend
+  build-web2-frontend:
+    name: Build Web2 Frontend
+    runs-on: [master]
+    needs: [build-base]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build image
+        run: docker build -t hdapp-web2-frontend:latest ./packages/js/web2/frontend
+  build-web3-frontend:
+    name: Build Web3 Frontend
+    runs-on: [master]
+    needs: [build-base]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build image
+        run: docker build -t hdapp-web3-frontend:latest ./packages/js/web3/frontend
   deploy:
     name: Deploy with docker-compose
     runs-on: [master]
-    needs: [build-web2-backend]
+    needs: [build-web2-backend, build-web2-frontend, build-web3-frontend]
     env:
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
