@@ -1,0 +1,26 @@
+{
+  "name": "js-shared-web2-common",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/js/shared/web2-common/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/js/shared/web2-common",
+        "main": "packages/js/shared/web2-common/src/index.ts",
+        "tsConfig": "packages/js/shared/web2-common/tsconfig.lib.json",
+        "assets": ["packages/js/shared/web2-common/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/js/shared/web2-common/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

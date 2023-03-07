@@ -1,0 +1,26 @@
+{
+  "name": "js-shared-db-common",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/js/shared/db-common/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/js/shared/db-common",
+        "main": "packages/js/shared/db-common/src/index.ts",
+        "tsConfig": "packages/js/shared/db-common/tsconfig.lib.json",
+        "assets": ["packages/js/shared/db-common/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/js/shared/db-common/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

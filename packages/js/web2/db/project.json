@@ -1,0 +1,53 @@
+{
+  "name": "js-web2-db",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/js/web2/db/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/esbuild:esbuild",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "platform": "node",
+        "outputPath": "dist/packages/js/web2/db",
+        "format": ["cjs"],
+        "bundle": false,
+        "main": "packages/js/web2/db/src/main.ts",
+        "tsConfig": "packages/js/web2/db/tsconfig.app.json",
+        "assets": ["packages/js/web2/db/src/assets"],
+        "esbuildOptions": {
+          "sourcemap": true,
+          "outExtension": {
+            ".js": ".js"
+          }
+        }
+      },
+      "configurations": {
+        "production": {
+          "esbuildOptions": {
+            "sourcemap": false
+          }
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/js:node",
+      "options": {
+        "buildTarget": "js-web2-db:build"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "js-web2-db:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/js/web2/db/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

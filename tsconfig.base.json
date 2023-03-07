@@ -1,0 +1,35 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2020",
+    "module": "esnext",
+    "lib": ["es2017", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "baseUrl": ".",
+    "paths": {
+      "@hdapp/shared/db-common": [
+        "packages/js/shared/db-common/src"
+      ],
+      "@hdapp/shared/db-common/*": [
+        "packages/js/shared/db-common/src/*"
+      ],
+      "@hdapp/shared/web2-common": [
+        "packages/js/shared/web2-common/src"
+      ],
+      "@hdapp/shared/web2-common/*": [
+        "packages/js/shared/web2-common/src/*"
+      ]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
