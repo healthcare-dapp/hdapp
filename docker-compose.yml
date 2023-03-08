@@ -49,7 +49,7 @@ services:
       - MINIO_ROOT_PASSWORD
       - WEB3_JSON_RPC_URL
       - WEB3_PRIVATE_KEY
-      - WEB3_USER_VERIFICATION_ADDRESS
+      - WEB3_ACCOUNT_MANAGER_ADDRESS
     networks:
       - hdapp
       - nginx
