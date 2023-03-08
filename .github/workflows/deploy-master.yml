@@ -13,7 +13,6 @@ jobs:
       - name: Build base image
         run: docker build -t hdapp:latest .
   build-web2-backend:
-    concurrency: build-projects
     name: Build Web2 Backend
     runs-on: [master]
     needs: [build-base]
@@ -22,7 +21,6 @@ jobs:
       - name: Build image
         run: docker build -t hdapp-web2-backend:latest ./packages/js/web2/backend
   build-web2-frontend:
-    concurrency: build-projects
     name: Build Web2 Frontend
     runs-on: [master]
     needs: [build-base]
@@ -31,7 +29,6 @@ jobs:
       - name: Build image
         run: docker build -t hdapp-web2-frontend:latest ./packages/js/web2/frontend
   build-web3-frontend:
-    concurrency: build-projects
     name: Build Web3 Frontend
     runs-on: [master]
     needs: [build-base]
