@@ -6,7 +6,7 @@ import { AccountManagerAbi } from "./abi/account-manager.abi";
 const {
     WEB3_JSON_RPC_URL,
     WEB3_PRIVATE_KEY,
-    WEB3_USER_VERIFICATION_ADDRESS,
+    WEB3_ACCOUNT_MANAGER_ADDRESS,
 } = process.env;
 
 @Injectable()
@@ -43,12 +43,12 @@ export class Web3AccountManagerService implements OnModuleInit {
         if (!this._provider || !this._signer)
             return;
         this._reader = new ethers.Contract(
-            WEB3_USER_VERIFICATION_ADDRESS!,
+            WEB3_ACCOUNT_MANAGER_ADDRESS!,
             AccountManagerAbi,
             this._provider,
         );
         this._writer = new ethers.Contract(
-            WEB3_USER_VERIFICATION_ADDRESS!,
+            WEB3_ACCOUNT_MANAGER_ADDRESS!,
             AccountManagerAbi,
             this._signer,
         );

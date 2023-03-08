@@ -8,13 +8,13 @@ networks:
 services:
   hdapp-redis:
     image: redis
-    container_name: hdapp-redis2
+    container_name: hdapp-redis
     command: redis-server --save 60 1 --loglevel warning
     networks:
       - hdapp
     restart: unless-stopped
   hdapp-minio:
-    container_name: hdapp-minio2
+    container_name: hdapp-minio
     image: minio/minio
     networks:
       - hdapp
@@ -30,7 +30,7 @@ services:
     command: "server /data"
   hdapp-web2-backend:
     image: hdapp-web2-backend:latest
-    container_name: hdapp-web2-backend2
+    container_name: hdapp-web2-backend
     environment:
       - POSTGRES_USER
       - POSTGRES_PASSWORD
@@ -52,5 +52,17 @@ services:
       - WEB3_USER_VERIFICATION_ADDRESS
     networks:
       - hdapp
+      - nginx
+    restart: unless-stopped
+  hdapp-web2-frontend:
+    image: hdapp-web2-frontend:latest
+    container_name: hdapp-web2-frontend
+    networks:
+      - nginx
+    restart: unless-stopped
+  hdapp-web3-frontend:
+    image: hdapp-web3-frontend:latest
+    container_name: hdapp-web3-frontend
+    networks:
       - nginx
     restart: unless-stopped
