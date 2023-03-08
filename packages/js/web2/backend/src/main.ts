@@ -21,15 +21,13 @@ HttpException.createBody = (objectOrErrorMessage: object | string, description?:
 };
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule, { cors: true, logger: false });
+    const app = await NestFactory.create(AppModule, { cors: true, logger: new Logger("nest") });
 
     app.useGlobalInterceptors(
         new PerformanceLoggingInterceptor(),
         new ErrorInterceptor(),
         new ResponseInterceptor(),
     );
-
-    app.useLogger(new Logger("nest"));
 
     const options = new DocumentBuilder()
         .setTitle("Healthcare DApp Web2 Backend")

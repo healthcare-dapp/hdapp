@@ -31,8 +31,7 @@ export class Web3AccountManagerService implements OnModuleInit {
     }
 
     connect() {
-        // @ts-ignore
-        const provider = this._provider = new ethers.providers.StaticJsonRpcProvider(WEB3_JSON_RPC_URL);
+        const provider = this._provider = new ethers.JsonRpcProvider(WEB3_JSON_RPC_URL);
 
         this._signer = new ethers.Wallet(WEB3_PRIVATE_KEY!, provider);
 

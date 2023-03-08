@@ -18,7 +18,7 @@ export class UserEntity {
     @ApiProperty({ description: "User's address (public key) in Ethereum blockchain" })
         web3Address: Web3Address | null;
 
-    @Column({ unique: true })
+    @Column({ type: "varchar", unique: true })
     @ApiProperty({ description: "User's email address" })
         email: EmailAddress;
 
