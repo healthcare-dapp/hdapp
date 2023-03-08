@@ -1,9 +1,10 @@
+import { HDMAccessControl, HDMAccessControl__factory } from "@hdapp/solidity/access-control-manager";
 import { Buffer } from "buffer";
 import { AES, enc } from "crypto-js";
 import { ethers } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable } from "mobx";
-import { HDMAccessControlAddress, HDMAccessControlABI, WEB3_JSON_RPC_URL } from "../contract";
+import { HDMAccessControlAddress, WEB3_JSON_RPC_URL } from "../contract";
 import { WalletEntry, WalletType } from "../services/wallet.service";
 
 export type Notification = {
@@ -21,7 +22,7 @@ export class Web3Manager {
     private _events = new EventEmitter();
 
     private _signer: ethers.Signer;
-    private _accessControl: ethers.Contract | null = null;
+    private _accessControl: HDMAccessControl | null = null;
     private _notifications: Notification[] = [
         {
             title: "Incoming data access request",
@@ -98,7 +99,7 @@ export class Web3Manager {
         if (!this._signer)
             return;
 
-        this._accessControl = new ethers.Contract(HDMAccessControlAddress, HDMAccessControlABI, this._signer);
+        this._accessControl = HDMAccessControl__factory.connect(HDMAccessControlAddress, this._signer);
     }
 
     async bindNotifications() {
@@ -107,13 +108,13 @@ export class Web3Manager {
 
         const myAddress = await this._signer!.getAddress();
 
-        void this._accessControl.on([
-            ethers.id("DataRequested(address,address,uint256)"),
-            null!,
-            ethers.zeroPadBytes(myAddress, 32)
-        ], async (event: ethers.EventLog) => {
-            this._notifications.push(await this._eventToNotification(event));
-        });
+        void this._accessControl.on(
+            this._accessControl.filters["DataRequested(address,address,uint256)"](void 0, myAddress),
+            async (_r1, _r2, _r3, event) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                this._notifications.push(await this._eventToNotification(event as any));
+            }
+        );
     }
 
     private async _eventToNotification(event: ethers.EventLog): Promise<Notification> {
@@ -151,26 +152,19 @@ export class Web3Manager {
             return;
 
         const myAddress = await this._signer!.getAddress();
-        const dataRequestedEvents = await this._accessControl.queryFilter([
-            ethers.id("DataRequested(address,address,uint256)"),
-            null!,
-            ethers.zeroPadBytes(myAddress, 32)
-        ],
-        this._lastBlockNumber
+        const dataRequestedEvents = await this._accessControl.queryFilter(
+            this._accessControl.filters["DataRequested(address,address,uint256)"](void 0, myAddress),
+            this._lastBlockNumber
         );
 
-        const dataPermissionsGrantedEvents = await this._accessControl.queryFilter([
-            ethers.id("DataPermissionsGranted(address,address,uint256,uint256)"),
-            ethers.zeroPadBytes(myAddress, 32)
-        ],
-        this._lastBlockNumber
+        const dataPermissionsGrantedEvents = await this._accessControl.queryFilter(
+            this._accessControl.filters["DataPermissionsGranted(address,address,uint256,uint256)"](myAddress),
+            this._lastBlockNumber
         );
 
-        const dataPermissionsRevokedEvents = await this._accessControl.queryFilter([
-            ethers.id("DataPermissionsRevoked(address,address,uint256)"),
-            ethers.zeroPadBytes(myAddress, 32)
-        ],
-        this._lastBlockNumber
+        const dataPermissionsRevokedEvents = await this._accessControl.queryFilter(
+            this._accessControl.filters["DataPermissionsRevoked(address,address,uint256)"](myAddress),
+            this._lastBlockNumber
         );
 
         const events = [...dataRequestedEvents, ...dataPermissionsGrantedEvents, ...dataPermissionsRevokedEvents]
@@ -189,7 +183,7 @@ export class Web3Manager {
 
         const myAddress = await this._signer!.getAddress();
         const dataIds = await this._accessControl.getDataPermissionsByOwner(myAddress);
-        this._ownedData = await Promise.all(dataIds.map(async (id: string) => {
+        this._ownedData = await Promise.all(dataIds.map(async (id: bigint) => {
             const data = await this._accessControl!.getDataPermissionsInfo(id);
             return {
                 title: ethers.toBigInt(id).toString(16),
@@ -204,7 +198,7 @@ export class Web3Manager {
 
         const myAddress = await this._signer!.getAddress();
         const dataIds = await this._accessControl.getDataPermissionsByUser(myAddress);
-        this._usedData = await Promise.all(dataIds.map(async (id: string) => {
+        this._usedData = await Promise.all(dataIds.map(async (id: bigint) => {
             const data = await this._accessControl!.getDataPermissionsInfo(id);
             return {
                 title: ethers.toBigInt(id).toString(16),

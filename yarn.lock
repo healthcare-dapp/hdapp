@@ -3192,14 +3192,6 @@
   resolved "https://registry.npmjs.org/@tsconfig/node16/-/node16-1.0.3.tgz#472eaab5f15c1ffdd7f8628bd4c4f753995ec79e"
   integrity sha512-yOlFc+7UtL/89t2ZhjPvvB/DeAr3r+Dq58IgzsFkOAvVC6NMJXmCGjbptdXdR9qsX7pKcTL+s87FtYREi2dEEQ==
 
-"@typechain/ethers-v5@^10.2.0":
-  version "10.2.0"
-  resolved "https://registry.npmjs.org/@typechain/ethers-v5/-/ethers-v5-10.2.0.tgz#68f5963efb5214cb2d881477228e4b5b315473e1"
-  integrity sha512-ikaq0N/w9fABM+G01OFmU3U3dNnyRwEahkdvi9mqy1a3XwKiPZaF/lu54OcNaEWnpvEYyhhS0N7buCtLQqC92w==
-  dependencies:
-    lodash "^4.17.15"
-    ts-essentials "^7.0.1"
-
 "@typechain/hardhat@^6.1.5":
   version "6.1.5"
   resolved "https://registry.npmjs.org/@typechain/hardhat/-/hardhat-6.1.5.tgz#caad58a1d3e9cd88061a584eb4f4fa763d5dcad1"
@@ -7080,7 +7072,7 @@ ethers@^5.5.3:
     "@ethersproject/web" "5.7.1"
     "@ethersproject/wordlists" "5.7.0"
 
-ethers@^6.1.0:
+ethers@^6:
   version "6.1.0"
   resolved "https://registry.npmjs.org/ethers/-/ethers-6.1.0.tgz#de9c3acbb865fda6c080e80ec88ae0aada046947"
   integrity sha512-aC45YGbvgXt7Nses5WsdQwc1cUIrrQt32zeFShNW7ZT3RQCIHBnd4nmbE5sJmrp70uTdwkRHkr4cZr1D/YwFPg==
@@ -14312,6 +14304,14 @@ type-is@^1.6.4, type-is@~1.6.18:
   dependencies:
     media-typer "0.3.0"
     mime-types "~2.1.24"
+
+typechain-target-ethers-v6@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.npmjs.org/typechain-target-ethers-v6/-/typechain-target-ethers-v6-0.1.0.tgz#a45a2a7b76e6ae8b2cce3f1d2e697ff7f7b926b5"
+  integrity sha512-nAV9J3JI5S7jO4kiWNEWYUJ8VXx10b/Pi1qG7bXYhIGjCxWZ2/Gb8Qltnzs/w07NOrRjVQ5VcX9kJh1Iy5gDLQ==
+  dependencies:
+    lodash "^4.17.15"
+    ts-essentials "^7.0.1"
 
 typechain@^8.1.1:
   version "8.1.1"

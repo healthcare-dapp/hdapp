@@ -4,22 +4,25 @@
   "sourceRoot": "packages/solidity/webrtc-broker/src",
   "projectType": "application",
   "targets": {
-    "serve": {
-      "executor": "@nrwl/js:node",
+    "build": {
+      "executor": "nx:run-commands",
       "options": {
-        "buildTarget": "solidity-webrtc-broker:build"
-      },
-      "configurations": {
-        "production": {
-          "buildTarget": "solidity-webrtc-broker:build:production"
-        }
+          "cwd": "packages/solidity/webrtc-broker",
+          "command": "hardhat compile"
       }
     },
-    "lint": {
-      "executor": "@nrwl/linter:eslint",
-      "outputs": ["{options.outputFile}"],
+    "deploy": {
+      "executor": "nx:run-commands",
       "options": {
-        "lintFilePatterns": ["packages/solidity/webrtc-broker/**/*.ts"]
+          "cwd": "packages/solidity/webrtc-broker",
+          "command": "hardhat run scripts/deploy.ts"
+      }
+    },
+    "verify": {
+      "executor": "nx:run-commands",
+      "options": {
+          "cwd": "packages/solidity/webrtc-broker",
+          "command": "hardhat verify"
       }
     }
   },

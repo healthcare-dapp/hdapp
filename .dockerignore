@@ -6,3 +6,7 @@
 **/.editorconfig
 **/.gitignore
 **/.git/
+
+**/artifacts
+**/cache
+**/typechain-types

@@ -4,7 +4,7 @@
     "rootDir": ".",
     "sourceMap": true,
     "declaration": false,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
@@ -28,6 +28,24 @@
       ],
       "@hdapp/shared/web2-common/*": [
         "packages/js/shared/web2-common/src/*"
+      ],
+      "@hdapp/solidity/account-manager": [
+        "packages/solidity/account-manager/typechain-types"
+      ],
+      "@hdapp/solidity/account-manager/*": [
+        "packages/solidity/account-manager/typechain-types/*"
+      ],
+      "@hdapp/solidity/access-control-manager": [
+        "packages/solidity/access-control-manager/typechain-types"
+      ],
+      "@hdapp/solidity/access-control-manager/*": [
+        "packages/solidity/access-control-manager/typechain-types/*"
+      ],
+      "@hdapp/solidity/webrtc-broker": [
+        "packages/solidity/webrtc-broker/typechain-types"
+      ],
+      "@hdapp/solidity/webrtc-broker/*": [
+        "packages/solidity/webrtc-broker/typechain-types/*"
       ]
     }
   },

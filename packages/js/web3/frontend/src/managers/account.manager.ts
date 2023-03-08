@@ -1,8 +1,9 @@
 import { AsyncAction } from "@hdapp/shared/web2-common/utils";
+import { HDMAccountManager, HDMAccountManager__factory } from "@hdapp/solidity/account-manager";
 import { ethers } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable, runInAction } from "mobx";
-import { HDMAccountManagerAddress, HDMAccountManagerABI } from "../contract";
+import { HDMAccountManagerAddress } from "../contract";
 
 interface Account {
     isBanned: boolean
@@ -10,7 +11,7 @@ interface Account {
 }
 
 export class AccountManager {
-    private _contract: ethers.Contract;
+    private _contract: HDMAccountManager;
     private _account: Account | null = null;
 
     private _events = new EventEmitter();
@@ -37,7 +38,7 @@ export class AccountManager {
         private _signer: ethers.Signer,
         private _web3Address: string
     ) {
-        this._contract = new ethers.Contract(HDMAccountManagerAddress, HDMAccountManagerABI, _signer);
+        this._contract = HDMAccountManager__factory.connect(HDMAccountManagerAddress, _signer);
 
         makeAutoObservable(this);
 

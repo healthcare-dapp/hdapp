@@ -6,12 +6,15 @@ async function main() {
     const AccountManagerSC = await ethers.getContractFactory("HDMAccountManager");
     const contract = await AccountManagerSC.deploy();
 
+    // await contract.waitForDeployment();
+    // const address = await contract.getAddress();
     await contract.deployed();
-    console.log(`User Verification Smart Contract deployed to ${contract.address} on network ${network.name}`);
+    const address = contract.address;
+    console.log(`HDMAccountManager deployed to ${address} on network ${network.name}`);
     if ("blockExplorerUrl" in network.config && typeof network.config.blockExplorerUrl === "string")
-        console.log(`Block explorer URL: ${join(network.config.blockExplorerUrl, "address", contract.address)}`);
+        console.log(`Block explorer URL: ${join(network.config.blockExplorerUrl, "address", address)}`);
 
-    writeFileSync("contract.txt", contract.address);
+    writeFileSync("contract.txt", address);
     console.log("Waiting 15 seconds to get enough confirmations...");
     await new Promise(resolve => setTimeout(resolve, 15000));
 }

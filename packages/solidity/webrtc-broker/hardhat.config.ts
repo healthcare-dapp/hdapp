@@ -9,7 +9,10 @@ const {
 
 const config: HardhatUserConfig = {
     solidity: "0.8.17",
-    defaultNetwork: "deploy",
+    defaultNetwork: "polygon-mumbai",
+    typechain: {
+        target: "ethers-v6"
+    },
     networks: {
         ["polygon-mumbai"]: {
             url: `https://polygon-mumbai.g.alchemy.com/v2/${DEPLOY_KEY}`,

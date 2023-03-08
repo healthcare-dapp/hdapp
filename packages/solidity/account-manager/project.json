@@ -4,11 +4,25 @@
   "sourceRoot": "packages/solidity/account-manager/src",
   "projectType": "application",
   "targets": {
-    "lint": {
-      "executor": "@nrwl/linter:eslint",
-      "outputs": ["{options.outputFile}"],
+    "build": {
+      "executor": "nx:run-commands",
       "options": {
-        "lintFilePatterns": ["packages/solidity/account-manager/**/*.ts"]
+          "cwd": "packages/solidity/account-manager",
+          "command": "hardhat compile"
+      }
+    },
+    "deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+          "cwd": "packages/solidity/account-manager",
+          "command": "hardhat run scripts/deploy.ts"
+      }
+    },
+    "verify": {
+      "executor": "nx:run-commands",
+      "options": {
+          "cwd": "packages/solidity/account-manager",
+          "command": "hardhat verify"
       }
     }
   },
