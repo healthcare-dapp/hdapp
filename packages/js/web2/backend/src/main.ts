@@ -9,6 +9,7 @@ import { AppModule } from "./app.module";
 import { ErrorInterceptor } from "./interceptors/error.interceptor";
 import { PerformanceLoggingInterceptor } from "./interceptors/performance-logging.interceptor";
 import { ResponseInterceptor } from "./interceptors/response.interceptor";
+import "pg";
 
 HttpException.createBody = (objectOrErrorMessage: object | string, description?: string, statusCode?: number) => {
     if (!objectOrErrorMessage) {
