@@ -15,7 +15,7 @@ jobs:
   build-web2-backend:
     name: Build Web2 Backend
     runs-on: self-hosted
-    needs: [build-base]
+    needs: [install-base]
     steps:
       - uses: actions/checkout@v3
       - name: Build image
@@ -23,7 +23,7 @@ jobs:
   build-web2-frontend:
     name: Build Web2 Frontend
     runs-on: self-hosted
-    needs: [build-base]
+    needs: [install-base]
     steps:
       - uses: actions/checkout@v3
       - name: Build image
@@ -31,7 +31,7 @@ jobs:
   build-web3-frontend:
     name: Build Web3 Frontend
     runs-on: self-hosted
-    needs: [build-base]
+    needs: [install-base]
     steps:
       - uses: actions/checkout@v3
       - name: Build image
