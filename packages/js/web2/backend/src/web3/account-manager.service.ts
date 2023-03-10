@@ -11,10 +11,6 @@ const {
 
 @Injectable()
 export class Web3AccountManagerService implements OnModuleInit {
-    private _provider: ethers.Provider | null = null;
-
-    private _signer: ethers.Signer | null = null;
-
     private _contract: HDMAccountManager | null = null;
 
     onModuleInit() {
@@ -22,25 +18,16 @@ export class Web3AccountManagerService implements OnModuleInit {
     }
 
     disconnect() {
-        this._signer = null;
-        this._provider = null;
         this._contract = null;
     }
 
     connect() {
-        const provider = this._provider = new ethers.JsonRpcProvider(WEB3_JSON_RPC_URL);
-        this._signer = new ethers.Wallet(WEB3_PRIVATE_KEY!, provider);
-
-        this.loadContract();
-    }
-
-    loadContract() {
-        if (!this._provider || !this._signer)
-            return;
+        const provider = new ethers.JsonRpcProvider(WEB3_JSON_RPC_URL);
+        const signer = new ethers.Wallet(WEB3_PRIVATE_KEY!, provider);
 
         this._contract = HDMAccountManager__factory.connect(
             WEB3_ACCOUNT_MANAGER_ADDRESS!,
-            this._signer
+            signer
         );
     }
 

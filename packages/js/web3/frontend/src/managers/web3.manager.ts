@@ -18,10 +18,9 @@ export type Config = {
 
 export class Web3Manager {
     #wallet: WalletEntry;
+    #signer: ethers.Signer;
 
     private _events = new EventEmitter();
-
-    private _signer: ethers.Signer;
     private _accessControl: HDMAccessControl | null = null;
     private _notifications: Notification[] = [
         {
@@ -51,7 +50,7 @@ export class Web3Manager {
 
         switch (wallet.type) {
             case WalletType.PrivateKey:
-                this._signer = new ethers.Wallet(wallet.private_key!, provider);
+                this.#signer = new ethers.Wallet(wallet.private_key!, provider);
                 break;
             default:
                 throw new Error("Unsupported.");
@@ -70,7 +69,7 @@ export class Web3Manager {
     }
 
     get signer() {
-        return this._signer;
+        return this.#signer;
     }
 
     get usedData() {
@@ -96,17 +95,17 @@ export class Web3Manager {
     }
 
     loadContract() {
-        if (!this._signer)
+        if (!this.#signer)
             return;
 
-        this._accessControl = HDMAccessControl__factory.connect(HDMAccessControlAddress, this._signer);
+        this._accessControl = HDMAccessControl__factory.connect(HDMAccessControlAddress, this.#signer);
     }
 
     async bindNotifications() {
         if (!this._accessControl)
             return;
 
-        const myAddress = await this._signer!.getAddress();
+        const myAddress = await this.#signer!.getAddress();
 
         void this._accessControl.on(
             this._accessControl.filters["DataRequested(address,address,uint256)"](void 0, myAddress),
@@ -151,7 +150,7 @@ export class Web3Manager {
         if (!this._accessControl)
             return;
 
-        const myAddress = await this._signer!.getAddress();
+        const myAddress = await this.#signer!.getAddress();
         const dataRequestedEvents = await this._accessControl.queryFilter(
             this._accessControl.filters["DataRequested(address,address,uint256)"](void 0, myAddress),
             this._lastBlockNumber
@@ -181,7 +180,7 @@ export class Web3Manager {
         if (!this._accessControl)
             return;
 
-        const myAddress = await this._signer!.getAddress();
+        const myAddress = await this.#signer!.getAddress();
         const dataIds = await this._accessControl.getDataPermissionsByOwner(myAddress);
         this._ownedData = await Promise.all(dataIds.map(async (id: bigint) => {
             const data = await this._accessControl!.getDataPermissionsInfo(id);
@@ -196,7 +195,7 @@ export class Web3Manager {
         if (!this._accessControl)
             return;
 
-        const myAddress = await this._signer!.getAddress();
+        const myAddress = await this.#signer!.getAddress();
         const dataIds = await this._accessControl.getDataPermissionsByUser(myAddress);
         this._usedData = await Promise.all(dataIds.map(async (id: bigint) => {
             const data = await this._accessControl!.getDataPermissionsInfo(id);

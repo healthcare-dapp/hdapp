@@ -41,3 +41,5 @@ Thumbs.db
 **/artifacts
 **/cache
 **/typechain-types
+
+prod.env

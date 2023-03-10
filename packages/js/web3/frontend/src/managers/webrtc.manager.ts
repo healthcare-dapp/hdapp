@@ -34,10 +34,10 @@ export class WebRTCManager {
     private _isProcessingWeb3TransactionQueue = false;
 
     constructor(
-        private _signer: ethers.Signer,
+        signer: ethers.Signer,
         private _web3Address: string
     ) {
-        this._web3Contract = HDMHandshake__factory.connect(HDMHandshakeAddress, this._signer);
+        this._web3Contract = HDMHandshake__factory.connect(HDMHandshakeAddress, signer);
 
         makeAutoObservable(this);
 

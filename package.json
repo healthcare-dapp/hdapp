@@ -2,7 +2,9 @@
   "name": "hdapp",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "nx": "nx"
+  },
   "private": true,
   "dependencies": {
     "@date-io/date-fns": "^2.16.0",
@@ -42,7 +44,6 @@
     "io-ts": "^2.2.20",
     "js-joda": "^1.11.0",
     "jsonwebtoken": "^9.0.0",
-    "localforage": "^1.10.0",
     "minio": "^7.0.32",
     "mobx": "^6.8.0",
     "mobx-react-lite": "^3.4.2",
@@ -64,14 +65,12 @@
     "redis": "^4.6.5",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
-    "tslib": "^2.3.0",
     "typeorm": "^0.3.12",
     "validator": "^13.9.0"
   },
   "devDependencies": {
     "@emotion/eslint-plugin": "^11.10.0",
     "@nestjs/schematics": "^9.0.0",
-    "@nestjs/testing": "^9.0.0",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@nomiclabs/hardhat-ethers": "^2.2.2",
@@ -86,7 +85,6 @@
     "@nrwl/vite": "15.8.5",
     "@nrwl/webpack": "15.8.5",
     "@nrwl/workspace": "15.8.5",
-    "@testing-library/react": "14.0.0",
     "@typechain/hardhat": "^6.1.5",
     "@types/bcrypt": "^5.0.0",
     "@types/crypto-js": "^4.1.1",
@@ -116,11 +114,8 @@
     "hardhat": "^2.13.0",
     "hardhat-deploy": "^0.11.25",
     "hardhat-gas-reporter": "^1.0.9",
-    "jsdom": "~20.0.3",
     "nx": "15.8.5",
-    "prettier": "^2.6.2",
     "sass": "^1.55.0",
-    "solidity-coverage": "^0.8.2",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.1",
     "typechain-target-ethers-v6": "^0.1.0",

@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "nx",
+            "project": "js-web2-backend",
+            "command": "serve",
+            "label": "Serve Web2 Backend",
+            "options": {
+                "shell": {
+                    "args": ["${workspaceFolder}/local.env"],
+                    "executable": "${workspaceFolder}/misc/bin/linux-sh"
+                }
+            }
+        },
+        {
+            "type": "npm",
+            "script": "nx serve js-web2-frontend",
+            "problemMatcher": [],
+            "label": "Serve Web2 Frontend"
+        },
+        {
+            "type": "npm",
+            "script": "nx serve js-web3-frontend",
+            "problemMatcher": [],
+            "label": "Serve Web3 Frontend"
+        }
+    ]
+}
