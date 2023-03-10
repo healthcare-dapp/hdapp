@@ -4,3 +4,4 @@ WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn
 COPY . .
+VOLUME /root/.cache/hardhat-nodejs
