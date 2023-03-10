@@ -1,0 +1,20 @@
+{
+  "builds": [
+    {
+      "path": "solc-linux-amd64-v0.8.17+commit.8df45f5f",
+      "version": "0.8.17",
+      "build": "commit.8df45f5f",
+      "longVersion": "0.8.17+commit.8df45f5f",
+      "keccak256": "0xca03e8f6474b5becc8c28ad61830a23761e28b0dd53a6c89d48be89ab82e3a34",
+      "sha256": "0x99f2070b776e9714f1f76c43c229cf99b8978a92938ee8d2364c6de11c1a03d4",
+      "urls": [
+        "bzzr://f564ec3270c16b1bc458d9162cf10f26dc5d0a5884912423167f973a6dd63f96",
+        "dweb:/ipfs/QmePhTsZLZJfEsMSWpB36NRx7vZQuwUoysGgKaEdZLtnHb"
+      ]
+    }
+  ],
+  "releases": {
+    "0.8.17": "solc-linux-amd64-v0.8.17+commit.8df45f5f"
+  },
+  "latestRelease": "0.8.17"
+}
