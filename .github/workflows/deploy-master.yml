@@ -5,8 +5,8 @@ on:
     branches:
       - master
 jobs:
-  build-base:
-    name: Build base images with dependencies
+  install-base:
+    name: Install all dependencies and copy files
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
