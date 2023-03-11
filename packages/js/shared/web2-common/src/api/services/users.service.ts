@@ -28,7 +28,7 @@ export const UsersService = new (class {
 
     // Unsure what to do with web3Address type yet.
     findByWeb3Address(address: string | Web3Address): Promise<UserDto> {
-        return http.get(endpoints.users.find_by_web3_address, { params: { address } })
+        return http.get(endpoints.users.find_by_web3_address.replace(":address", address))
             .then(r => r.data)
             .then(UserDto.decode)
             .then(getRightOrFail);
