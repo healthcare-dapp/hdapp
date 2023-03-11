@@ -1,5 +1,6 @@
+import { endpoints } from "@hdapp/shared/web2-common/api/endpoints";
 import { SelfUpdateUserDto, UpdateUserDto, UserDto, UserFiltersDto } from "@hdapp/shared/web2-common/dto";
-import { Web3Address, web3AddressType } from "@hdapp/shared/web2-common/types";
+import { PagedResponse, Web3Address, web3AddressType } from "@hdapp/shared/web2-common/types";
 import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query, Request, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { UserAdapter } from "../../db/adapters/user.adapter";
@@ -9,12 +10,11 @@ import { UserGuard } from "../../guards/user.guard";
 import { Base64Pipe } from "../../utils/base64.pipe";
 import { ExtendedRequest } from "../../utils/extended-request";
 import { IoTsValidationPipe } from "../../utils/io-ts.pipe";
-import { PagedResponse } from "../../utils/paged-response";
 import { MailService } from "../auth/mail.service";
 import { UserNotFoundError, UsersService } from "./users.service";
 
 @ApiTags("User management")
-@Controller("/api/users/")
+@Controller()
 export class UsersController {
     constructor(
         private users: UsersService,
@@ -23,7 +23,7 @@ export class UsersController {
 
     @UserMatcher({ hasModeratorCapabilities: true })
     @UseGuards(JwtAuthGuard, UserGuard)
-    @Get("/")
+    @Get(endpoints.users.find_paged)
     @ApiOperation({ description: "Retrieve all users in pages." })
     @ApiBearerAuth()
     async getUsers(@Query("from_id") from_id?: string,
@@ -50,7 +50,7 @@ export class UsersController {
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get("current")
+    @Get(endpoints.users.get_current)
     @ApiOperation({ description: "Displays data of currently logged in user." })
     @ApiBearerAuth()
     getCurrentUser(@Request() request: ExtendedRequest): UserDto {
@@ -58,7 +58,7 @@ export class UsersController {
     }
 
     @UseGuards(JwtAuthGuard)
-    @Patch("current")
+    @Patch(endpoints.users.patch_current)
     @ApiOperation({ description: "Updates data of the currently logged in user." })
     @ApiBearerAuth()
     async updateCurrentUser(@Request() request: ExtendedRequest,
@@ -77,7 +77,7 @@ export class UsersController {
         }
     }
 
-    @Get("by_id/:id")
+    @Get(endpoints.users.find_by_id)
     @ApiOperation({ description: "Retrieve a user by their ID." })
     async getUserById(@Param("id") id: string): Promise<UserDto> {
         try {
@@ -92,7 +92,7 @@ export class UsersController {
         }
     }
 
-    @Get("by_web3_address/:address")
+    @Get(endpoints.users.find_by_web3_address)
     @ApiOperation({ description: "Retrieve a user by their ID." })
     async getUserByWeb3Address(@Param("address", new IoTsValidationPipe(web3AddressType)) address: Web3Address): Promise<UserDto> {
         try {
@@ -109,7 +109,7 @@ export class UsersController {
 
     @UserMatcher({ hasAdministratorCapabilities: true })
     @UseGuards(JwtAuthGuard, UserGuard)
-    @Patch("by_id/:id")
+    @Patch(endpoints.users.patch_by_id)
     @ApiOperation({ description: "Update information on a user by ID." })
     @ApiBearerAuth()
     async updateUserById(@Param("id") id: string,
@@ -132,7 +132,7 @@ export class UsersController {
 
     @UserMatcher({ hasModeratorCapabilities: true })
     @UseGuards(JwtAuthGuard, UserGuard)
-    @Post("by_id/:id/verify")
+    @Post(endpoints.users.verify_by_id)
     @ApiOperation({ description: "Sets a verification flag for the user." })
     @ApiBearerAuth()
     async verifyDoctor(@Param("id") id: string): Promise<UserDto> {

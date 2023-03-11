@@ -7,7 +7,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { HDNodeWallet, Wallet } from "ethers";
 import { Repository, FindManyOptions, DeepPartial, EntityNotFoundError, QueryFailedError, Brackets } from "typeorm";
-import { PagedResponse } from "../../utils/paged-response";
+import { PagedResponse } from "../../../../../shared/web2-common/src/types/paged-response.type";
 import { Web3AccountManagerService } from "../../web3/account-manager.service";
 import { MailService } from "../auth/mail.service";
 

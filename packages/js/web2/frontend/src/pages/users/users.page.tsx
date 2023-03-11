@@ -1,7 +1,9 @@
+import { setJwtToken } from "@hdapp/shared/web2-common/api/http";
+import { UsersService } from "@hdapp/shared/web2-common/api/services";
+import { UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { Add, AdminPanelSettings, LocalPolice, MedicalInformation, Person, Refresh, Search, Tune } from "@mui/icons-material";
 import { AppBar, Box, Button, Checkbox, IconButton, InputAdornment, Stack, TextField, Toolbar, Typography } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import axios from "axios";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
@@ -88,19 +90,15 @@ const columns: GridColDef[] = [
     },
 ];
 
+// for now
+setJwtToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjc3NzUwNDI0LCJleHAiOjE2Nzc4MzY4MjR9.O0oYsEwDQmPU8fHlE6MyGOdrLGSZIYzDExuDZruEYqI");
+
 export const UsersPage = observer(forwardRef((props, ref) => {
-    const [users, setUsers] = useState([]);
+    const [users, setUsers] = useState<UserDto[]>([]);
     useEffect(() => {
         (async () => {
-            const response = await axios.get("http://localhost:8080/api/users", {
-                headers: {
-                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjc3NzUwNDI0LCJleHAiOjE2Nzc4MzY4MjR9.O0oYsEwDQmPU8fHlE6MyGOdrLGSZIYzDExuDZruEYqI"
-                },
-                params: {
-                    filters: btoa(JSON.stringify({ has_web3_address: true }))
-                }
-            });
-            setUsers(response.data.data.items);
+            const response = await UsersService.findPaged({ has_web3_address: true });
+            setUsers(response.items);
         })();
     }, []);
     return (

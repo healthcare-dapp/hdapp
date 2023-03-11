@@ -1,18 +1,19 @@
+import { StatisticsService } from "@hdapp/shared/web2-common/api/services/statistics.service";
+import { StatisticsDto } from "@hdapp/shared/web2-common/dto/statistics.dto";
 import { BadgeOutlined, List, People } from "@mui/icons-material";
 import { Button, Card, Container, Stack, Typography, useTheme } from "@mui/material";
-import axios from "axios";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
 
 export const DashboardPage = observer(forwardRef((props, ref) => {
     const theme = useTheme();
-    const [statistics, setStatistics] = useState();
+    const [statistics, setStatistics] = useState<StatisticsDto>();
 
     useEffect(() => {
         (async () => {
-            const response = await axios.get("http://localhost:8080/statistics");
-            setStatistics(response.data.data);
+            const response = await StatisticsService.get();
+            setStatistics(response);
         })();
     }, []);
 

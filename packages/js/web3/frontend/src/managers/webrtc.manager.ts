@@ -1,8 +1,7 @@
 import { Logger } from "@hdapp/shared/web2-common/utils";
-import { HDMHandshake, HDMHandshake__factory } from "@hdapp/solidity/webrtc-broker";
 import { ethers } from "ethers";
 import { makeAutoObservable } from "mobx";
-import { HDMHandshakeAddress } from "../contract";
+import { Web3Manager } from "./web3.manager";
 
 export type MessageEventData = {
     type: "candidate"
@@ -28,17 +27,13 @@ export class WebRTCManager {
     private _isPolitePeer = false;
     private _peer: string | null = null;
 
-    private _web3Contract: HDMHandshake;
-
     private _web3TransactionQueue: (() => Promise<void>)[] = [];
     private _isProcessingWeb3TransactionQueue = false;
 
     constructor(
-        signer: ethers.Signer,
+        private _web3: Web3Manager,
         private _web3Address: string
     ) {
-        this._web3Contract = HDMHandshake__factory.connect(HDMHandshakeAddress, signer);
-
         makeAutoObservable(this);
 
         this._bindWeb3Events();
@@ -48,11 +43,11 @@ export class WebRTCManager {
         if (!this._web3Address)
             throw new Error("no web3 address");
 
-        void this._web3Contract.on(
-            this._web3Contract.filters["Message(address,address,bytes)"](void 0, this._web3Address),
+        void this._web3.webRtcBroker.on(
+            this._web3.webRtcBroker.filters["Message(address,address,bytes)"](void 0, this._web3Address),
             async (sender, receiver, _dataBytes, event) => {
                 const txn = await event.getTransaction();
-                const txnDescription = this._web3Contract!.interface.parseTransaction(txn);
+                const txnDescription = this._web3.webRtcBroker.interface.parseTransaction(txn);
                 const data = JSON.parse(ethers.toUtf8String(txnDescription!.args[1]));
                 await this._handleWeb3Event({ receiver, sender, data });
             }
@@ -120,10 +115,10 @@ export class WebRTCManager {
 
     private _queueWeb3Transaction(address: string, data: MessageEventData) {
         const func = async () => {
-            if (!this._web3Contract)
+            if (!this._web3)
                 return;
             debug("Sending to handshake SC", { address, data });
-            const response: ethers.TransactionResponse = await this._web3Contract.send(
+            const response: ethers.TransactionResponse = await this._web3.webRtcBroker.send(
                 address,
                 Buffer.from(JSON.stringify(data), "utf8")
             );

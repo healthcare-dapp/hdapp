@@ -1,7 +1,8 @@
+import { UsersService } from "@hdapp/shared/web2-common/api/services";
+import { UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { Check, Refresh, Search, Tune } from "@mui/icons-material";
 import { AppBar, Box, Button, Chip, IconButton, InputAdornment, Stack, TextField, Toolbar, Typography } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import axios from "axios";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
@@ -59,18 +60,11 @@ const columns: GridColDef[] = [
 ];
 
 export const RequestsPage = observer(forwardRef((props, ref) => {
-    const [requests, setRequests] = useState([]);
+    const [requests, setRequests] = useState<UserDto[]>([]);
     useEffect(() => {
         (async () => {
-            const response = await axios.get("http://localhost:8080/api/users", {
-                headers: {
-                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjc3NzUwNDI0LCJleHAiOjE2Nzc4MzY4MjR9.O0oYsEwDQmPU8fHlE6MyGOdrLGSZIYzDExuDZruEYqI"
-                },
-                params: {
-                    filters: btoa(JSON.stringify({ has_web3_address: false, has_doctor_capabilities: true, is_banned: false }))
-                }
-            });
-            setRequests(response.data.data.items);
+            const response = await UsersService.findPaged({ has_web3_address: false, has_doctor_capabilities: true, is_banned: false });
+            setRequests(response.items);
         })();
     }, []);
     return (

@@ -43,3 +43,5 @@ Thumbs.db
 **/typechain-types
 
 prod.env
+
+dev/

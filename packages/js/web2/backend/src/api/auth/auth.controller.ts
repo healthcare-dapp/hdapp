@@ -1,3 +1,4 @@
+import { endpoints } from "@hdapp/shared/web2-common/api";
 import { CreateUserDto, LoginUserSuccessDto, TokenDto } from "@hdapp/shared/web2-common/dto";
 import {
     BadRequestException,
@@ -20,14 +21,14 @@ import { IoTsValidationPipe } from "../../utils/io-ts.pipe";
 import { AuthService, EmailVerificationError, JwtTokenRevokedError } from "./auth.service";
 
 @ApiTags("User authorization and registration")
-@Controller("/api/auth")
+@Controller()
 export class AuthController {
     constructor(
         private auth: AuthService,
     ) { }
 
     @UseGuards(LocalAuthGuard)
-    @Post("login")
+    @Post(endpoints.auth.login)
     @ApiOperation({ description: "Performs a email-password authorization of user, returning a JWT." })
     @ApiBody({ description: "Email and password." })
     login(
@@ -41,7 +42,7 @@ export class AuthController {
         };
     }
 
-    @Post("register")
+    @Post(endpoints.auth.register)
     @ApiOperation({ description: "Creates a new user account." })
     @ApiBody({ description: "Registration details." })
     async register(@Body(new IoTsValidationPipe(CreateUserDto)) u: CreateUserDto) {
@@ -50,7 +51,7 @@ export class AuthController {
         );
     }
 
-    @Post("refresh")
+    @Post(endpoints.auth.refresh_jwt)
     @ApiOperation({ description: "Refreshes auth JWT." })
     async refreshToken(@Body() t: TokenDto): Promise<TokenDto> {
         try {
@@ -67,7 +68,7 @@ export class AuthController {
         }
     }
 
-    @Post("revoke")
+    @Post(endpoints.auth.revoke_jwt)
     @ApiOperation({ description: "Invalidates auth JWT." })
     async revokeToken(@Body() t: TokenDto) {
         try {
@@ -80,7 +81,7 @@ export class AuthController {
         }
     }
 
-    @Get("verify/:verifyToken")
+    @Get(endpoints.auth.verify_email)
     @ApiOperation({ description: "Verifies user account from a link in an email letter." })
     async verify(@Param("verifyToken") token: string,
         @Response() response: ExpressResponse,

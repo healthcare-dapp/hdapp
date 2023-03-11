@@ -1,3 +1,6 @@
+import { AuthService, MediaService, UsersService } from "@hdapp/shared/web2-common/api/services";
+import { CreateUserDto } from "@hdapp/shared/web2-common/dto/user.dto";
+import { EmailAddress } from "@hdapp/shared/web2-common/types/email-address.type";
 import { IllegalArgumentException } from "@js-joda/core";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -228,15 +231,13 @@ export class Registration extends React.Component<{}, {
                 this.state.uploadedFiles.forEach(file => formData.append("files", file));
                 this.setState({ isBusy: true });
 
-                const f = await axios.post<{ id: string }[]>("https://hdapp.ruslang.xyz/api/media/upload", formData)
-                    .then(r => r.data).then(files => {
-                        console.log(files);
-                        this.setState({
-                            fileIDs: files.map(file => file.id),
-                            isBusy: false
-                        });
-                        console.log("Files are succesfully uploaded");
-                    });
+                const files = await MediaService.upload(formData);
+                console.log(files);
+                this.setState({
+                    fileIDs: files.map(file => file.id),
+                    isBusy: false
+                });
+                console.log("Files are succesfully uploaded");
                 return true;
             } alert("Cannot upload right now. Server is busy!");
         } catch (e) {
@@ -278,19 +279,18 @@ export class Registration extends React.Component<{}, {
                         throw new IllegalArgumentException("No files?!");
                     }
                 }
-                const CreateUserDto = {
-                    email: this.state.mailValue,
+                const data: CreateUserDto = {
+                    email: this.state.mailValue as EmailAddress,
                     full_name: this.state.nameValue,
                     birth_date: dateF,
                     medical_organization_name: this.state.medicalNameValue,
-                    confirmation_documents: this.state.fileIDs,
+                    confirmation_document_ids: this.state.fileIDs,
                     has_doctor_capabilities: this.state.isDoctor
                 };
-                console.log(CreateUserDto);
-                const response = await axios.post("https://hdapp.ruslang.xyz/api/auth/register", CreateUserDto);
 
-                if (response.status === 201)
-                    this.setState({ isSubmitted: true });
+                await AuthService.register(data);
+
+                this.setState({ isSubmitted: true });
             }
         } catch (e) {
             console.log(e);
@@ -408,7 +408,7 @@ export class Registration extends React.Component<{}, {
     //             Request Access
     //         </Button>
 
-    //         <Link href="https://hdapp.ruslang.xyz/app/" variant="body2">
+    //         <Link href="/app" variant="body2">
     //             Already have an account? Sign in
     //         </Link>
 
@@ -435,7 +435,7 @@ export class Registration extends React.Component<{}, {
                             </Box>
                         }
                         </Card>
-                        <Link href="https://hdapp.ruslang.xyz/app/" variant="body2" sx={{ mt: 1 }}>
+                        <Link href="/app" variant="body2" sx={{ mt: 1 }}>
                             Already have an account? Sign in
                         </Link>
                     </Box>
@@ -554,7 +554,7 @@ export class Registration extends React.Component<{}, {
                                 </Stack>
                             </Box>
                         }</Card>
-                        <Link href="https://hdapp.ruslang.xyz/app/" variant="body2" sx={{ mt: 1 }}>
+                        <Link href="/app" variant="body2" sx={{ mt: 1 }}>
                             Already have an account? Sign in
                         </Link>
                     </Box>
@@ -633,7 +633,7 @@ export class Registration extends React.Component<{}, {
                         </Box>
                     }
                     </Card>
-                    <Link href="https://hdapp.ruslang.xyz/app/" variant="body2" sx={{ mt: 1 }}>
+                    <Link href="/app" variant="body2" sx={{ mt: 1 }}>
                         Already have an account? Sign in
                     </Link>
                 </Box>

@@ -14,14 +14,16 @@
             }
         },
         {
-            "type": "npm",
-            "script": "nx serve js-web2-frontend",
+            "type": "nx",
+            "project": "js-web2-frontend",
+            "command": "serve",
             "problemMatcher": [],
             "label": "Serve Web2 Frontend"
         },
         {
-            "type": "npm",
-            "script": "nx serve js-web3-frontend",
+            "type": "nx",
+            "project": "js-web3-frontend",
+            "command": "serve",
             "problemMatcher": [],
             "label": "Serve Web3 Frontend"
         }

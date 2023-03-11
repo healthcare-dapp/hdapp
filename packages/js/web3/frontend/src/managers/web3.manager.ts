@@ -1,11 +1,14 @@
 import { HDMAccessControl, HDMAccessControl__factory } from "@hdapp/solidity/access-control-manager";
+import { HDMAccountManager, HDMAccountManager__factory } from "@hdapp/solidity/account-manager";
+import { HDMHandshake, HDMHandshake__factory } from "@hdapp/solidity/webrtc-broker";
 import { Buffer } from "buffer";
 import { AES, enc } from "crypto-js";
 import { ethers } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable } from "mobx";
-import { HDMAccessControlAddress, WEB3_JSON_RPC_URL } from "../contract";
+import { WEB3_JSON_RPC_URL } from "../contract";
 import { WalletEntry, WalletType } from "../services/wallet.service";
+import { Web3ContractProvider } from "../utils/web3-contract.provider";
 
 export type Notification = {
     title: string
@@ -19,19 +22,13 @@ export type Config = {
 export class Web3Manager {
     #wallet: WalletEntry;
     #signer: ethers.Signer;
+    #address: string;
+
+    #accessControlManager: Web3ContractProvider<HDMAccessControl>;
+    #accountManager: Web3ContractProvider<HDMAccountManager>;
+    #webRtcBroker: Web3ContractProvider<HDMHandshake>;
 
     private _events = new EventEmitter();
-    private _accessControl: HDMAccessControl | null = null;
-    private _notifications: Notification[] = [
-        {
-            title: "Incoming data access request",
-            description: "Abram Lincoln would like to access your X-Ray medical data"
-        },
-        {
-            title: "Sync completed successfully",
-            description: "5 devices have up-to-date information"
-        },
-    ];
     private _ownedData: Notification[] = [];
     private _usedData: Notification[] = [];
     private _lastBlockNumber = 29800000; // TODO: keep in local storage
@@ -43,37 +40,31 @@ export class Web3Manager {
 
     constructor(wallet: WalletEntry) {
         this.#wallet = wallet;
+        if (wallet.type !== WalletType.PrivateKey)
+            throw new Error("Unsupported.");
+
+        const provider = new ethers.AlchemyProvider("goerli", WEB3_JSON_RPC_URL);
+        const signer = this.#signer = new ethers.Wallet(wallet.private_key!, provider);
+
+        this.#address = wallet.address;
+        this.#accessControlManager = new Web3ContractProvider(HDMAccessControl__factory, wallet.address, signer);
+        this.#accountManager = new Web3ContractProvider(HDMAccountManager__factory, wallet.address, signer);
+        this.#webRtcBroker = new Web3ContractProvider(HDMHandshake__factory, wallet.address, signer);
 
         makeAutoObservable(this);
-
-        const provider = new ethers.JsonRpcProvider(WEB3_JSON_RPC_URL);
-
-        switch (wallet.type) {
-            case WalletType.PrivateKey:
-                this.#signer = new ethers.Wallet(wallet.private_key!, provider);
-                break;
-            default:
-                throw new Error("Unsupported.");
-        }
-
-        this.loadContract();
-        void this.bindNotifications();
+        // void this.bindNotifications();
     }
 
-    get notifications() {
-        return this._notifications;
+    get accessControlManager() {
+        return this.#accessControlManager.contract;
     }
 
-    get ownedData() {
-        return this._ownedData;
+    get accountManager() {
+        return this.#accountManager.contract;
     }
 
-    get signer() {
-        return this.#signer;
-    }
-
-    get usedData() {
-        return this._usedData;
+    get webRtcBroker() {
+        return this.#webRtcBroker.contract;
     }
 
     get password() {
@@ -94,32 +85,20 @@ export class Web3Manager {
         }
     }
 
-    loadContract() {
-        if (!this.#signer)
-            return;
-
-        this._accessControl = HDMAccessControl__factory.connect(HDMAccessControlAddress, this.#signer);
-    }
-
-    async bindNotifications() {
-        if (!this._accessControl)
-            return;
-
-        const myAddress = await this.#signer!.getAddress();
-
-        void this._accessControl.on(
-            this._accessControl.filters["DataRequested(address,address,uint256)"](void 0, myAddress),
+    /* async bindNotifications() {
+        void this.#accessControl.contract.on(
+            this.#accessControl.filters["DataRequested(address,address,uint256)"](void 0, this.#address),
             async (_r1, _r2, _r3, event) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 this._notifications.push(await this._eventToNotification(event as any));
             }
         );
-    }
+    } */
 
     private async _eventToNotification(event: ethers.EventLog): Promise<Notification> {
         switch (event.eventName) {
             case "DataRequested": {
-                const info = await this._accessControl!.getDataRequestInfo(
+                const info = await this.#accessControlManager.contract.getDataRequestInfo(
                     event.args!.requester,
                     event.args!.requestIndex
                 );
@@ -146,23 +125,19 @@ export class Web3Manager {
         }
     }
 
-    async loadNotifications() {
-        if (!this._accessControl)
-            return;
-
-        const myAddress = await this.#signer!.getAddress();
-        const dataRequestedEvents = await this._accessControl.queryFilter(
-            this._accessControl.filters["DataRequested(address,address,uint256)"](void 0, myAddress),
+    /* async loadNotifications() {
+        const dataRequestedEvents = await this.#accessControl.queryFilter(
+            this.#accessControl.filters["DataRequested(address,address,uint256)"](void 0, this.#address),
             this._lastBlockNumber
         );
 
-        const dataPermissionsGrantedEvents = await this._accessControl.queryFilter(
-            this._accessControl.filters["DataPermissionsGranted(address,address,uint256,uint256)"](myAddress),
+        const dataPermissionsGrantedEvents = await this.#accessControl.queryFilter(
+            this.#accessControl.filters["DataPermissionsGranted(address,address,uint256,uint256)"](this.#address),
             this._lastBlockNumber
         );
 
-        const dataPermissionsRevokedEvents = await this._accessControl.queryFilter(
-            this._accessControl.filters["DataPermissionsRevoked(address,address,uint256)"](myAddress),
+        const dataPermissionsRevokedEvents = await this.#accessControl.queryFilter(
+            this.#accessControl.filters["DataPermissionsRevoked(address,address,uint256)"](this.#address),
             this._lastBlockNumber
         );
 
@@ -174,16 +149,13 @@ export class Web3Manager {
                 return this._eventToNotification(event as unknown as ethers.EventLog);
             })
         );
-    }
+    } */
 
     async loadOwnedData() {
-        if (!this._accessControl)
-            return;
 
-        const myAddress = await this.#signer!.getAddress();
-        const dataIds = await this._accessControl.getDataPermissionsByOwner(myAddress);
+        const dataIds = await this.#accessControlManager.contract.getDataPermissionsByOwner(this.#address);
         this._ownedData = await Promise.all(dataIds.map(async (id: bigint) => {
-            const data = await this._accessControl!.getDataPermissionsInfo(id);
+            const data = await this.#accessControlManager.contract.getDataPermissionsInfo(id);
             return {
                 title: ethers.toBigInt(id).toString(16),
                 description: `Shared with: ${data.user}, is revoked: ${data.isRevoked}`
@@ -192,13 +164,10 @@ export class Web3Manager {
     }
 
     async loadUsedData() {
-        if (!this._accessControl)
-            return;
 
-        const myAddress = await this.#signer!.getAddress();
-        const dataIds = await this._accessControl.getDataPermissionsByUser(myAddress);
+        const dataIds = await this.#accessControlManager.contract.getDataPermissionsByUser(this.#address);
         this._usedData = await Promise.all(dataIds.map(async (id: bigint) => {
-            const data = await this._accessControl!.getDataPermissionsInfo(id);
+            const data = await this.#accessControlManager.contract.getDataPermissionsInfo(id);
             return {
                 title: ethers.toBigInt(id).toString(16),
                 description: `Owner: ${data.owner}, is revoked: ${data.isRevoked}`
@@ -207,24 +176,20 @@ export class Web3Manager {
     }
 
     async requestPermissions(requestee: string, data: string) {
-        if (!this._accessControl)
-            return;
 
         const encryptedData = this._password
             ? Buffer.from(AES.encrypt(data, this._password).toString(), "base64").toString("hex")
             : data;
 
-        await this._accessControl.requestPermissions(
+        await this.#accessControlManager.contract.requestPermissions(
             requestee,
             ethers.toBigInt("0x" + encryptedData)
         );
     }
 
     async grantPermissionsFromRequest(requester: string, requestIndex: string, dataHash: string) {
-        if (!this._accessControl)
-            return;
 
-        await this._accessControl.grantPermissionsFromRequest(
+        await this.#accessControlManager.contract.grantPermissionsFromRequest(
             requester,
             +requestIndex,
             ethers.toBigInt("0x" + dataHash)
@@ -232,9 +197,7 @@ export class Web3Manager {
     }
 
     async revokePermissions(dataHash: string) {
-        if (!this._accessControl)
-            return;
 
-        await this._accessControl.revokePermissions(ethers.toBigInt("0x" + dataHash));
+        await this.#accessControlManager.contract.revokePermissions(ethers.toBigInt("0x" + dataHash));
     }
 }

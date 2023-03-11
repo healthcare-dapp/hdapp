@@ -64,15 +64,16 @@ export class SessionManager {
                 this._walletShort = walletShort;
                 this._web3Manager = new Web3Manager(wallet);
                 this._webrtcManager = new WebRTCManager(
-                    this._web3Manager.signer,
+                    this._web3Manager,
                     walletShort.address,
                 );
                 this._accountManager = new AccountManager(
-                    this._web3Manager.signer,
+                    this._web3Manager,
                     walletShort.address,
                 );
             });
         } catch (e) {
+            console.error(e);
             throw new Error("Password incorrect");
         }
     });
@@ -83,19 +84,23 @@ export class SessionManager {
             address: wallet.address,
             user: wallet.user
         };
-        runInAction(() => {
-            this._encryptionProvider = provider;
-            this._walletShort = walletShort;
-            this._web3Manager = new Web3Manager(wallet);
-            this._webrtcManager = new WebRTCManager(
-                this._web3Manager.signer,
-                walletShort.address,
-            );
-            this._accountManager = new AccountManager(
-                this._web3Manager.signer,
-                walletShort.address,
-            );
-        });
+        try {
+            runInAction(() => {
+                this._encryptionProvider = provider;
+                this._walletShort = walletShort;
+                this._web3Manager = new Web3Manager(wallet);
+                this._webrtcManager = new WebRTCManager(
+                    this._web3Manager,
+                    walletShort.address,
+                );
+                this._accountManager = new AccountManager(
+                    this._web3Manager,
+                    walletShort.address,
+                );
+            });
+        } catch (e) {
+            console.trace("govno", e);
+        }
     }
 }
 

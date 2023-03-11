@@ -74,7 +74,7 @@ export class ProfileService implements IDbConsumer {
             weight: encrypted.weight,
             medical_organization_name: encrypted.medical_organization_name,
             blood_type: encrypted.blood_type,
-            birth_date: LocalDateTime.parse(encrypted.birth_date).toLocalDate(),
+            birth_date: LocalDate.parse(encrypted.birth_date),
             updated_at: LocalDateTime.parse(encrypted.updated_at)
         };
     }

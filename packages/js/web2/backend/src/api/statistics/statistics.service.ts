@@ -1,4 +1,5 @@
 import { UserEntity } from "@hdapp/shared/db-common/entities";
+import { StatisticsDto } from "@hdapp/shared/web2-common/dto/statistics.dto";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Repository } from "typeorm";
@@ -10,7 +11,7 @@ export class StatisticsService {
         private users: Repository<UserEntity>,
     ) {}
 
-    async getStatistics() {
+    async getStatistics(): Promise<StatisticsDto> {
         return {
             users: {
                 total: await this.users.count({ where: { isBanned: false } }),

@@ -1,3 +1,4 @@
+import { endpoints } from "@hdapp/shared/web2-common/api/endpoints";
 import {
     BadRequestException,
     Controller,
@@ -15,13 +16,13 @@ import { FileAdapter } from "../../db/adapters/file.adapter";
 import { FileService } from "./file.service";
 
 @ApiTags("File management")
-@Controller("/api/media")
+@Controller()
 export class FileController {
     constructor(private fileService: FileService) { }
 
     // @UserMatcher({ has_moderator_capabilities: true })
     // @UseGuards(JwtAuthGuard, UserGuard)
-    @Get("download/:id/:name")
+    @Get(endpoints.file.download)
     @ApiOperation({ description: "Download a file from the server." })
     @ApiBearerAuth()
     async downloadFile(@Param("id") id: string, @Response() response: ExpressResponse) {
@@ -35,7 +36,7 @@ export class FileController {
         }
     }
 
-    @Post("upload")
+    @Post(endpoints.file.upload)
     @UseInterceptors(FileFieldsInterceptor([{ name: "files", maxCount: 10 }]))
     @ApiOperation({ description: "Uploads files to the server." })
     @ApiBearerAuth()

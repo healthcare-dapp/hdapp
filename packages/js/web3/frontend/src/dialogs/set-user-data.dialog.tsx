@@ -1,5 +1,6 @@
+import { UsersService } from "@hdapp/shared/web2-common/api/services";
 import { AsyncAction } from "@hdapp/shared/web2-common/utils";
-import { LocalDate } from "@js-joda/core";
+import { LocalDate, LocalDateTime } from "@js-joda/core";
 import { Upload } from "@mui/icons-material";
 import {
     Dialog,
@@ -22,9 +23,8 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { FC, useEffect, useState } from "react";
 import { ModalProvider } from "../App2";
-import { apiService } from "../services/api.service";
 
-const getUserByWeb3Address = new AsyncAction(apiService.getUserByWeb3Address);
+const getUserByWeb3Address = new AsyncAction(UsersService.findByWeb3Address);
 
 export interface SetUserDataDialogResult {
     fullName: string
@@ -34,7 +34,7 @@ export interface SetUserDataDialogResult {
 
 export const SetUserDataDialog: FC<{ address: string; onClose(result: SetUserDataDialogResult): void }> = observer(x => {
     const [fullName, setFullName] = useState("");
-    const [birthDate, setBirthDate] = useState<LocalDate | null>(null);
+    const [birthDate, setBirthDate] = useState<Date | null>(null);
     const [avatar, setAvatar] = useState<Blob | null>(null);
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("sm"));
@@ -43,7 +43,7 @@ export const SetUserDataDialog: FC<{ address: string; onClose(result: SetUserDat
     useEffect(() => {
         getUserByWeb3Address.tryRun(x.address)
             ?.then(user => {
-                setBirthDate(LocalDate.parse(user.birth_date));
+                setBirthDate(new Date(user.birth_date));
                 setFullName(user.full_name);
             })
             .catch(console.error);
@@ -98,7 +98,7 @@ export const SetUserDataDialog: FC<{ address: string; onClose(result: SetUserDat
                     </Stack>
                     <Button variant="contained"
                             disabled={!birthDate || !fullName.trim()}
-                            onClick={() => birthDate && x.onClose({ fullName, birthDate, avatar })}>Let's go</Button>
+                            onClick={() => birthDate && x.onClose({ fullName, birthDate: LocalDateTime.parse(birthDate.toISOString().slice(0, -1)).toLocalDate(), avatar })}>Let's go</Button>
                 </Stack>
             </DialogContent>
             <Backdrop sx={{ color: "#fff", zIndex: theme => theme.zIndex.drawer + 1 }}

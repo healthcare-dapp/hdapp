@@ -51,7 +51,6 @@ export function formatTemporal<T extends FormattableTemporal>(
         ?? (local instanceof LocalDate ? temporalFormats.ddMMyyyy : undefined)
         ?? (local instanceof LocalTime ? temporalFormats.HHmm : undefined)
         ?? temporalFormats.ddMMyyyyHHmm;
-    console.log(suitableFormat, local);
 
     return (suitableFormat as DateTimeFormatter).format(local);
 }
