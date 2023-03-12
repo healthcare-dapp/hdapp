@@ -16,32 +16,27 @@ services:
     image: minio/minio
     networks:
       - hdapp
-    env_file: ./dev.env
+    env_file: ./misc/env/dev.env
     restart: unless-stopped
     command: "server /data"
   hdapp-web2-backend:
     image: hdapp-web2-backend:latest
     container_name: hdapp-web2-backend
-    env_file: ./dev.env
+    env_file: ./misc/env/dev.env
     networks:
       - hdapp
-      - nginx
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "9080:8080"
   hdapp-web2-frontend:
     image: hdapp-web2-frontend:latest
     container_name: hdapp-web2-frontend
-    networks:
-      - nginx
     restart: unless-stopped
     ports:
       - "9000:80"
   hdapp-web3-frontend:
     image: hdapp-web3-frontend:latest
     container_name: hdapp-web3-frontend
-    networks:
-      - nginx
     restart: unless-stopped
     ports:
       - "9001:80"

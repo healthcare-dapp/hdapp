@@ -1,3 +1,16 @@
 #!/bin/sh
-export $(cat $1)
-bash -c "$2"
+if [[ "$1" == *.env ]]
+then
+    echo "Loading environment file $1..."
+    if [[ -f "$FILE" ]]
+    then
+        export $(cat $1)
+        bash -c "$2"
+    else
+        echo "Environment file was not found."
+        exit 1
+    fi
+else
+    echo "Loading WITHOUT an environment file."
+    bash -c "$@"
+fi

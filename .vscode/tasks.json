@@ -1,31 +1,102 @@
 {
     "version": "2.0.0",
+    "linux": {
+        "options": {
+            "shell": {
+                "executable": "${workspaceFolder}/misc/bin/linux-sh"
+            }
+        }
+    },
+    "windows": {
+        "options": {
+            "shell": {
+                "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "${workspaceFolder}/misc/bin/windows-env.ps1"
+                ]
+            }
+        }
+    },
     "tasks": [
         {
-            "type": "nx",
-            "project": "js-web2-backend",
-            "command": "serve",
+            "type": "shell",
+            "command": "yarn nx js-web2-backend",
+            "detail": "With local Docker infra",
             "label": "Serve Web2 Backend",
+            "problemMatcher": [],
             "options": {
                 "shell": {
-                    "args": ["${workspaceFolder}/local.env"],
+                    "args": ["${workspaceFolder}/misc/env/dev-local.env"],
+                }
+            }
+        },
+        {
+            "type": "shell",
+            "command": "yarn nx js-web2-backend",
+            "label": "Serve Web2 Backend",
+            "detail": "With production infra",
+            "problemMatcher": [],
+            "options": {
+                "shell": {
+                    "args": ["${workspaceFolder}/misc/env/prod.env"],
                     "executable": "${workspaceFolder}/misc/bin/linux-sh"
                 }
             }
         },
         {
-            "type": "nx",
-            "project": "js-web2-frontend",
-            "command": "serve",
+            "type": "shell",
+            "command": "yarn nx js-web2-frontend",
             "problemMatcher": [],
-            "label": "Serve Web2 Frontend"
+            "label": "Serve Web2 Frontend",
+            "detail": "With local backend"
         },
         {
-            "type": "nx",
-            "project": "js-web3-frontend",
-            "command": "serve",
+            "type": "shell",
+            "command": "yarn nx js-web2-frontend",
             "problemMatcher": [],
-            "label": "Serve Web3 Frontend"
+            "options": {
+                "shell": {
+                    "args": ["${workspaceFolder}/misc/env/vite-prod.env"],
+                    "executable": "${workspaceFolder}/misc/bin/linux-sh"
+                }
+            },
+            "label": "Serve Web2 Frontend",
+            "detail": "With production backend"
+        },
+        {
+            "type": "shell",
+            "command": "yarn nx serve js-web3-frontend",
+            "problemMatcher": [],
+            "label": "Serve Web3 Frontend",
+            "detail": "With local backend"
+        },
+        {
+            "type": "shell",
+            "command": "yarn nx serve js-web3-frontend",
+            "problemMatcher": [],
+            "options": {
+                "shell": {
+                    "args": ["${workspaceFolder}/misc/env/vite-prod.env"],
+                }
+            },
+            "label": "Serve Web3 Frontend",
+            "detail": "With production backend"
+        },
+        {
+            "type": "shell",
+            "command": "docker-compose -f docker-compose.dev.yml up -d",
+            "problemMatcher": [],
+            "label": "Deploy project in Docker"
+        },
+        {
+            "type": "shell",
+            "command": "docker-compose -f docker-compose.dev.yml up -d hdapp-redis hdapp-minio",
+            "problemMatcher": [],
+            "label": "Deploy infrastructure in Docker"
         }
     ]
 }

@@ -1,28 +1,37 @@
 import { LoginUserDto, LoginUserSuccessDto } from "../../dto/login-user.dto";
 import { TokenDto } from "../../dto/token.dto";
 import { CreateUserDto } from "../../dto/user.dto";
-import { getRightOrFail } from "../../io-ts-utils/get-right";
 import { endpoints } from "../endpoints";
 import { http } from "../http";
 
 export const AuthService = new (class {
-    login(dto: LoginUserDto): Promise<LoginUserSuccessDto> {
-        return http.post(endpoints.auth.login, dto)
-            .then(r => r.data)
-            .then(LoginUserSuccessDto.decode)
-            .then(getRightOrFail);
+    login(data: LoginUserDto): Promise<LoginUserSuccessDto> {
+        return http.request({
+            url: endpoints.auth.login,
+            data,
+            type: LoginUserSuccessDto
+        });
     }
 
-    register(dto: CreateUserDto): Promise<void> {
-        return http.post(endpoints.auth.register, dto);
+    register(data: CreateUserDto): Promise<void> {
+        return http.request({
+            url: endpoints.auth.register,
+            data
+        });
     }
 
-    refreshJwt(dto: TokenDto): Promise<void> {
-        return http.post(endpoints.auth.refresh_jwt, dto);
+    refreshJwt(data: TokenDto): Promise<void> {
+        return http.request({
+            url: endpoints.auth.refresh_jwt,
+            data
+        });
     }
 
-    revokeJwt(dto: TokenDto): Promise<void> {
-        return http.post(endpoints.auth.revoke_jwt, dto);
+    revokeJwt(data: TokenDto): Promise<void> {
+        return http.request({
+            url: endpoints.auth.revoke_jwt,
+            data
+        });
     }
 
     verifyEmail(): Promise<void> {
