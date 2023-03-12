@@ -6,7 +6,7 @@ let jwtToken: string | undefined;
 export const http = axios.create();
 
 http.interceptors.request.use(config => {
-    config.baseURL = new URL("/api", baseUrl).toString();
+    config.url = new URL(config.url ?? "/", baseUrl ?? location.href).toString();
     if (jwtToken)
         config.headers.Authorization = `Bearer ${jwtToken}`;
 
