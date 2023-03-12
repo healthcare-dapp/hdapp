@@ -24,7 +24,8 @@
       "executor": "@nrwl/vite:dev-server",
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "js-web3-frontend:build"
+        "buildTarget": "js-web3-frontend:build",
+        "proxyConfig": "packages/js/web3/frontend/proxy.conf.json"
       },
       "configurations": {
         "development": {
