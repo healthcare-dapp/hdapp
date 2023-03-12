@@ -7,6 +7,7 @@ import { http } from "../http";
 export const AuthService = new (class {
     login(data: LoginUserDto): Promise<LoginUserSuccessDto> {
         return http.request({
+            method: "POST",
             url: endpoints.auth.login,
             data,
             type: LoginUserSuccessDto
@@ -15,6 +16,7 @@ export const AuthService = new (class {
 
     register(data: CreateUserDto): Promise<void> {
         return http.request({
+            method: "POST",
             url: endpoints.auth.register,
             data
         });
@@ -22,6 +24,7 @@ export const AuthService = new (class {
 
     refreshJwt(data: TokenDto): Promise<void> {
         return http.request({
+            method: "POST",
             url: endpoints.auth.refresh_jwt,
             data
         });
@@ -29,6 +32,7 @@ export const AuthService = new (class {
 
     revokeJwt(data: TokenDto): Promise<void> {
         return http.request({
+            method: "POST",
             url: endpoints.auth.revoke_jwt,
             data
         });

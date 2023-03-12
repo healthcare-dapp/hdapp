@@ -24,7 +24,7 @@
     "tasks": [
         {
             "type": "shell",
-            "command": "yarn nx js-web2-backend",
+            "command": "yarn nx serve js-web2-backend",
             "detail": "With local Docker infra",
             "label": "Serve Web2 Backend",
             "problemMatcher": [],
@@ -36,32 +36,30 @@
         },
         {
             "type": "shell",
-            "command": "yarn nx js-web2-backend",
+            "command": "yarn nx serve js-web2-backend",
             "label": "Serve Web2 Backend",
             "detail": "With production infra",
             "problemMatcher": [],
             "options": {
                 "shell": {
                     "args": ["${workspaceFolder}/misc/env/prod.env"],
-                    "executable": "${workspaceFolder}/misc/bin/linux-sh"
                 }
             }
         },
         {
             "type": "shell",
-            "command": "yarn nx js-web2-frontend",
+            "command": "yarn nx serve js-web2-frontend",
             "problemMatcher": [],
             "label": "Serve Web2 Frontend",
             "detail": "With local backend"
         },
         {
             "type": "shell",
-            "command": "yarn nx js-web2-frontend",
+            "command": "yarn nx serve js-web2-frontend",
             "problemMatcher": [],
             "options": {
                 "shell": {
                     "args": ["${workspaceFolder}/misc/env/vite-prod.env"],
-                    "executable": "${workspaceFolder}/misc/bin/linux-sh"
                 }
             },
             "label": "Serve Web2 Frontend",

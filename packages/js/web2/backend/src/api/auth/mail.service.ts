@@ -51,7 +51,7 @@ export class MailService {
             await this.mailer.sendMail({
                 to: userEmail, // list of receivers
                 subject: "HDAPP Registration Request on Review", // Subject line
-                text: "Thanks for applying for a doctor account on HDAPP!\r\nYour registration is currently on a review process by our moderator team. Once the review is over, you will be sent an e-mail to this address.", // plaintext body
+                text: "Thanks for applying for a doctor account on HDAPP!\r\nYour registration is currently on a review process by our moderation team. Once the review is over, you will be sent an e-mail to this address.", // plaintext body
             });
 
             debug("Sent registration review notice e-mail.", { email: userEmail });

@@ -31,8 +31,7 @@ http.interceptors.response.use(response => {
         ApiResponse(type).decode(response.data)
     );
 
-    // go away axios i don't need your full response object in my services
-    return decoded as unknown as AxiosResponse;
+    return decoded.data;
 }, err => {
     error("Request failed.", err);
 }, { synchronous: true });

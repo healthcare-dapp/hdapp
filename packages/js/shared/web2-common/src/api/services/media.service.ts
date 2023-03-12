@@ -6,6 +6,7 @@ import { http } from "../http";
 export const MediaService = new (class {
     upload(data: FormData): Promise<FileDto[]> {
         return http.request({
+            method: "POST",
             url: endpoints.file.upload,
             data,
             type: array(FileDto)
