@@ -1,4 +1,4 @@
-import { Logger } from "@hdapp/shared/web2-common/utils";
+import { Logger, formatBytes } from "@hdapp/shared/web2-common/utils";
 import EventEmitter from "events";
 
 const dbName = "hdapp-pwa-frontend";
@@ -32,7 +32,14 @@ export class DbService {
         this._consumers.push(consumer);
     }
 
+    private async _calculateStorage() {
+        const storageSize = await navigator.storage.estimate();
+        debug("Using", formatBytes(storageSize.usage ?? -1), "out of", formatBytes(storageSize.quota ?? -1));
+    }
+
     private _requestDb() {
+        void this._calculateStorage();
+        debug("Opening IndexedDB");
         const request = indexedDB.open(dbName, 3);
         request.addEventListener(
             "success",
@@ -40,6 +47,12 @@ export class DbService {
                 debug("Database has been successfully opened.");
                 this._initDb(request.result);
                 this._emit("ready");
+            }
+        );
+        request.addEventListener(
+            "error",
+            err => {
+                error("IndexedDB initialization failed.", err);
             }
         );
         request.addEventListener(

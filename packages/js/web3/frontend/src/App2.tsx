@@ -73,12 +73,12 @@ export const AppRoot = observer(function App() {
         dbService.on("ready", () => setIsDbLoading(false));
     }, []);
 
-    if (isDbLoading || !hasWalletsListEverLoaded)
+    /* if (isDbLoading || !hasWalletsListEverLoaded)
         return (
             <Stack alignItems="center" justifyContent="center" style={{ height: "100vh" }}>
                 <CircularProgress />
             </Stack>
-        );
+        ); */
 
     if (!hasWallets && !isWalletsListLoading)
         return <SignInPage />;

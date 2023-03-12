@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { AxiosResponse } from "axios";
 import { getRightOrFail } from "../io-ts-utils";
+import { ApiResponse } from "../types/api-response.type";
 import { Logger } from "../utils";
 import { HttpInstance } from "./http.types";
-import { ApiResponse } from "../types/api-response.type";
 
 let baseUrl: string | undefined;
 let jwtToken: string | undefined;
@@ -42,5 +42,6 @@ export function setJwtToken(token: string) {
 }
 
 export function setBaseUrl(url: string) {
+    debug("Base URL set to", url);
     baseUrl = url;
 }

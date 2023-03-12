@@ -2,7 +2,7 @@
 if [[ "$1" == *.env ]]
 then
     echo "Loading environment file $1..."
-    if [[ -f "$FILE" ]]
+    if [[ -f "$1" ]]
     then
         export $(cat $1)
         bash -c "$2"
