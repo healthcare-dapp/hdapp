@@ -10,6 +10,8 @@ services:
     command: redis-server --save 60 1 --loglevel warning
     networks:
       - hdapp
+    ports:
+      - "6379:6379"
     restart: unless-stopped
   hdapp-minio:
     container_name: hdapp-minio
@@ -17,6 +19,8 @@ services:
     networks:
       - hdapp
     env_file: ./misc/env/dev.env
+    ports:
+      - "9090:9000"
     restart: unless-stopped
     command: "server /data"
   hdapp-web2-backend:

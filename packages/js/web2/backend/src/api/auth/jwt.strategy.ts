@@ -1,7 +1,8 @@
-import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
+import { Injectable, InternalServerErrorException, Logger, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy, StrategyOptions } from "passport-jwt";
 import { EntityNotFoundError } from "typeorm";
+import { ExtendedRequest } from "../../utils/extended-request";
 import { UsersService } from "../users/users.service";
 
 @Injectable()
@@ -16,7 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         } as StrategyOptions);
     }
 
-    async validate(payload: { id: string }) {
+    async validate(payload: { id: string }): Promise<ExtendedRequest["user"]> {
         try {
             const user = await this.users.findOneById(payload.id);
             return user;
@@ -25,6 +26,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
             if (e instanceof EntityNotFoundError)
                 throw new UnauthorizedException();
+
+            throw new InternalServerErrorException();
         }
     }
 }

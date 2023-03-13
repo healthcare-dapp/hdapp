@@ -50,14 +50,6 @@ export class UserEntity {
     @ApiProperty({ description: "True if user has verified their email" })
         hasVerifiedEmail: boolean;
 
-    @Column({ default: false })
-    @ApiProperty({ description: "True if user has been verified to be a doctor" })
-        isVerifiedDoctor: boolean;
-
-    @Column({ default: false })
-    @ApiProperty({ description: "True if user has been banned from the smart contracts" })
-        isBanned: boolean;
-
     @Column({ nullable: true, type: "varchar" })
     @ApiProperty({ description: "Medical organization name the user is assigned to" })
         medicalOrganizationName: string | null;

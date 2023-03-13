@@ -1,11 +1,12 @@
-import { CreateUserEntity, UserEntity } from "@hdapp/shared/db-common/entities";
+import { CreateUserEntity } from "@hdapp/shared/db-common/entities";
 import { CreateUserDto, UpdateUserDto, UserDto } from "@hdapp/shared/web2-common/dto";
 import { LocalDate } from "@js-joda/core";
 import { DeepPartial } from "typeorm";
+import { UserFullEntity } from "../entities/user-full.entity";
 import { FileAdapter } from "./file.adapter";
 
 export const UserAdapter = new (class {
-    transformToDto(entity: UserEntity): UserDto {
+    transformToDto(entity: UserFullEntity): UserDto {
         return {
             id: entity.id,
             web3_address: entity.web3Address,
@@ -38,7 +39,7 @@ export const UserAdapter = new (class {
         };
     }
 
-    transformUpdateDtoToEntity(entity: UpdateUserDto): DeepPartial<UserEntity> {
+    transformUpdateDtoToEntity(entity: UpdateUserDto): DeepPartial<UserFullEntity> {
         return {
             email: entity.email,
             birthDate: entity.birth_date

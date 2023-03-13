@@ -14,7 +14,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBody } from "@nestjs/swagger";
 import { Response as ExpressResponse } from "express";
-import { UserAdapter } from "../../db/adapters/user.adapter";
+import { UserAdapter } from "../../adapters/user.adapter";
 import { LocalAuthGuard } from "../../guards/local.guard";
 import { ExtendedRequest } from "../../utils/extended-request";
 import { IoTsValidationPipe } from "../../utils/io-ts.pipe";

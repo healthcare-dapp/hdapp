@@ -1,6 +1,6 @@
-import { UserEntity } from "@hdapp/shared/db-common/entities";
 import { Request } from "express";
+import { UserFullEntity } from "../entities/user-full.entity";
 
 export type ExtendedRequest = Request & {
-    user: UserEntity
+    user: UserFullEntity
 };

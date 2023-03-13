@@ -3,7 +3,7 @@ import { SelfUpdateUserDto, UpdateUserDto, UserDto, UserFiltersDto } from "@hdap
 import { PagedResponse, Web3Address, web3AddressType } from "@hdapp/shared/web2-common/types";
 import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query, Request, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { UserAdapter } from "../../db/adapters/user.adapter";
+import { UserAdapter } from "../../adapters/user.adapter";
 import { JwtAuthGuard } from "../../guards/jwt.guard";
 import { UserMatcher } from "../../guards/user-matcher.decorator";
 import { UserGuard } from "../../guards/user.guard";

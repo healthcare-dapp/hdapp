@@ -30,7 +30,9 @@
             "problemMatcher": [],
             "options": {
                 "shell": {
-                    "args": ["${workspaceFolder}/misc/env/dev-local.env"],
+                    "args": [
+                        "${workspaceFolder}/misc/env/dev-local.env"
+                    ]
                 }
             }
         },
@@ -42,7 +44,9 @@
             "problemMatcher": [],
             "options": {
                 "shell": {
-                    "args": ["${workspaceFolder}/misc/env/prod.env"],
+                    "args": [
+                        "${workspaceFolder}/misc/env/dev-local.env"
+                    ]
                 }
             }
         },
@@ -59,7 +63,9 @@
             "problemMatcher": [],
             "options": {
                 "shell": {
-                    "args": ["${workspaceFolder}/misc/env/vite-prod.env"],
+                    "args": [
+                        "${workspaceFolder}/misc/env/vite-prod.env"
+                    ]
                 }
             },
             "label": "Serve Web2 Frontend",
@@ -78,7 +84,9 @@
             "problemMatcher": [],
             "options": {
                 "shell": {
-                    "args": ["${workspaceFolder}/misc/env/vite-prod.env"],
+                    "args": [
+                        "${workspaceFolder}/misc/env/vite-prod.env"
+                    ]
                 }
             },
             "label": "Serve Web3 Frontend",

@@ -12,7 +12,7 @@ import {
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Response as ExpressResponse } from "express";
-import { FileAdapter } from "../../db/adapters/file.adapter";
+import { FileAdapter } from "../../adapters/file.adapter";
 import { FileService } from "./file.service";
 
 @ApiTags("File management")
