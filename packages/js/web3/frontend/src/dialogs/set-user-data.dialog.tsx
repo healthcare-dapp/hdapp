@@ -21,7 +21,7 @@ import {
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
-import { FC, useEffect, useState } from "react";
+import { ChangeEvent, FC, useEffect, useState } from "react";
 import { ModalProvider } from "../App2";
 
 const getUserByWeb3Address = new AsyncAction(UsersService.findByWeb3Address);
@@ -49,6 +49,11 @@ export const SetUserDataDialog: FC<{ address: string; onClose(result: SetUserDat
             .catch(console.error);
     }, [x.address]);
 
+    function handleAvatarInputChange(e: ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files![0];
+        file && setAvatar(file);
+    }
+
     return (
         <Dialog fullScreen={isMobileViewMd} disablePortal maxWidth="xs" {...ModalProvider.modalProps(x)}>
             <DialogTitle align="center">
@@ -64,22 +69,35 @@ export const SetUserDataDialog: FC<{ address: string; onClose(result: SetUserDat
                     </DialogContentText>
                     <Stack spacing={2} direction={isMobileView ? "column" : "row"} alignItems="center">
                         <ButtonBase sx={{ position: "relative", borderRadius: "50%" }}>
-                            <Avatar sx={{ width: 128, height: 128 }} />
-                            <IconButton disableRipple size="large"
-                                        sx={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            backgroundColor: "rgba(0, 0, 0, 0.6)",
-                                            color: "white",
-                                        }}>
-                                <Stack alignItems="center">
-                                    <Upload />
-                                    <Typography fontWeight={500} fontSize={14} textTransform="uppercase">Upload</Typography>
-                                </Stack>
-                            </IconButton>
+                            <Avatar sx={{ width: 128, height: 128 }} src={avatar ? URL.createObjectURL(avatar) : void 0} />
+                            { !avatar && (
+                                <IconButton disableRipple size="large"
+                                            sx={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                backgroundColor: "rgba(0, 0, 0, 0.6)",
+                                                color: "white",
+                                            }}>
+                                    <Stack alignItems="center">
+                                        <Upload />
+                                        <Typography fontWeight={500} fontSize={14} textTransform="uppercase">Upload</Typography>
+                                    </Stack>
+                                </IconButton>
+                            ) }
+
+                            <input type="file"
+                                   style={{
+                                       position: "absolute",
+                                       top: 0,
+                                       left: 0,
+                                       right: 0,
+                                       bottom: 0,
+                                       opacity: 0
+                                   }}
+                                   onChange={handleAvatarInputChange} />
                         </ButtonBase>
                         <Stack spacing={2} alignItems="center">
                             <TextField autoFocus

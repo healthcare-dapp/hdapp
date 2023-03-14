@@ -30,6 +30,7 @@ import { FC, useEffect, useState } from "react";
 import { ModalProvider } from "../App2";
 import { sessionManager } from "../managers/session.manager";
 import { blockService } from "../services/block.service";
+import { fileService } from "../services/file.service";
 import { RecordForm, recordService } from "../services/record.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { CreateBlockDialog } from "./create-block.dialog";
@@ -84,6 +85,7 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
     const [type, setType] = useState("");
     const [isBlockIdSelectorOpen, setIsBlockIdSelectorOpen] = useState(false);
     const [blockEntries, setBlockEntries] = useState<{ key: string; title: string }[]>([]);
+    const [attachments, setAttachments] = useState<File[]>([]);
 
     useEffect(() => {
         blockService.getBlocks()
@@ -96,6 +98,16 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
     }, []);
 
     async function handleRecordCreate() {
+        const attachment_ids: string[] = [];
+        for (const attachment of attachments) {
+            const id = await fileService.uploadFile(
+                attachment,
+                sessionManager.wallet.address,
+                sessionManager.encryption
+            );
+            attachment_ids.push(id);
+        }
+
         await addRecordAction.run({
             title,
             description,
@@ -104,7 +116,7 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
             created_by: wallet.address,
             owned_by: wallet.address,
             appointment_ids: [],
-            attachment_ids: []
+            attachment_ids
         }, encryption);
         x.onClose();
     }
@@ -189,11 +201,22 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
                     <Card variant="outlined" sx={{ pr: 2, py: 2, paddingLeft: "14px" }}>
                         <Stack spacing={1}>
                             <Typography fontWeight="500">Attachments</Typography>
+                            <div style={{ width: 0, minWidth: "100%" }}>
+                                { attachments.map((file, index) => (
+                                    <Chip variant="outlined"
+                                          key={index}
+                                          onDelete={() => {
+                                              setAttachments(attachments.filter(a => a !== file));
+                                          }}
+                                          label={file.name} />
+                                )) }
+                            </div>
                             <div style={{ position: "relative" }}>
                                 <Button variant="outlined" startIcon={<Add />}>
                                     Select file...
                                 </Button>
-                                <input type="file" style={{ opacity: 0, position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
+                                <input type="file" style={{ opacity: 0, position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                                       onChange={e => setAttachments(a => [...a, ...e.target.files! as unknown as File[]])} />
                             </div>
                         </Stack>
                     </Card>

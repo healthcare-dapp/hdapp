@@ -1,4 +1,5 @@
 
+import { AsyncAction } from "@hdapp/shared/web2-common/utils/async-action";
 import { Menu as MenuIcon, PersonAdd, QrCodeRounded, Search, Tune } from "@mui/icons-material";
 import {
     AppBar,
@@ -21,6 +22,7 @@ import { ModalProvider } from "../../App2";
 import { QrCodeDialog } from "../../dialogs/qr-code.dialog";
 import { ScanQrCodeDialog } from "../../dialogs/scan-qr-code.dialog";
 import { sessionManager } from "../../managers/session.manager";
+import { ProfileEntry, profileService } from "../../services/profile.service";
 import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
@@ -42,6 +44,7 @@ const JumboText = styled(Typography)(({ theme }) => ({
 }));
 
 const vm = new DashboardViewModel();
+const getProfileAction = new AsyncAction(profileService.getProfile);
 
 export const DashboardPage = observer(() => {
     const { account } = sessionManager;
@@ -49,9 +52,13 @@ export const DashboardPage = observer(() => {
     const canShowSidebar = useMediaQuery(theme.breakpoints.up("md"));
     const canShowSharingInfo = useMediaQuery(theme.breakpoints.up("sm"));
     const [openCounter, setOpenCounter] = useState(0);
+    const [profile, setProfile] = useState<ProfileEntry>();
 
-    useDatabase(() => {
+    useDatabase(async () => {
         void vm.loadRecords.tryRun();
+
+        const result = await getProfileAction.forceRun(sessionManager.wallet.address, sessionManager.encryption);
+        setProfile(result);
     });
 
     if (!account)
@@ -93,7 +100,7 @@ export const DashboardPage = observer(() => {
             ) }
             <Container sx={{ pt: 3 }}>
                 <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ pb: 3 }}>
-                    <JumboText>Welcome, Ruslan!</JumboText>
+                    { profile && <JumboText>Welcome, { profile.full_name.split(" ")[0] }!</JumboText> }
                     { canShowSharingInfo && <Box flexGrow={1} /> }
                     { canShowSidebar && (
                         <Button variant="text" size="small" startIcon={<PersonAdd />} color="primary"
@@ -109,8 +116,8 @@ export const DashboardPage = observer(() => {
                     ) }
                 </Stack>
                 <Grid container spacing={2}>
-                    <Grid md={8}>
-                        <Stack spacing={2} style={{ flexGrow: 1 }}>
+                    <Grid xs={12} md={8}>
+                        <Stack spacing={2}>
                             <MyProfileWidget />
                             { account.isLoading
                                 ? (

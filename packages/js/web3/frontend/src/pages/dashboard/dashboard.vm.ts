@@ -75,6 +75,18 @@ export class DashboardViewModel {
             group.shared_with = []; // TODO
         }
 
+        const ungrouped = records.filter(r => !groups.some(g => g.records.includes(r)));
+        if (ungrouped.length) {
+            groups.push({
+                records: ungrouped,
+                title: "Ungrouped",
+                aggregated_updated_at: LocalDateTime.now(),
+                key: "ungrouped",
+                shared_with: [],
+                type: RecordGroupType.ByBlock
+            });
+        }
+
         return [...groups].sort(
             (a, b) => a.aggregated_updated_at.compareTo(b.aggregated_updated_at)
         );

@@ -11,11 +11,13 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
+import makeBlockie from "ethereum-blockies-base64";
 import { observer } from "mobx-react-lite";
 import { FC, forwardRef, useEffect, useState } from "react";
 import { sessionManager } from "../../managers/session.manager";
 import { walletManager } from "../../managers/wallet.manager";
 import { WalletEntryShort } from "../../services/wallet.service";
+import { trimWeb3Address } from "../../utils/trim-web3-address";
 import { Logo } from "../../widgets/header";
 
 const Account: FC<{ selected?: boolean; wallet: WalletEntryShort }> = observer(x => {
@@ -23,7 +25,7 @@ const Account: FC<{ selected?: boolean; wallet: WalletEntryShort }> = observer(x
     const [password, setPassword] = useState("");
     return (
         <Stack spacing={2} alignItems="center" justifyContent="center">
-            <Avatar sx={{ width: 64, height: 64 }} />
+            <Avatar src={makeBlockie(x.wallet.address)} sx={{ width: 64, height: 64 }} />
             <Typography fontWeight="500"
                         align="center"
                         color={theme.palette.text.primary}>
@@ -31,25 +33,29 @@ const Account: FC<{ selected?: boolean; wallet: WalletEntryShort }> = observer(x
                 <Typography fontWeight="500"
                             fontSize={12}
                             color={theme.palette.grey[500]}>
-                    ({ x.wallet.address })
+                    ({ trimWeb3Address(x.wallet.address) })
                 </Typography>
             </Typography>
             { x.selected && (
-                <>
-                    <span />
-                    <TextField variant="outlined" label="Password"
-                               size="small"
-                               type="password"
-                               value={password}
-                               error={!!sessionManager.unlock.error}
-                               helperText={sessionManager.unlock.error ? "Incorrect password" : void 0}
-                               onChange={e => setPassword(e.target.value)} />
-                    <LoadingButton loading={sessionManager.unlock.pending}
-                                   variant="contained" disableElevation
-                                   onClick={() => sessionManager.unlock.run(x.wallet, password)}>
-                        Unlock
-                    </LoadingButton>
-                </>
+                <form onSubmit={e => {
+                    e.preventDefault();
+                    void sessionManager.unlock.run(x.wallet, password);
+                }}>
+                    <Stack spacing={2} alignItems="center" justifyContent="center">
+                        <TextField variant="outlined" label="Password"
+                                   size="small"
+                                   type="password"
+                                   value={password}
+                                   error={!!sessionManager.unlock.error}
+                                   helperText={sessionManager.unlock.error ? "Incorrect password" : void 0}
+                                   onChange={e => setPassword(e.target.value)} />
+                        <LoadingButton loading={sessionManager.unlock.pending}
+                                       variant="contained" disableElevation
+                                       type="submit">
+                            Unlock
+                        </LoadingButton>
+                    </Stack>
+                </form>
             ) }
         </Stack>
     );

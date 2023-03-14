@@ -4,6 +4,8 @@ import { ExpandMore, KeyboardArrowUp, KeyboardArrowDown, Edit, ShieldOutlined, S
 import { Stack, Box, Accordion, AccordionSummary, Typography, AvatarGroup, Avatar, AccordionDetails, Button, IconButton, useTheme, useMediaQuery } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2";
 import { FC, useState } from "react";
+import { ModalProvider } from "../../../App2";
+import { ShareRecordDialog } from "../../../dialogs/share-record.dialog";
 import { RecordGroup } from "../dashboard.vm";
 import { DataRecordItemWidget } from "./data-record-item.widget";
 import { DataRecordsGridWidget } from "./data-records-grid.widget";
@@ -77,11 +79,13 @@ export const DataGroupItemWidget: FC<{ group: RecordGroup }> = x => {
                             </IconButton>
                         ) }
                         { canShowSharingInfo ? (
-                            <Button variant="contained" disableElevation color="success" startIcon={<ShieldOutlined />}>
+                            <Button variant="contained" disableElevation color="success" startIcon={<ShieldOutlined />}
+                                    onClick={() => ModalProvider.show(ShareRecordDialog, {})}>
                                 Manage access
                             </Button>
                         ) : (
-                            <IconButton color="success">
+                            <IconButton color="success"
+                                        onClick={() => ModalProvider.show(ShareRecordDialog, {})}>
                                 <Shield />
                             </IconButton>
                         ) }

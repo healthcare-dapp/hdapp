@@ -24,9 +24,12 @@ import Grid from "@mui/system/Unstable_Grid";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useNavigate, useParams } from "react-router-dom";
+import { ModalProvider } from "../../App2";
 import Paper1 from "../../assets/raster/mocks/paper1.png";
+import { ShareRecordDialog } from "../../dialogs/share-record.dialog";
 import { sessionManager } from "../../managers/session.manager";
 import { BlockEntry, blockService } from "../../services/block.service";
+import { FileEntry, fileService } from "../../services/file.service";
 import { ProfileEntry, profileService } from "../../services/profile.service";
 import { RecordEntry, recordService } from "../../services/record.service";
 import { trimWeb3Address } from "../../utils/trim-web3-address";
@@ -37,6 +40,8 @@ import { HeaderWidget } from "../../widgets/header";
 
 const getRecordAction = new AsyncAction(recordService.getRecord);
 const getRecordCreatorProfileAction = new AsyncAction(profileService.getProfile);
+const getRecordCreatorAvatarAction = new AsyncAction(fileService.getFileBlob);
+const getRecordOwnerAvatarAction = new AsyncAction(fileService.getFileBlob);
 const getRecordOwnerProfileAction = new AsyncAction(profileService.getProfile);
 
 export const RecordPage = () => {
@@ -45,6 +50,9 @@ export const RecordPage = () => {
     const [creatorProfile, setCreatorProfile] = useState<ProfileEntry>();
     const [ownerProfile, setOwnerProfile] = useState<ProfileEntry>();
     const [blocks, setBlocks] = useState<BlockEntry[]>([]);
+    const [attachments, setAttachments] = useState<FileEntry[]>([]);
+    const [attachmentUrls, setAttachmentUrls] = useState<string[]>([]);
+    const [creatorAvatarUrl, setCreatorAvatarUrl] = useState<string>();
 
     useDatabase(async () => {
         if (!recordId)
@@ -53,15 +61,23 @@ export const RecordPage = () => {
         const result = await getRecordAction.run(recordId, sessionManager.encryption);
         setRecord(result);
 
-        const [creator, owner, ...fullBlocks] = await Promise.all([
-            await getRecordCreatorProfileAction.run(result.created_by, sessionManager.encryption),
-            await getRecordOwnerProfileAction.run(result.owned_by, sessionManager.encryption),
-            ...result.block_ids.map(id => blockService.getBlock(id))
+        await Promise.all([
+            await getRecordCreatorProfileAction.run(result.created_by, sessionManager.encryption)
+                .then(async profile => {
+                    if (profile.avatar_hash)
+                        await getRecordCreatorAvatarAction.run(profile.avatar_hash, sessionManager.encryption)
+                            .then(blob => setCreatorAvatarUrl(URL.createObjectURL(blob)));
+                    return profile;
+                })
+                .then(setCreatorProfile),
+            await getRecordOwnerProfileAction.run(result.owned_by, sessionManager.encryption).then(setOwnerProfile),
+            Promise.all(result.block_ids.map(id => blockService.getBlock(id))).then(setBlocks),
+            Promise.all(result.attachment_ids.map(id => fileService.getFileMetadata(id))).then(setAttachments),
+            Promise.all(result.attachment_ids.map(id => fileService.getFileBlob(id, sessionManager.encryption)))
+                .then(atts => {
+                    setAttachmentUrls(atts.map(blob => URL.createObjectURL(blob)));
+                }),
         ]);
-
-        setCreatorProfile(creator);
-        setOwnerProfile(owner);
-        setBlocks(fullBlocks);
     });
 
     const theme = useTheme();
@@ -117,7 +133,8 @@ export const RecordPage = () => {
                                             <Button variant="outlined" startIcon={<ArchiveOutlined />}>
                                                 Archive
                                             </Button>
-                                            <Button variant="contained" disableElevation color="success" startIcon={<Share />}>
+                                            <Button variant="contained" disableElevation color="success" startIcon={<Share />}
+                                                    onClick={() => ModalProvider.show(ShareRecordDialog, {})}>
                                                 Share
                                             </Button>
                                         </>
@@ -137,11 +154,10 @@ export const RecordPage = () => {
                                     <Stack spacing={2} alignItems="flex-start">
                                         { canShowSidebar && (
                                             <Stack spacing={1} alignItems="center" sx={{ width: "100%" }}>
-                                                <img src={Paper1} style={{ borderRadius: "16px", width: "100%", height: "400px", objectFit: "contain", background: theme.palette.grey[200] }} />
+                                                <img src={attachmentUrls[0]}
+                                                     style={{ borderRadius: "16px", width: "100%", height: "400px", objectFit: "contain", background: theme.palette.grey[200] }} />
                                                 <Stack spacing={1} direction="row">
                                                     <Box style={{ width: "8px", height: "8px", borderRadius: "4px", background: theme.palette.primary.main }} />
-                                                    <Box style={{ width: "8px", height: "8px", borderRadius: "4px", background: theme.palette.grey[400] }} />
-                                                    <Box style={{ width: "8px", height: "8px", borderRadius: "4px", background: theme.palette.grey[400] }} />
                                                 </Stack>
                                             </Stack>
                                         ) }
@@ -163,9 +179,7 @@ export const RecordPage = () => {
                                                         : creatorProfile ? (
                                                             <>
                                                                 <Avatar sx={{ width: 40, height: 40 }}
-                                                                        src={creatorProfile.avatar_hash
-                                                                            ? URL.createObjectURL(creatorProfile.avatar_hash)
-                                                                            : void 0} />
+                                                                        src={creatorAvatarUrl} />
                                                                 <Stack width={0} flexGrow={1}>
                                                                     <Stack direction="row" spacing={0.5} alignItems="center">
                                                                         <Typography variant="subtitle2">
@@ -246,26 +260,28 @@ export const RecordPage = () => {
                                                 </Typography>
                                             </CardContent>
                                             <MenuList sx={{ pt: 0, minHeight: "300px" }}>
-                                                <MenuItem>
-                                                    <Stack spacing={1} width="100%">
-                                                        <Stack spacing={2} direction="row" alignItems="center" width="100%">
-                                                            <Avatar sx={{ width: 40, height: 40 }} />
-                                                            <Stack width={0} flexGrow={1}>
-                                                                <Stack direction="row" spacing={0.5} alignItems="center">
-                                                                    <Typography variant="subtitle2">
-                                                                        Ruslan Garifullin
-                                                                    </Typography>
-                                                                    <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400, marginLeft: "auto" }}>
-                                                                        2 hours ago
-                                                                    </Typography>
+                                                { creatorProfile && (
+                                                    <MenuItem>
+                                                        <Stack spacing={1} width="100%">
+                                                            <Stack spacing={2} direction="row" alignItems="center" width="100%">
+                                                                <Avatar sx={{ width: 40, height: 40 }} src={creatorAvatarUrl} />
+                                                                <Stack width={0} flexGrow={1}>
+                                                                    <Stack direction="row" spacing={0.5} alignItems="center">
+                                                                        <Typography variant="subtitle2">
+                                                                            { creatorProfile.full_name }
+                                                                        </Typography>
+                                                                        <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400, marginLeft: "auto" }}>
+                                                                            { formatTemporal(record.created_at) }
+                                                                        </Typography>
+                                                                    </Stack>
+                                                                    <Typography noWrap variant="subtitle2" sx={{ fontWeight: 400 }}>You</Typography>
                                                                 </Stack>
-                                                                <Typography noWrap variant="subtitle2" sx={{ fontWeight: 400 }}>You</Typography>
                                                             </Stack>
+                                                            <Typography whiteSpace="normal" variant="subtitle2" fontSize={12} pl={7} sx={{ fontWeight: 400 }}>Created this record</Typography>
                                                         </Stack>
-                                                        <Typography whiteSpace="normal" variant="subtitle2" fontSize={12} pl={7} sx={{ fontWeight: 400 }}>Downloaded this record via device sync</Typography>
-                                                    </Stack>
-                                                </MenuItem>
-                                                <MenuItem>
+                                                    </MenuItem>
+                                                ) }
+                                                { /* <MenuItem>
                                                     <Stack spacing={1} width="100%">
                                                         <Stack spacing={2} direction="row" alignItems="center" width="100%">
                                                             <Avatar sx={{ width: 40, height: 40, backgroundColor: theme.palette.success.light }} />
@@ -287,7 +303,7 @@ export const RecordPage = () => {
                                                         <Typography whiteSpace="normal" variant="subtitle2" fontSize={12} pl={7} sx={{ fontWeight: 400 }}>Created an appointment linked to this record</Typography>
                                                         <Typography whiteSpace="normal" variant="subtitle2" fontSize={12} pl={7} sx={{ fontWeight: 400 }}>Created this record</Typography>
                                                     </Stack>
-                                                </MenuItem>
+                                                </MenuItem> */ }
                                             </MenuList>
                                         </Card>
                                     </Stack>
