@@ -4,6 +4,7 @@ import { ModalProvider } from "../App2";
 import { SetPasswordDialog } from "../dialogs/set-password.dialog";
 import { SetUserDataDialog, SetUserDataDialogResult } from "../dialogs/set-user-data.dialog";
 import { dbService } from "../services/db.service";
+import { fileService } from "../services/file.service";
 import { profileService } from "../services/profile.service";
 import { WalletEntry, WalletEntryShort, walletService, WalletType } from "../services/wallet.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
@@ -64,11 +65,18 @@ export class WalletManager {
             await walletService.addWallet(wallet, provider);
             sessionManager.unlockImmediately(wallet, password);
 
+            const avatar_hash = avatar
+                ? await fileService.uploadFile(
+                    avatar,
+                    wallet.address,
+                    sessionManager.encryption
+                ) : null;
+
             await profileService.addProfile(
                 address,
                 {
                     full_name: fullName,
-                    avatar,
+                    avatar_hash,
                     birth_date: birthDate,
                     blood_type: null,
                     gender: null,

@@ -2,6 +2,7 @@ import { Logger } from "@hdapp/shared/web2-common/utils";
 import { LocalDateTime } from "@js-joda/core";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { dbService, DbService, IDbConsumer } from "./db.service";
+import { makeAutoObservable } from "mobx";
 
 interface FileBlobDbEntry {
     hash: string
@@ -34,6 +35,7 @@ export class FileService implements IDbConsumer {
     private readonly _logger = new Logger("file-service");
 
     constructor(private _db: DbService) {
+        makeAutoObservable(this, {}, { autoBind: true });
     }
 
     private _transformDbEntryToEntry(dbEntry: FileMetadataDbEntry): FileEntry {
@@ -57,11 +59,11 @@ export class FileService implements IDbConsumer {
                     reject(new FileNotFoundError("File not found."));
                 }
                 try {
-                    const decryptedResult = provider.decryptUint8Array(request.result.blob);
+                    const decryptedResult = provider.decryptString(request.result.blob);
                     resolve(
                         new Blob(
                             [decryptedResult],
-                            { type: request.result.mimeType }
+                            { type: "image/jpeg" }
                         )
                     );
                 } catch (cause) {
@@ -126,7 +128,7 @@ export class FileService implements IDbConsumer {
         });
     }
 
-    async uploadFile(file: File, owner: string, provider: EncryptionProvider) {
+    async uploadFile(file: File, owner: string, provider: EncryptionProvider): Promise<string> {
         const arrayBuffer = await new Promise<ArrayBuffer>(resolve => {
             const fileReader = new FileReader();
             fileReader.onload = function (event) {
@@ -134,7 +136,7 @@ export class FileService implements IDbConsumer {
             };
             fileReader.readAsArrayBuffer(file);
         });
-        const encryptedBlob = await provider.encryptArrayBuffer(arrayBuffer);
+        const encryptedBlob = provider.encryptArrayBuffer(new Uint8Array(arrayBuffer));
         const tsn = this._db.transaction([
             this._blobStoreName,
             this._metadataStoreName
@@ -151,7 +153,7 @@ export class FileService implements IDbConsumer {
         };
         const blobRequest: IDBRequest<IDBValidKey> = blobStore.put({ hash, blob: encryptedBlob });
         const metadataRequest: IDBRequest<IDBValidKey> = metadataStore.put(metadata);
-        return await Promise.all([
+        await Promise.all([
             new Promise<void>((resolve, reject) => {
                 blobRequest.addEventListener("success", () => {
                     if (!blobRequest.result) {
@@ -179,6 +181,8 @@ export class FileService implements IDbConsumer {
                 });
             }),
         ]);
+
+        return hash;
     }
 
     onDbUpgrade(db: IDBDatabase): void {

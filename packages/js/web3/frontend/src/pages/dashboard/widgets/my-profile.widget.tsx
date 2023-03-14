@@ -1,12 +1,14 @@
 import { AsyncAction, formatTemporal, temporalFormats } from "@hdapp/shared/web2-common/utils";
 import { ExpandMore, AddPhotoAlternate, Edit } from "@mui/icons-material";
 import { Stack, Box, useTheme, Accordion, AccordionSummary, Typography, AccordionDetails, Avatar, Button, useMediaQuery, CircularProgress } from "@mui/material";
-import { FC, useState } from "react";
+import { ChangeEvent, FC, useState } from "react";
 import { sessionManager } from "../../../managers/session.manager";
+import { fileService } from "../../../services/file.service";
 import { ProfileEntry, profileService } from "../../../services/profile.service";
 import { useDatabase } from "../../../utils/use-database";
 
 const getProfileAction = new AsyncAction(profileService.getProfile);
+const getFileBlobAction = new AsyncAction(fileService.getFileBlob);
 
 export const MyProfileWidget: FC = x => {
     const theme = useTheme();
@@ -15,11 +17,36 @@ export const MyProfileWidget: FC = x => {
     const isChangeAvatarPositionAltered = useMediaQuery(theme.breakpoints.up("sm"));
     const [isExpanded, setIsExpanded] = useState(false);
     const [profile, setProfile] = useState<ProfileEntry>();
+    const [avatar, setAvatar] = useState<string>();
 
     useDatabase(async () => {
-        const result = await getProfileAction.run(sessionManager.wallet.address, sessionManager.encryption);
+        const result = await getProfileAction.forceRun(sessionManager.wallet.address, sessionManager.encryption);
         setProfile(result);
+
+        if (result.avatar_hash) {
+            const avatarBlob = await getFileBlobAction.forceRun(result.avatar_hash, sessionManager.encryption);
+            const url = URL.createObjectURL(avatarBlob);
+            setAvatar(url);
+        }
     });
+
+    async function handleAvatarInputChange(e: ChangeEvent<HTMLInputElement>) {
+        const file = e.target!.files![0];
+        const url = URL.createObjectURL(file);
+        const fileHash = await fileService.uploadFile(
+            file,
+            sessionManager.wallet.address,
+            sessionManager.encryption
+        );
+        await profileService.updateProfile(
+            sessionManager.wallet.address,
+            {
+                ...profile!,
+                avatar_hash: fileHash
+            },
+            sessionManager.encryption
+        );
+    }
 
     return (
         <Accordion variant="outlined" expanded={isAlwaysExpanded || isExpanded}
@@ -39,9 +66,7 @@ export const MyProfileWidget: FC = x => {
                        spacing={3} sx={{ pl: 3, pr: 1, pt: 0, pb: 1 }}
                        alignItems={hasCondensedDetails ? "flex-start" : "center"}>
                     <Avatar sx={{ width: 160, height: 160 }}
-                            src={profile?.avatar
-                                ? URL.createObjectURL(profile.avatar)
-                                : void 0} />
+                            src={avatar} />
                     { getProfileAction.pending
                         ? <CircularProgress style={{ alignSelf: "center", margin: "40px 0" }} />
                         : profile ? (
@@ -96,11 +121,31 @@ export const MyProfileWidget: FC = x => {
                              ml={2}>
                             <Button size="small" startIcon={<AddPhotoAlternate />}>
                                 Change Avatar
+                                <input type="file"
+                                       style={{
+                                           position: "absolute",
+                                           left: 0,
+                                           top: 0,
+                                           width: "100%",
+                                           height: "100%",
+                                           opacity: 0
+                                       }}
+                                       onChange={handleAvatarInputChange} />
                             </Button>
                         </Box>
                     ) : (
                         <Button size="small" startIcon={<AddPhotoAlternate />}>
                             Change Avatar
+                            <input type="file"
+                                   style={{
+                                       position: "absolute",
+                                       left: 0,
+                                       top: 0,
+                                       width: "100%",
+                                       height: "100%",
+                                       opacity: 0
+                                   }}
+                                   onChange={handleAvatarInputChange} />
                         </Button>
                     ) }
                     <Button size="small" startIcon={<Edit />}

@@ -163,8 +163,8 @@ export const RecordPage = () => {
                                                         : creatorProfile ? (
                                                             <>
                                                                 <Avatar sx={{ width: 40, height: 40 }}
-                                                                        src={creatorProfile.avatar
-                                                                            ? URL.createObjectURL(creatorProfile.avatar)
+                                                                        src={creatorProfile.avatar_hash
+                                                                            ? URL.createObjectURL(creatorProfile.avatar_hash)
                                                                             : void 0} />
                                                                 <Stack width={0} flexGrow={1}>
                                                                     <Stack direction="row" spacing={0.5} alignItems="center">

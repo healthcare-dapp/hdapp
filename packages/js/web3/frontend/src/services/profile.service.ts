@@ -17,7 +17,7 @@ interface ProfileDbEntryEncryptedData {
     blood_type: string | null
     height: number | null
     weight: number | null
-    avatar: Blob | null
+    avatar_hash: string | null
     medical_organization_name: string | null
 }
 
@@ -30,7 +30,7 @@ export interface ProfileEntry {
     blood_type: string | null
     height: number | null
     weight: number | null
-    avatar: Blob | null
+    avatar_hash: string | null
     medical_organization_name: string | null
 }
 
@@ -41,7 +41,7 @@ export interface ProfileForm {
     blood_type: string | null
     height: number | null
     weight: number | null
-    avatar: Blob | null
+    avatar_hash: string | null
     medical_organization_name: string | null
 }
 
@@ -68,7 +68,7 @@ export class ProfileService implements IDbConsumer {
         return {
             address: dbEntry.address,
             full_name: encrypted.full_name,
-            avatar: encrypted.avatar,
+            avatar_hash: encrypted.avatar_hash,
             gender: encrypted.gender,
             height: encrypted.height,
             weight: encrypted.weight,
