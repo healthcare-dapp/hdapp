@@ -20,6 +20,9 @@ contract HDMAccessControl is AccessControl {
     mapping(address => uint256[]) public permissionsByUsers;
     mapping(address => DataRequest[]) public requests;
     address[] public users;
+    
+    mapping(address => address[]) public userConnections;
+    mapping(address => address[]) public userBlocks;
 
     HDMAccountManager accountManager;
 
@@ -52,6 +55,22 @@ contract HDMAccessControl is AccessControl {
         address indexed user,
         address indexed owner,
         uint256 indexed dataHash
+    );
+
+    event UserConnectionCreated (
+        address indexed user1,
+        address indexed user2
+    );
+
+    event UserConnectionRequested (
+        address indexed requester,
+        address indexed requestee,
+        uint256 indexed hash
+    );
+
+    event UserBlocked (
+        address indexed sender,
+        address indexed user
     );
 
     modifier checkIfSenderIsBanned() {
@@ -192,6 +211,73 @@ contract HDMAccessControl is AccessControl {
         onlyRole(MANAGER_ROLE)
     {
         accountManager = HDMAccountManager(_accountManagerAddress);
+    }
+
+    function getUserConnections(address _user)
+        external
+        view
+        returns (address[] memory)
+    {
+        return userConnections[_user];
+    }
+
+    function requestUserConnection(address _targetUser, uint256 _hash)
+        public
+        checkIfSenderIsBanned
+    {
+        require(
+            _targetUser == msg.sender, 
+            "HDMAccessControl: user cannot request a connection with themselves."
+        );
+
+        emit UserConnectionRequested(
+            msg.sender,
+            _targetUser,
+            _hash
+        );
+    }
+
+    function addUserConnection(address _targetUser)
+        public
+        checkIfSenderIsBanned
+    {
+        require(
+            _targetUser == msg.sender, 
+            "HDMAccessControl: user cannot build a connection with themselves."
+        );
+
+        userConnections[_targetUser].push(msg.sender);
+        userConnections[msg.sender].push(_targetUser);
+
+        emit UserConnectionCreated(
+            msg.sender,
+            _targetUser
+        );
+    }
+
+    function blockUser(address _targetUser)
+        public
+        checkIfSenderIsBanned
+    {
+        require(
+            _targetUser == msg.sender, 
+            "HDMAccessControl: user cannot block themselves."
+        );
+
+        userBlocks[msg.sender].push(_targetUser);
+
+        emit UserBlocked(
+            msg.sender,
+            _targetUser
+        );
+    }
+
+    function getUserBlocks(address _user)
+        external
+        view
+        returns (address[] memory)
+    {
+        return userBlocks[_user];
     }
 }
  

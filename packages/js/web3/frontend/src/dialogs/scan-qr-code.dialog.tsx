@@ -8,8 +8,10 @@ import {
     useMediaQuery,
     useTheme,
 } from "@mui/material";
+import QrScanner from "qr-scanner";
 import { FC, useEffect, useRef } from "react";
 import { ModalProvider } from "../App2";
+import { SendConnectionConfirmationDialog } from "./send-connection-confirmation.dialog";
 import { UserInviteConfirmationDialog } from "./user-invite-confirmation.dialog";
 
 export const ScanQrCodeDialog: FC<{ onClose(): void }> = x => {
@@ -17,17 +19,53 @@ export const ScanQrCodeDialog: FC<{ onClose(): void }> = x => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
 
+    async function confirmConnection(result: QrScanner.ScanResult) {
+        const url = new URL(result.data);
+        const search = url.searchParams;
+        if (url.host === "hdapp.ruslang.xyz" && search.has("connect")) {
+            const address = search.get("connect")!;
+            const isConfirmed = await ModalProvider.show(SendConnectionConfirmationDialog, {
+                address
+            });
+            if (!isConfirmed)
+                return;
+            console.log("confirmed");
+        }
+    }
+
     useEffect(() => {
-        navigator.mediaDevices.getUserMedia({
-            video: {
-                width: 1280, height: 720,
-                facingMode: { exact: "environment" }
+        let mediaStream: MediaStream;
+        let qr: QrScanner;
+        (async () => {
+            if (!videoRef.current)
+                return;
+
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: 1280, height: 720,
+                    facingMode: { exact: "environment" }
+                }
+            });
+
+            videoRef.current.srcObject = mediaStream;
+            qr = new QrScanner(
+                videoRef.current,
+                confirmConnection,
+                {
+                    preferredCamera: "environment"
+                }
+            );
+        })();
+
+        return () => {
+            try {
+                qr.stop();
+                qr.destroy();
+                videoRef.current!.srcObject = null;
+            } catch (e) {
+                //
             }
-        }).then(ms => {
-            console.log(ms);
-            if (videoRef.current)
-                videoRef.current.srcObject = ms;
-        }).catch(console.error);
+        };
     }, []);
     return (
         <Dialog fullScreen={isMobileView} disablePortal maxWidth="lg"
@@ -47,7 +85,7 @@ export const ScanQrCodeDialog: FC<{ onClose(): void }> = x => {
                 <video id="video" style={{ background: "black", flexGrow: 1, minHeight: "500px" }} autoPlay ref={videoRef}
                        onClick={() => {
                            x.onClose();
-                           ModalProvider.show(UserInviteConfirmationDialog, { onClose() {} });
+                           void ModalProvider.show(UserInviteConfirmationDialog, { onClose() {} });
                        }} />
             </Stack>
         </Dialog>

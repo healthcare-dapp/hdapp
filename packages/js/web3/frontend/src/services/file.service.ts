@@ -1,8 +1,8 @@
 import { Logger } from "@hdapp/shared/web2-common/utils";
 import { LocalDateTime } from "@js-joda/core";
+import { makeAutoObservable } from "mobx";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { dbService, DbService, IDbConsumer } from "./db.service";
-import { makeAutoObservable } from "mobx";
 
 interface FileBlobDbEntry {
     hash: string
@@ -128,7 +128,7 @@ export class FileService implements IDbConsumer {
         });
     }
 
-    async uploadFile(file: File, owner: string, provider: EncryptionProvider): Promise<string> {
+    async uploadFile(file: Blob, owner: string, provider: EncryptionProvider): Promise<string> {
         const arrayBuffer = await new Promise<ArrayBuffer>(resolve => {
             const fileReader = new FileReader();
             fileReader.onload = function (event) {

@@ -12,9 +12,14 @@ import { SignInPage } from "./pages/sign-in";
 import { router } from "./router";
 import { dbService } from "./services/db.service";
 
-type ModalProps = {
+type ModalPropsInternal = {
     __modalId: string
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface ModalProps<R = any> {
+    onClose?(r?: R): void
+}
 
 export const ModalProvider = new (class {
     private _modals = new Map<string, ReactElement>();
@@ -29,23 +34,25 @@ export const ModalProvider = new (class {
         this._theme = theme;
     }
 
-    show<R, P extends { onClose?(r?: R): void }>(Component2: FC<P>, props: P) {
+    show<P extends ModalProps>(Component2: FC<P>, props: Omit<P, "onClose">): Promise<Parameters<NonNullable<P["onClose"]>>[0]> {
         const id = Date.now().toString();
-        this._modals.set(
-            id,
-            // @ts-ignore
-            <Component2 {...props} key={id} __modalId={id} onClose={r => {
-                runInAction(() => {
-                    this._aboutToCloseModals.push(id);
-                });
-                setTimeout(() => {
+        return new Promise(resolve => {
+            this._modals.set(
+                id,
+                // @ts-ignore
+                <Component2 {...props} key={id} __modalId={id} onClose={r => {
                     runInAction(() => {
-                        this._modals.delete(id);
+                        this._aboutToCloseModals.push(id);
                     });
-                }, this._theme!.transitions.duration.leavingScreen);
-                props.onClose?.(r);
-            }} />
-        );
+                    setTimeout(() => {
+                        runInAction(() => {
+                            this._modals.delete(id);
+                        });
+                    }, this._theme!.transitions.duration.leavingScreen);
+                    resolve(r);
+                }} />
+            );
+        });
     }
 
     get modals() {
@@ -54,7 +61,7 @@ export const ModalProvider = new (class {
 
     modalProps(props: Record<string, unknown>) {
         return {
-            open: !this._aboutToCloseModals.includes((props as ModalProps).__modalId)
+            open: !this._aboutToCloseModals.includes((props as ModalPropsInternal).__modalId)
         };
     }
 })();

@@ -98,14 +98,14 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
     }, []);
 
     async function handleRecordCreate() {
-        const attachment_ids: string[] = [];
+        const attachmentIds: string[] = [];
         for (const attachment of attachments) {
             const id = await fileService.uploadFile(
                 attachment,
                 sessionManager.wallet.address,
                 sessionManager.encryption
             );
-            attachment_ids.push(id);
+            attachmentIds.push(id);
         }
 
         await addRecordAction.run({
@@ -116,7 +116,7 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
             created_by: wallet.address,
             owned_by: wallet.address,
             appointment_ids: [],
-            attachment_ids
+            attachment_ids: attachmentIds
         }, encryption);
         x.onClose();
     }
@@ -161,7 +161,7 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
 
                                     if (value.includes(addRecordStr)) {
                                         setIsBlockIdSelectorOpen(false);
-                                        ModalProvider.show(CreateBlockDialog, {});
+                                        void ModalProvider.show(CreateBlockDialog, {});
                                         return;
                                     }
 

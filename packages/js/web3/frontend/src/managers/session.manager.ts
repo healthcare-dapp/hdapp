@@ -1,6 +1,9 @@
 import { AsyncAction } from "@hdapp/shared/web2-common/utils";
+import { LocalDateTime } from "@js-joda/core";
 import { makeAutoObservable, runInAction } from "mobx";
-import { WalletEntry, WalletEntryShort, walletService } from "../services/wallet.service";
+import UAParser from "ua-parser-js";
+import { DeviceEntry, deviceService } from "../services/device.service";
+import { WalletEntry, WalletEntryShort, WalletNotFoundError, walletService } from "../services/wallet.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { AccountManager } from "./account.manager";
 import { Web3Manager } from "./web3.manager";
@@ -12,6 +15,7 @@ export class SessionManager {
     private _web3Manager: Web3Manager | null = null;
     private _webrtcManager: WebRTCManager | null = null;
     private _walletShort: WalletEntryShort | null = null;
+    private _device: DeviceEntry | null = null;
 
     constructor() {
         makeAutoObservable(this);
@@ -53,55 +57,74 @@ export class SessionManager {
         return !!this._encryptionProvider;
     }
 
+    private async _initVars(walletShort: WalletEntryShort, wallet: WalletEntry, provider: EncryptionProvider) {
+        const device = await (async () => {
+            const currentDevice = await deviceService.getCurrentDevice(provider);
+            if (currentDevice)
+                return currentDevice;
+
+            const uaParser = new UAParser(navigator.userAgent);
+            const uaDevice = uaParser.getResult();
+
+            const hash = btoa([uaDevice.ua, Date.now().toString()].join(" "));
+            const privateKey = btoa([uaDevice.ua, Date.now().toString()].join(" "));
+            const friendlyName = [uaDevice.browser.name, uaDevice.browser.version].join(" ");
+
+            await deviceService.addDevice({
+                is_current: true,
+                hash,
+                friendly_name: friendlyName,
+                added_at: LocalDateTime.now(),
+                private_key: privateKey,
+                owned_by: walletShort.address,
+                type: uaDevice.device.type ?? "pc"
+            }, provider);
+
+            return await deviceService.getCurrentDevice(provider);
+        })();
+
+        runInAction(() => {
+            this._device = device;
+            this._encryptionProvider = provider;
+            this._walletShort = walletShort;
+            this._web3Manager = new Web3Manager(wallet);
+            this._webrtcManager = new WebRTCManager(
+                this._web3Manager,
+                walletShort.address,
+            );
+            this._accountManager = new AccountManager(
+                this._web3Manager,
+                walletShort.address,
+            );
+        });
+    }
+
     unlock = new AsyncAction(async (walletShort: WalletEntryShort, password: string) => {
         await new Promise(r => setTimeout(r, 1000));
         const provider = new EncryptionProvider(password);
 
         try {
             const wallet = await walletService.getWallet(walletShort.address, provider);
-            runInAction(() => {
-                this._encryptionProvider = provider;
-                this._walletShort = walletShort;
-                this._web3Manager = new Web3Manager(wallet);
-                this._webrtcManager = new WebRTCManager(
-                    this._web3Manager,
-                    walletShort.address,
-                );
-                this._accountManager = new AccountManager(
-                    this._web3Manager,
-                    walletShort.address,
-                );
-            });
+            await this._initVars(walletShort, wallet, provider);
         } catch (e) {
-            console.error(e);
-            throw new Error("Password incorrect");
+            if (e instanceof WalletNotFoundError)
+                throw new Error("Password incorrect");
+
+            throw e;
         }
     });
 
-    unlockImmediately(wallet: WalletEntry, password: string) {
+    async unlockImmediately(wallet: WalletEntry, password: string) {
         const provider = new EncryptionProvider(password);
         const walletShort: WalletEntryShort = {
             address: wallet.address,
             user: wallet.user
         };
-        try {
-            runInAction(() => {
-                this._encryptionProvider = provider;
-                this._walletShort = walletShort;
-                this._web3Manager = new Web3Manager(wallet);
-                this._webrtcManager = new WebRTCManager(
-                    this._web3Manager,
-                    walletShort.address,
-                );
-                this._accountManager = new AccountManager(
-                    this._web3Manager,
-                    walletShort.address,
-                );
-            });
-        } catch (e) {
-            console.trace("govno", e);
-        }
+
+        await this._initVars(walletShort, wallet, provider);
     }
 }
 
 export const sessionManager = new SessionManager();
+// @ts-ignore
+window.sessionManager = sessionManager;

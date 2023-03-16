@@ -16,7 +16,7 @@ import { observer } from "mobx-react-lite";
 import { FC, forwardRef, useEffect, useState } from "react";
 import { sessionManager } from "../../managers/session.manager";
 import { walletManager } from "../../managers/wallet.manager";
-import { WalletEntryShort } from "../../services/wallet.service";
+import { WalletEntryShort, WalletNotFoundError } from "../../services/wallet.service";
 import { trimWeb3Address } from "../../utils/trim-web3-address";
 import { Logo } from "../../widgets/header";
 
@@ -47,7 +47,11 @@ const Account: FC<{ selected?: boolean; wallet: WalletEntryShort }> = observer(x
                                    type="password"
                                    value={password}
                                    error={!!sessionManager.unlock.error}
-                                   helperText={sessionManager.unlock.error ? "Incorrect password" : void 0}
+                                   helperText={sessionManager.unlock.error instanceof WalletNotFoundError
+                                       ? "Incorrect password"
+                                       : sessionManager.unlock.error
+                                           ? "Error unlocking wallet"
+                                           : void 0}
                                    onChange={e => setPassword(e.target.value)} />
                         <LoadingButton loading={sessionManager.unlock.pending}
                                        variant="contained" disableElevation

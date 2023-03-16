@@ -1,13 +1,13 @@
 @host = http://localhost:8080
 #@host = https://hdapp.ruslang.xyz
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjc3NzUwNDI0LCJleHAiOjE2Nzc4MzY4MjR9.O0oYsEwDQmPU8fHlE6MyGOdrLGSZIYzDExuDZruEYqI
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjc4ODEzMzEyLCJleHAiOjE2Nzg4OTk3MTJ9.on6JPfnuTvktLTGbPFvOzvUorHdgSsObSOZQio4_EXo
 
 POST {{host}}/api/auth/login HTTP/1.1
 Content-Type: application/json
 
 {
-  "email": "ruziknf+3@ruzik.xyz",
-  "password": "1234"
+  "email": "swat0056@mail.ru",
+  "password": "123"
 }
 
 ###
@@ -88,7 +88,7 @@ Authorization: Bearer {{token}}
 
 ####
 
-GET {{host}}/api/users/by_id/1 HTTP/1.1
+GET {{host}}/api/users/by_id/3 HTTP/1.1
 Authorization: Bearer {{token}}
 
 ####
@@ -108,7 +108,7 @@ Content-Type: application/json
 
 ####
 
-POST {{host}}/api/users/by_id/2/verify HTTP/1.1
+POST {{host}}/api/users/by_id/3/verify HTTP/1.1
 Authorization: Bearer {{token}}
 
 ####

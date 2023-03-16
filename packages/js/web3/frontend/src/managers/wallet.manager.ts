@@ -39,16 +39,12 @@ export class WalletManager {
         try {
             const address = await Web3Manager.testPrivateKey(privateKey);
 
-            const password = await new Promise<string | null>(onClose => {
-                ModalProvider.show(SetPasswordDialog, { onClose });
-            });
+            const password = await ModalProvider.show(SetPasswordDialog, {});
 
             if (!password)
                 throw new Error("Setting a password is required to use the app.");
 
-            const { fullName, avatar, birthDate } = await new Promise<SetUserDataDialogResult>(onClose => {
-                ModalProvider.show(SetUserDataDialog, { address, onClose });
-            });
+            const { fullName, avatar, birthDate } = await ModalProvider.show(SetUserDataDialog, { address });
 
             const provider = new EncryptionProvider(password);
             const wallet: WalletEntry = {
@@ -63,9 +59,9 @@ export class WalletManager {
             };
 
             await walletService.addWallet(wallet, provider);
-            sessionManager.unlockImmediately(wallet, password);
+            await sessionManager.unlockImmediately(wallet, password);
 
-            const avatar_hash = avatar
+            const avatarHash = avatar
                 ? await fileService.uploadFile(
                     avatar,
                     wallet.address,
@@ -76,7 +72,7 @@ export class WalletManager {
                 address,
                 {
                     full_name: fullName,
-                    avatar_hash,
+                    avatar_hash: avatarHash,
                     birth_date: birthDate,
                     blood_type: null,
                     gender: null,

@@ -54,6 +54,8 @@
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "pg": "^8.10.0",
+    "qr-scanner": "^1.4.2",
+    "qrcode": "^1.5.1",
     "react": "^18.2.0",
     "react-axios": "^2.0.6",
     "react-dom": "^18.2.0",
@@ -66,6 +68,7 @@
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
     "typeorm": "^0.3.12",
+    "ua-parser-js": "^1.0.34",
     "validator": "^13.9.0"
   },
   "devDependencies": {
@@ -96,9 +99,11 @@
     "@types/node": "^18.14.6",
     "@types/passport-jwt": "^3.0.8",
     "@types/passport-local": "^1.0.35",
+    "@types/qrcode": "^1.5.0",
     "@types/react": "18.0.28",
     "@types/react-dom": "18.0.11",
     "@types/react-router-dom": "5.3.3",
+    "@types/ua-parser-js": "^0.7.36",
     "@types/validator": "^13.7.13",
     "@typescript-eslint/eslint-plugin": "^5.36.1",
     "@typescript-eslint/parser": "^5.36.1",

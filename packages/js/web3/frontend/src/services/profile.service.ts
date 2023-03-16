@@ -100,8 +100,8 @@ export class ProfileService implements IDbConsumer {
                 }
             });
             request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve file data.", { tsn, hash, request });
-                reject(new Error("Could not retrieve file data."));
+                this._logger.debug("Could not retrieve device data.", { tsn, hash, request });
+                reject(new Error("Could not retrieve device data."));
             });
         });
     }
@@ -133,8 +133,8 @@ export class ProfileService implements IDbConsumer {
                 }
             });
             request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve file data.", { tsn, request });
-                reject(new Error("Could not retrieve file data."));
+                this._logger.debug("Could not retrieve device data.", { tsn, request });
+                reject(new Error("Could not retrieve device data."));
             });
         });
     }

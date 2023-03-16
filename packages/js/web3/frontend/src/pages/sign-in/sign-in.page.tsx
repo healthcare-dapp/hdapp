@@ -229,7 +229,7 @@ export const SignInPage = observer(forwardRef(function SignInPage(props, ref) {
             return;
         const verify = search.get("verify");
         if (verify === "success") {
-            ModalProvider.show(SuccessfulVerificationDialog, { onClose() {} });
+            void ModalProvider.show(SuccessfulVerificationDialog, { onClose() {} });
         }
     }, []);
 

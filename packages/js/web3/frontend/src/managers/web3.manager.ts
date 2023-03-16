@@ -6,7 +6,7 @@ import { AES, enc } from "crypto-js";
 import { ethers } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable } from "mobx";
-import { WEB3_JSON_RPC_URL } from "../contract";
+import { HDMAccessControlAddress, HDMAccountManagerAddress, HDMHandshakeAddress, WEB3_JSON_RPC_URL } from "../contract";
 import { WalletEntry, WalletType } from "../services/wallet.service";
 import { Web3ContractProvider } from "../utils/web3-contract.provider";
 
@@ -38,6 +38,10 @@ export class Web3Manager {
     on = this._events.addListener;
     off = this._events.removeListener;
 
+    get signer() {
+        return this.#signer;
+    }
+
     constructor(wallet: WalletEntry) {
         this.#wallet = wallet;
         if (wallet.type !== WalletType.PrivateKey)
@@ -47,9 +51,9 @@ export class Web3Manager {
         const signer = this.#signer = new ethers.Wallet(wallet.private_key!, provider);
 
         this.#address = wallet.address;
-        this.#accessControlManager = new Web3ContractProvider(HDMAccessControl__factory, wallet.address, signer);
-        this.#accountManager = new Web3ContractProvider(HDMAccountManager__factory, wallet.address, signer);
-        this.#webRtcBroker = new Web3ContractProvider(HDMHandshake__factory, wallet.address, signer);
+        this.#accessControlManager = new Web3ContractProvider(HDMAccessControl__factory, HDMAccessControlAddress, signer);
+        this.#accountManager = new Web3ContractProvider(HDMAccountManager__factory, HDMAccountManagerAddress, signer);
+        this.#webRtcBroker = new Web3ContractProvider(HDMHandshake__factory, HDMHandshakeAddress, signer);
 
         makeAutoObservable(this);
         // void this.bindNotifications();

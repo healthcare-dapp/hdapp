@@ -1,4 +1,4 @@
-import { AuthService, MediaService, UsersService } from "@hdapp/shared/web2-common/api/services";
+import { AuthService, MediaService } from "@hdapp/shared/web2-common/api/services";
 import { CreateUserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { EmailAddress } from "@hdapp/shared/web2-common/types/email-address.type";
 import { IllegalArgumentException } from "@js-joda/core";
@@ -18,7 +18,6 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { Stack } from "@mui/system";
 import { DatePicker } from "@mui/x-date-pickers";
-import axios from "axios";
 import { format } from "date-fns";
 import React, { ChangeEvent, FormEvent } from "react";
 import FileUpload from "react-mui-fileuploader";
@@ -57,7 +56,7 @@ export class Registration extends React.Component<{}, {
         this.state = {
             email: " ",
             fullName: " ",
-            date: new Date(),
+            date: null,
             isDoctor: false,
             uploadedFiles: [],
             fileIDs: [],
@@ -485,8 +484,10 @@ export class Registration extends React.Component<{}, {
                                                     this.setState({ date });
                                                     this.fieldCheck();
                                                 }}
+                                                minDate={new Date(1850, 1, 1)}
+                                                maxDate={new Date(new Date().getFullYear() - 18, 1, 1)}
                                                 label="Date of Birth:"
-                                                renderInput={params => <TextField {...params} fullWidth />} />
+                                                renderInput={params => <TextField {...params} fullWidth helperText="You must be at least 18 years of age" />} />
 
                                     <FormControl>
                                         <FormLabel id="demo-row-radio-buttons-group-label"
@@ -602,7 +603,12 @@ export class Registration extends React.Component<{}, {
                                                 this.setState({ date });
                                                 this.fieldCheck();
                                             }}
+                                            minDate={new Date(1850, 1, 1)}
+                                            maxDate={new Date(new Date().getFullYear() - 18, 1, 1)}
                                             label="Date of Birth:"
+                                            slotProps={{
+                                                textField: { helperText: "You must be at least 18 years of age" }
+                                            }}
                                             renderInput={params => <TextField {...params} fullWidth />} />
 
                                 <FormControl>

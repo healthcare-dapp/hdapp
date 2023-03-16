@@ -14,9 +14,9 @@ import {
     Avatar,
     Fade,
 } from "@mui/material";
-import { FC, useState } from "react";
+import QrCode from "qrcode";
+import { FC, useEffect, useState } from "react";
 import { ModalProvider } from "../App2";
-import QrCodeImage from "../assets/raster/mocks/qr.png";
 import { sessionManager } from "../managers/session.manager";
 import { ScanQrCodeDialog } from "./scan-qr-code.dialog";
 
@@ -24,7 +24,17 @@ export const QrCodeDialog: FC<{ onClose(): void }> = x => {
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [hasFoundConnections, setHasFoundConnections] = useState(false);
+    const [qrUrl, setQrUrl] = useState<string>();
+    const [connectionUrl, setConnectionUrl] = useState<string>();
     const { wallet } = sessionManager;
+    useEffect(() => {
+        const connUrl = new URL("https://hdapp.ruslang.xyz/app");
+        connUrl.searchParams.set("connect", wallet.address);
+        connUrl.searchParams.set("key", "idk");
+        setConnectionUrl(connUrl.toString());
+        QrCode.toDataURL(connUrl.toString(), { width: 300, margin: 5 })
+            .then(setQrUrl);
+    }, []);
     return (
         <Dialog fullScreen={isMobileView} disablePortal sx={{ ".MuiDialog-paper": { maxWidth: "1036px" } }}
                 onClose={() => x.onClose()} {...ModalProvider.modalProps(x)}>
@@ -126,10 +136,10 @@ export const QrCodeDialog: FC<{ onClose(): void }> = x => {
                                             maxWidth: "450px",
                                             whiteSpace: "nowrap"
                                         }}>
-                                            https://hdapp.ruslang.xyz/app?connect={ wallet?.address ?? "0x60dE39B3667F6aD7A05926FFf0313AF416D70e7E" }&key={ btoa("verystrongpassword") }
+                                            { connectionUrl }
                                         </code>
                                         <Box flexGrow={1} />
-                                        <IconButton><CopyAll /></IconButton>
+                                        <IconButton onClick={() => navigator.clipboard.writeText(connectionUrl!)}><CopyAll /></IconButton>
                                     </Stack>
 
                                 </Typography>
@@ -139,7 +149,7 @@ export const QrCodeDialog: FC<{ onClose(): void }> = x => {
                                             sx={{ my: 1 }} size="large"
                                             onClick={() => {
                                                 x.onClose();
-                                                ModalProvider.show(ScanQrCodeDialog, { onClose() {} });
+                                                void ModalProvider.show(ScanQrCodeDialog, { onClose() {} });
                                             }}>Add contact by QR</Button>
                                 </Typography>
                             </Stack>
@@ -147,7 +157,10 @@ export const QrCodeDialog: FC<{ onClose(): void }> = x => {
                     </div>
                     <Box flexGrow={1} />
                 </Stack>
-                <Paper sx={{ borderRadius: 6 }} onClick={() => setHasFoundConnections(!hasFoundConnections)}><img src={QrCodeImage} /></Paper>
+                <Paper sx={{ borderRadius: 6, display: "flex", overflow: "hidden" }}
+                       onClick={() => setHasFoundConnections(!hasFoundConnections)}>
+                    <img alt="qr-code" src={qrUrl} />
+                </Paper>
             </Stack>
         </Dialog>
     );

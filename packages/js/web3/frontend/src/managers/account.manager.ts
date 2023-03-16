@@ -52,12 +52,10 @@ export class AccountManager {
             const account = await this._web3.accountManager.getAccountInfo(this._web3Address);
 
             runInAction(() => {
-                this._account = account;
+                this._account = { isBanned: account.isBanned, isDoctor: account.isDoctor };
             });
         } catch (e) {
-            runInAction(() => {
-                this._account = { isBanned: false, isDoctor: false };
-            });
+            console.error(e);
         }
     });
 }
