@@ -36,26 +36,18 @@ export class Web3AccountManagerService implements OnModuleInit {
     }
 
     async getAccountInfo(address?: Web3Address | null): Promise<Web3UserEntity> {
-        try {
-            if (!address) {
-                trace("getAccountInfo called without address");
-                return {
-                    isVerifiedDoctor: false,
-                    isBanned: false,
-                };
-            }
-            const info = await this._contract?.getAccountInfo(address);
-            return {
-                isVerifiedDoctor: !!info?.isDoctor,
-                isBanned: !!info?.isBanned,
-            };
-        } catch (e) {
-            error("getAccountInfo is bugged and returns an invalid response, defaulting to 00");
+        if (!address) {
+            trace("getAccountInfo called without address");
             return {
                 isVerifiedDoctor: false,
                 isBanned: false,
             };
         }
+        const info = await this._contract?.getAccountInfo(address);
+        return {
+            isVerifiedDoctor: !!info?.isDoctor,
+            isBanned: !!info?.isBanned,
+        };
     }
 
     async promoteToDoctor(address: Web3Address) {
