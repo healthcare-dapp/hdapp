@@ -1,8 +1,8 @@
-import { Logger } from "@hdapp/shared/web2-common/utils";
-import { LocalDateTime } from "@js-joda/core";
-import { makeAutoObservable } from "mobx";
+import { Instant, LocalDateTime } from "@js-joda/core";
+import { SHA256 } from "crypto-js";
 import { EncryptionProvider } from "../utils/encryption.provider";
-import { dbService, DbService, IDbConsumer } from "./db.service";
+import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
+import { dbService, DbService } from "./db.service";
 
 interface RecordDbEntry {
     hash: string
@@ -56,120 +56,92 @@ export interface RecordSearchRequest {
 
 export class RecordNotFoundError extends Error { }
 
-export class RecordService implements IDbConsumer {
-    private readonly _storeName = "records";
+const transformer = (provider: EncryptionProvider) => (dbEntry: RecordDbEntry): RecordEntry => {
+    const encrypted: RecordDbEntryEncryptedData = JSON.parse(
+        provider.decrypt(dbEntry.encrypted)
+    );
 
-    private readonly _logger = new Logger("record-service");
+    return {
+        hash: dbEntry.hash,
+        title: encrypted.title,
+        description: encrypted.description,
+        appointment_ids: encrypted.appointment_ids,
+        attachment_ids: encrypted.attachment_ids,
+        block_ids: encrypted.block_ids,
+        created_by: encrypted.created_by,
+        owned_by: encrypted.owned_by,
+        type: encrypted.type,
+        created_at: LocalDateTime.parse(encrypted.created_at)
+    };
+};
 
-    constructor(private _db: DbService) {
-        makeAutoObservable(this, {}, { autoBind: true });
+const reverseTransformer = (provider: EncryptionProvider) => (entry: RecordEntry): RecordDbEntry => {
+    const encrypted: RecordDbEntryEncryptedData = {
+        title: entry.title,
+        description: entry.description,
+        appointment_ids: entry.appointment_ids,
+        attachment_ids: entry.attachment_ids,
+        block_ids: entry.block_ids,
+        created_by: entry.created_by,
+        owned_by: entry.owned_by,
+        type: entry.type,
+        created_at: entry.created_at.toString()
+    };
+
+    return {
+        hash: entry.hash,
+        encrypted: provider.encrypt(JSON.stringify(encrypted))
+    };
+};
+
+export class RecordService extends DbConsumer {
+    protected readonly _storeName = "records";
+
+    constructor(protected _db: DbService) {
+        super("record-service");
     }
 
-    private _transformDbEntryToEntry(dbEntry: RecordDbEntry, encrypted: RecordDbEntryEncryptedData): RecordEntry {
-        return {
-            hash: dbEntry.hash,
-            title: encrypted.title,
-            description: encrypted.description,
-            appointment_ids: encrypted.appointment_ids,
-            attachment_ids: encrypted.attachment_ids,
-            block_ids: encrypted.block_ids,
-            created_by: encrypted.created_by,
-            owned_by: encrypted.owned_by,
-            type: encrypted.type,
-            created_at: LocalDateTime.parse(encrypted.created_at)
-        };
-    }
+    readonly getRecord = async (hash: string, provider: EncryptionProvider): Promise<RecordEntry> => {
+        try {
+            const entity = await this._findOne(hash, transformer(provider));
+            return entity;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new RecordNotFoundError("Record was not found.");
 
-    getRecord(hash: string, provider: EncryptionProvider): Promise<RecordEntry> {
-        const tsn = this._db.transaction([this._storeName], "readonly");
-        const dataStore = tsn.objectStore(this._storeName);
-        const request: IDBRequest<RecordDbEntry> = dataStore.get(hash);
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not find the requested file's data.", { tsn, hash, request });
-                    reject(new RecordNotFoundError("File not found."));
-                }
-                try {
-                    const decryptedResult: RecordDbEntryEncryptedData = JSON.parse(provider.decrypt(request.result.encrypted));
-                    resolve(this._transformDbEntryToEntry(request.result, decryptedResult));
-                } catch (cause) {
-                    this._logger.debug("Record data could not be retrieved.", { tsn, hash, cause });
-                    reject(
-                        new Error("Record data could not be retrieved.")
-                    );
-                }
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve file data.", { tsn, hash, request });
-                reject(new Error("Could not retrieve file data."));
-            });
-        });
-    }
+            throw e;
+        }
+    };
 
-    searchRecords(searchRequest: RecordSearchRequest, provider: EncryptionProvider): Promise<RecordEntry[]> {
-        const tsn = this._db.transaction([this._storeName], "readonly");
-        const dataStore = tsn.objectStore(this._storeName);
-        const request = dataStore.openCursor();
-        if (!request)
-            return Promise.resolve([]);
+    readonly searchRecords = async (_searchRequest: RecordSearchRequest, provider: EncryptionProvider): Promise<RecordEntry[]> => {
+        try {
+            const devices = await this._findMany(
+                transformer(provider),
+                () => true
+            );
+            return devices;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new RecordNotFoundError("Record was not found.");
 
-        const entries: RecordEntry[] = [];
+            throw e;
+        }
+    };
 
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result)
-                    return resolve(entries);
+    readonly addRecord = async (form: RecordForm, provider: EncryptionProvider): Promise<void> => {
+        try {
+            await this._add({
+                ...form,
+                hash: SHA256(Instant.now().toString() + " " + form.title + " " + form.owned_by).toString(),
+                created_at: LocalDateTime.now()
+            }, reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new RecordNotFoundError("Record was not found.");
 
-                try {
-                    const dbEntry: RecordDbEntry = request.result.value;
-                    const encrypted: RecordDbEntryEncryptedData = JSON.parse(provider.decrypt(dbEntry.encrypted));
-                    entries.push(this._transformDbEntryToEntry(dbEntry, encrypted));
-                    request.result.continue();
-                } catch (cause) {
-                    this._logger.debug("Record data could not be retrieved.", { tsn, cause });
-                    reject(
-                        new Error("Record data could not be retrieved.")
-                    );
-                }
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve file data.", { tsn, request });
-                reject(new Error("Could not retrieve file data."));
-            });
-        });
-    }
-
-    addRecord(form: RecordForm, provider: EncryptionProvider): Promise<void> {
-        const tsn = this._db.transaction([this._storeName], "readwrite");
-        const dataStore = tsn.objectStore(this._storeName);
-        const hash = Date.now().toString();
-        const dataEntry: RecordDbEntryEncryptedData = {
-            ...form,
-            created_at: LocalDateTime.now().toString()
-        };
-        const encrypted = provider.encrypt(JSON.stringify(dataEntry));
-        const dbEntry: RecordDbEntry = {
-            hash,
-            encrypted
-        };
-        const request: IDBRequest<IDBValidKey> = dataStore.add(dbEntry);
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not add a new record.", { tsn, hash, request });
-                    reject(new RecordNotFoundError("File not found."));
-                    return;
-                }
-
-                resolve();
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not add a new record.", { tsn, hash, request });
-                reject(new Error("Could not add a new record."));
-            });
-        });
-    }
+            throw e;
+        }
+    };
 
     onDbUpgrade(db: IDBDatabase): void {
         const metadataStore = db.createObjectStore(

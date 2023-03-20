@@ -35,7 +35,7 @@ export const SendConnectionConfirmationDialog: FC<{ address: string; onClose(isC
                         You are trying to connect with a HDAPP user with address <b>{ x.address }</b><br />
                         Please confirm that the following 4 symbols are the same with the person you are trying to connect with!
                     </DialogContentText>
-                    <DialogContentText fontSize={24} fontWeight={600} color="success.dark" align="center">
+                    <DialogContentText fontSize={48} fontWeight={600} color="success.dark" align="center">
                         { x.address.slice(-4).toUpperCase() }
                     </DialogContentText>
                     <Button onClick={() => x.onClose(false)}>Cancel</Button>

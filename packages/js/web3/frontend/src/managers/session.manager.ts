@@ -1,17 +1,22 @@
 import { AsyncAction } from "@hdapp/shared/web2-common/utils";
-import { LocalDateTime } from "@js-joda/core";
+import { Instant, LocalDateTime } from "@js-joda/core";
+import { ethers, keccak256 } from "ethers";
 import { makeAutoObservable, runInAction } from "mobx";
 import UAParser from "ua-parser-js";
 import { DeviceEntry, deviceService } from "../services/device.service";
 import { WalletEntry, WalletEntryShort, WalletNotFoundError, walletService } from "../services/wallet.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
+import { AccessControlManager } from "./access-control.manager";
 import { AccountManager } from "./account.manager";
+import { NotificationsManager } from "./notifications.manager";
 import { Web3Manager } from "./web3.manager";
 import { WebRTCManager } from "./webrtc.manager";
 
 export class SessionManager {
     private _accountManager: AccountManager | null = null;
+    private _accessControlManager: AccessControlManager | null = null;
     private _encryptionProvider: EncryptionProvider | null = null;
+    private _notificationsManager: NotificationsManager | null = null;
     private _web3Manager: Web3Manager | null = null;
     private _webrtcManager: WebRTCManager | null = null;
     private _walletShort: WalletEntryShort | null = null;
@@ -27,10 +32,22 @@ export class SessionManager {
         return this._accountManager;
     }
 
+    get accessControl() {
+        if (!this._accessControlManager)
+            throw new Error("No access control manager is available.");
+        return this._accessControlManager;
+    }
+
     get encryption() {
         if (!this._encryptionProvider)
             throw new Error("No encryption provider is available.");
         return this._encryptionProvider;
+    }
+
+    get notifications() {
+        if (!this._notificationsManager)
+            throw new Error("No notifications manager is available.");
+        return this._notificationsManager;
     }
 
     get wallet() {
@@ -66,12 +83,18 @@ export class SessionManager {
             const uaParser = new UAParser(navigator.userAgent);
             const uaDevice = uaParser.getResult();
 
-            const hash = btoa([uaDevice.ua, Date.now().toString()].join(" "));
-            const privateKey = btoa([uaDevice.ua, Date.now().toString()].join(" "));
+            const hash = keccak256(
+                ethers.toUtf8Bytes([
+                    walletShort.address,
+                    Instant.now().toString()
+                ].join(" "))
+            );
+            const privateKey = "";
             const friendlyName = [uaDevice.browser.name, uaDevice.browser.version].join(" ");
 
             await deviceService.addDevice({
                 is_current: true,
+                is_pending: false,
                 hash,
                 friendly_name: friendlyName,
                 added_at: LocalDateTime.now(),
@@ -88,13 +111,17 @@ export class SessionManager {
             this._encryptionProvider = provider;
             this._walletShort = walletShort;
             this._web3Manager = new Web3Manager(wallet);
+            this._notificationsManager = new NotificationsManager();
             this._webrtcManager = new WebRTCManager(
                 this._web3Manager,
-                walletShort.address,
+                this._encryptionProvider
             );
             this._accountManager = new AccountManager(
+                this._web3Manager
+            );
+            this._accessControlManager = new AccessControlManager(
                 this._web3Manager,
-                walletShort.address,
+                this._notificationsManager
             );
         });
     }

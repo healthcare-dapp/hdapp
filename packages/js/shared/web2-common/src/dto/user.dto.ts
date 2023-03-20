@@ -1,4 +1,4 @@
-import { array, boolean, partial, string, type, TypeOf } from "io-ts";
+import { array, boolean, number, partial, string, type, TypeOf } from "io-ts";
 import { orNull } from "../io-ts-utils/or-null";
 import { orUndefined } from "../io-ts-utils/or-undefined";
 import { emailAddressType } from "../types/email-address.type";
@@ -6,7 +6,7 @@ import { web3AddressType } from "../types/web3-address.type";
 import { FileDto } from "./file.dto";
 
 export const UserDto = type({
-    id: string,
+    id: number,
     web3_address: orNull(web3AddressType),
     email: emailAddressType,
     full_name: string,

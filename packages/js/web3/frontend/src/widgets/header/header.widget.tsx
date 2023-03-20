@@ -1,8 +1,9 @@
-import { CalendarMonthOutlined, ForumOutlined, MapOutlined, Notes, ViewDayOutlined } from "@mui/icons-material";
+import { CalendarMonthOutlined, ForumOutlined, MapOutlined, Notes, ViewDayOutlined, Wifi, Wifi2Bar, WifiOff } from "@mui/icons-material";
 import {
     alpha,
     Badge,
     Box,
+    Chip,
     Container,
     Paper,
     Stack,
@@ -15,6 +16,7 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { NavLink, redirect, useMatches } from "react-router-dom";
 import RasterLogo512Outlined from "../../assets/raster/logo512_outlined.png";
+import { sessionManager } from "../../managers/session.manager";
 import { HeaderAccountWidget } from "./account.widget";
 import { HeaderNotificationsWidget } from "./notifications.widget";
 
@@ -148,26 +150,27 @@ export const HeaderWidget = observer(() => {
                                 </Stack>
                             ) }
                             <Box sx={{ flex: 1 }} />
-                            { /* isBigEnough && (
-                        <Chip icon={connectionQuality === "good" ? <Wifi /> : connectionQuality === "okay" ? <Wifi2Bar /> : <WifiOff />}
-                              label={connectionQuality !== "bad" ? "Connection stable" : "Connection was lost"}
-                              sx={{ fontWeight: 500 }}
-                              color={connectionQuality === "good" ? "success" : connectionQuality === "okay" ? "warning" : "error"}
-                              variant={connectionQuality !== "bad" ? "outlined" : "filled"}
-                              onClick={() => {
-                                  switch (connectionQuality) {
-                                      case "bad":
-                                          setConnectionQuality("okay");
-                                          break;
-                                      case "okay":
-                                          setConnectionQuality("good");
-                                          break;
-                                      case "good":
-                                          setConnectionQuality("bad");
-                                          break;
-                                  }
-                              }} />
-                    ) */ }
+                            { isBigEnough && (
+                                <Chip icon={connectionQuality === "good" ? <Wifi /> : connectionQuality === "okay" ? <Wifi2Bar /> : <WifiOff />}
+                                      label={connectionQuality !== "bad" ? "Connection stable" : "Connection was lost"}
+                                      sx={{ fontWeight: 500 }}
+                                      color={connectionQuality === "good" ? "success" : connectionQuality === "okay" ? "warning" : "error"}
+                                      variant={connectionQuality !== "bad" ? "outlined" : "filled"}
+                                      onClick={() => {
+                                          void sessionManager.webrtc.start();
+                                          /* switch (connectionQuality) {
+                                              case "bad":
+                                                  setConnectionQuality("okay");
+                                                  break;
+                                              case "okay":
+                                                  setConnectionQuality("good");
+                                                  break;
+                                              case "good":
+                                                  setConnectionQuality("bad");
+                                                  break;
+                                          } */
+                                      }} />
+                            ) }
                             <HeaderNotificationsWidget />
                             <HeaderAccountWidget />
                         </Stack>

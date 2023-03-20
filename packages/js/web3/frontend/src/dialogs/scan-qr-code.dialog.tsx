@@ -11,60 +11,67 @@ import {
 import QrScanner from "qr-scanner";
 import { FC, useEffect, useRef } from "react";
 import { ModalProvider } from "../App2";
+import { sessionManager } from "../managers/session.manager";
 import { SendConnectionConfirmationDialog } from "./send-connection-confirmation.dialog";
 import { UserInviteConfirmationDialog } from "./user-invite-confirmation.dialog";
+import { WaitingForConnectionDialog } from "./waiting-for-connection.dialog";
 
 export const ScanQrCodeDialog: FC<{ onClose(): void }> = x => {
     const theme = useTheme();
     const videoRef = useRef<HTMLVideoElement>(null);
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
 
-    async function confirmConnection(result: QrScanner.ScanResult) {
-        const url = new URL(result.data);
-        const search = url.searchParams;
-        if (url.host === "hdapp.ruslang.xyz" && search.has("connect")) {
-            const address = search.get("connect")!;
-            const isConfirmed = await ModalProvider.show(SendConnectionConfirmationDialog, {
-                address
-            });
-            if (!isConfirmed)
-                return;
-            console.log("confirmed");
-        }
-    }
-
     useEffect(() => {
-        let mediaStream: MediaStream;
+        // let mediaStream: MediaStream;
         let qr: QrScanner;
+        let isLocked = false;
+
+        async function confirmConnection(result: QrScanner.ScanResult) {
+            if (isLocked)
+                return;
+            isLocked = true;
+            const url = new URL(result.data);
+            const search = url.searchParams;
+            if (url.host === "hdapp.ruslang.xyz" && search.has("connect")) {
+                const address = search.get("connect")!;
+                const key = search.get("key")!;
+                const isConfirmed = await ModalProvider.show(SendConnectionConfirmationDialog, {
+                    address
+                });
+                if (!isConfirmed) {
+                    await qr.start();
+                    return;
+                }
+
+                await sessionManager.accessControl.requestUserConnection
+                    .run(address, key);
+
+                console.log("confirmed");
+                await ModalProvider.show(WaitingForConnectionDialog, {});
+            }
+            isLocked = false;
+        }
+
         (async () => {
             if (!videoRef.current)
                 return;
 
-            mediaStream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: 1280, height: 720,
-                    facingMode: { exact: "environment" }
-                }
-            });
-
-            videoRef.current.srcObject = mediaStream;
             qr = new QrScanner(
                 videoRef.current,
                 confirmConnection,
                 {
-                    preferredCamera: "environment"
+                    preferredCamera: "environment",
                 }
             );
+            await qr.start();
         })();
 
         return () => {
-            try {
+            /* try {
                 qr.stop();
-                qr.destroy();
-                videoRef.current!.srcObject = null;
             } catch (e) {
                 //
-            }
+            } */
         };
     }, []);
     return (

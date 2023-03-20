@@ -1,5 +1,4 @@
 import { AsyncAction } from "@hdapp/shared/web2-common/utils";
-import { ethers } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable, runInAction } from "mobx";
 import { Web3Manager } from "./web3.manager";
@@ -33,10 +32,8 @@ export class AccountManager {
     }
 
     constructor(
-        private _web3: Web3Manager,
-        private _web3Address: string
+        private _web3: Web3Manager
     ) {
-        console.log(_web3Address);
         makeAutoObservable(this);
 
         void this._loadAccount.run()
@@ -49,7 +46,7 @@ export class AccountManager {
 
     private readonly _loadAccount = new AsyncAction(async () => {
         try {
-            const account = await this._web3.accountManager.getAccountInfo(this._web3Address);
+            const account = await this._web3.accountManager.getAccountInfo(this._web3.address);
 
             runInAction(() => {
                 this._account = { isBanned: account.isBanned, isDoctor: account.isDoctor };

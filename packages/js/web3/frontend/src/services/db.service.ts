@@ -94,7 +94,7 @@ export class DbService {
             throw new Error("Db was not initialized yet.");
 
         const transaction = this._db.transaction(storeNames, mode);
-        const stack = new Error().stack;
+        const stack = [new Error().stack];
 
         transaction.addEventListener("complete", () => {
             debug("Transaction completed.", { storeNames, mode, transaction, stack });

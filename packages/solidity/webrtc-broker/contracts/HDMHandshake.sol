@@ -4,21 +4,23 @@ pragma solidity ^0.8.4;
 contract HDMHandshake {
     event Message (
         address indexed sender,
-        address indexed receiver,
-        bytes indexed data
+        uint256 indexed deviceHash
     );
 
-    function send(address _receiver, bytes calldata _data) public {
-        require(
-            msg.sender != _receiver,
-            "HDMHandshake: cannot post a message for yourself."
-        );
-
+    function send(uint256 _deviceHash, bytes calldata) public {
         emit Message(
             msg.sender,
-            _receiver,
-            _data
+            _deviceHash
         );
     }
+
+    /* function multiSend(uint256[] calldata _deviceHashes, bytes[] calldata) public {
+        for (uint256 i = 0; i < _deviceHashes.length; i++) {
+            emit Message(
+                msg.sender,
+                _deviceHashes[i]
+            );
+        }
+    } */
 }
  

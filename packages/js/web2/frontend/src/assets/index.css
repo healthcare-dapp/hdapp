@@ -4,6 +4,7 @@
 
     position: relative;
     background-color: #ffffff;
+    overflow: auto;
     overflow: overlay;
     min-height: 100vh;
   }

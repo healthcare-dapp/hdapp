@@ -17,6 +17,7 @@ import {
     Badge,
     Box,
     Button,
+    Card,
     Container,
     Fab,
     IconButton,
@@ -62,6 +63,11 @@ const ChatButton = styled(ListItemButton)(({ theme }) => ({
         }
     }
 }));
+
+const OverflowCard = styled(Card)`
+    overflow: auto;
+    overflow: overlay;
+`;
 
 const LeftPanel: FC = () => {
     const theme = useTheme();
@@ -238,7 +244,7 @@ const RightPanel: FC = () => {
                     <IconButton size="large" color="inherit"><MoreVert /></IconButton>
                 </Stack>
             </AppBar>
-            <Box sx={{ overflow: "overlay", flexGrow: 1, height: 0 }}
+            <OverflowCard sx={{ flexGrow: 1, height: 0 }}
                  ref={messagesListRef}>
                 <Stack spacing={1} sx={{ pt: 2, pb: 1, px: canShowExtendedHeader ? 2 : 1, position: "relative", minHeight: "100%" }} justifyContent="flex-end">
                     <Paper variant="outlined" sx={{ background: alpha(theme.palette.primary.light, 0.3), alignSelf: "flex-end", maxWidth: "450px", width: "100%", position: "relative", display: "flex", minHeight: "100px" }}>
@@ -359,7 +365,7 @@ const RightPanel: FC = () => {
                         </Paper>
                     )) }
                 </Stack>
-            </Box>
+            </OverflowCard>
             <Stack direction="row" sx={{ px: canShowExtendedHeader ? 2 : 1, py: 1 }} spacing={1} alignItems="stretch">
                 <IconButton sx={{ backgroundColor: theme.palette.grey[200], boxShadow: theme.shadows[1] }}><Add /></IconButton>
                 <TextField variant="outlined" placeholder="Write a message" size="small"

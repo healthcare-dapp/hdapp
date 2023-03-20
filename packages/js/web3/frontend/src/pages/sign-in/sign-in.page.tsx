@@ -16,6 +16,7 @@ import {
     IconButton,
     Link,
     Stack,
+    styled,
     TextField,
     Typography,
     useMediaQuery,
@@ -28,6 +29,13 @@ import { ModalProvider } from "../../App2";
 import { SuccessfulVerificationDialog } from "../../dialogs/successful-verification.dialog";
 import { walletManager } from "../../managers/wallet.manager";
 import { Logo } from "../../widgets/header";
+
+const OverflowCard = styled(Card)`
+    position: relative;
+    overflow: auto;
+    overflow: overlay;
+    width: 100%;
+`;
 
 const SignInCard: FC<{
     icon: SvgIconComponent
@@ -81,7 +89,7 @@ const SignInMainPage: FC<{ setPage(page: Page): void }> = x => {
     const theme = useTheme();
     const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
     return (
-        <Card elevation={2} sx={{ maxWidth: 800, width: "100%", overflow: "overlay" }}>
+        <OverflowCard elevation={2} sx={{ maxWidth: 800 }}>
             <Stack spacing={2} alignItems="center" sx={{ pt: 2, px: isSmall ? 1 : 2, pb: 4 }}>
                 <Typography fontWeight="500"
                             align="center"
@@ -126,7 +134,7 @@ const SignInMainPage: FC<{ setPage(page: Page): void }> = x => {
                 <Button disableElevation variant="contained"
                         href="/#/register">Create an account</Button>
             </Stack>
-        </Card>
+        </OverflowCard>
     );
 };
 
@@ -136,7 +144,7 @@ const SignInPrivateKeyPage: FC<{ onBackButton(): void }> = x => {
     const [privateKey, setPrivateKey] = useState("");
 
     return (
-        <Card elevation={2} sx={{ maxWidth: 700, width: "100%", overflow: "overlay", position: "relative" }}>
+        <OverflowCard elevation={2} sx={{ maxWidth: 700 }}>
             <IconButton onClick={x.onBackButton} sx={{ position: "absolute", top: 0, left: 0, m: 1 }}>
                 <ArrowBack />
             </IconButton>
@@ -177,7 +185,7 @@ const SignInPrivateKeyPage: FC<{ onBackButton(): void }> = x => {
                     Add an account
                 </LoadingButton>
             </Stack>
-        </Card>
+        </OverflowCard>
     );
 };
 
@@ -188,7 +196,7 @@ const SignInUrlPage: FC = x => {
     const privateKey = search.get("privateKey")!;
 
     return (
-        <Card elevation={2} sx={{ maxWidth: 700, width: "100%", overflow: "overlay", position: "relative" }}>
+        <OverflowCard elevation={2} sx={{ maxWidth: 700 }}>
             <Stack spacing={2} alignItems="center" sx={{ pt: 2, px: isSmall ? 1 : 2, pb: 3 }}>
                 <Typography fontWeight="500"
                             align="center"
@@ -209,7 +217,7 @@ const SignInUrlPage: FC = x => {
                     Start setup
                 </LoadingButton>
             </Stack>
-        </Card>
+        </OverflowCard>
     );
 };
 
