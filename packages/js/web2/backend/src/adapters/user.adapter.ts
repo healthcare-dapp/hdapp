@@ -8,7 +8,7 @@ import { FileAdapter } from "./file.adapter";
 export const UserAdapter = new (class {
     transformToDto(entity: UserFullEntity): UserDto {
         return {
-            id: entity.id,
+            id: +entity.id,
             web3_address: entity.web3Address,
             email: entity.email,
             birth_date: entity.birthDate.toString(),
