@@ -133,13 +133,13 @@ export const HeaderWidget = observer(() => {
                                             <span>Messages</span>
                                         </Stack>
                                     </NavLinkStyled>
-                                    <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}
+                                    { /* <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}
                                                    to="/maps">
                                         <Stack direction="row" alignItems="center" spacing={1}>
                                             <MapOutlined fontSize="medium" />
                                             <span>Maps</span>
                                         </Stack>
-                                    </NavLinkStyled>
+                                    </NavLinkStyled> */ }
                                     <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}
                                                    to="/logs">
                                         <Stack direction="row" alignItems="center" spacing={1}>

@@ -1,4 +1,4 @@
-import { ViewDayOutlined, CalendarMonthOutlined, ForumOutlined, MapOutlined, NotificationsOutlined } from "@mui/icons-material";
+import { ViewDayOutlined, CalendarMonthOutlined, ForumOutlined, NotificationsOutlined, Notes } from "@mui/icons-material";
 import { BottomNavigationAction, Box, Badge, BottomNavigation, styled, useMediaQuery, useTheme } from "@mui/material";
 import { alpha } from "@mui/system";
 import { FC } from "react";
@@ -46,9 +46,12 @@ export const BottomBarWidget: FC = () => {
                 <BottomNavigationAction value="/messages"
                                         label={canShowBottomBarText ? "Messages" : void 0}
                                         icon={<Badge color="error" badgeContent={3}><ForumOutlined /></Badge>} />
-                <BottomNavigationAction value="/maps"
+                { /* <BottomNavigationAction value="/maps"
                                         label={canShowBottomBarText ? "Maps" : void 0}
-                                        icon={<MapOutlined />} />
+                                        icon={<MapOutlined />} /> */ }
+                <BottomNavigationAction value="/logs"
+                                        label={canShowBottomBarText ? "logs" : void 0}
+                                        icon={<Notes />} />
                 <BottomNavigationAction value="/notifications"
                                         label={canShowBottomBarText ? "Notifications" : void 0}
                                         icon={<Badge color="error" badgeContent={2}><NotificationsOutlined /></Badge>} />
