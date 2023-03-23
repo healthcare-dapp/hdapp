@@ -1,12 +1,12 @@
-import { Check, DeleteOutline, DoneAll, Notifications, PersonAdd, Sync, Tune } from "@mui/icons-material";
+import { formatTemporal, temporalFormats } from "@hdapp/shared/web2-common/utils/temporal";
+import { AddModeratorOutlined, Check, DeleteOutline, DoneAll, Notifications, PersonAdd, PersonSearchOutlined, QuestionMark, Sync, Tune } from "@mui/icons-material";
 import { IconButton, Badge, Popover, Typography, Stack, Box, Button, List, Avatar, ListItem, ListItemAvatar, ListItemText, useTheme, useMediaQuery } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
-import { Notification } from "../../managers/web3.manager";
+import { sessionManager } from "../../managers/session.manager";
 
 export const HeaderNotificationsWidget = observer(() => {
-    // const { notifications } = Web3Manager;
-    const notifications: Notification[] = [];
+    const notifications = sessionManager.notifications.array;
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
     const theme = useTheme();
     const canShowClearAllText = useMediaQuery(theme.breakpoints.up("sm"));
@@ -75,31 +75,80 @@ export const HeaderNotificationsWidget = observer(() => {
                             </Typography>
                         </Stack>
                     ) }
-                    { notifications.map((n, i) => (
-                        <ListItem alignItems="flex-start"
-                                  key={i}>
-                            <ListItemAvatar>
-                                <Avatar sx={{ background: n.title.includes("Sync") ? theme.palette.success.light : void 0 }}>{ n.title.includes("Sync") ? <Sync /> : <PersonAdd /> }</Avatar>
-                            </ListItemAvatar>
-                            <ListItemText primary={(
-                                <Stack alignItems="center" direction="row">
-                                    <Typography>{ n.title }</Typography>
-                                    <Typography fontSize={12} color="text.secondary" sx={{ marginLeft: "auto" }}>3 hours ago</Typography>
-                                </Stack>
-                            )} secondary={(
-                                <Stack spacing={1}>
-                                    <Typography color="text.secondary" fontSize={14}>{ n.description }</Typography>
-                                    { n.title.includes("Incoming") && (
-                                        <Stack alignItems="center" direction="row" spacing={1}>
-                                            <Button variant="contained" disableElevation size="small" color="success"
-                                                    startIcon={<Check />}>Accept</Button>
-                                            <Button size="small" color="error">Ignore</Button>
-                                        </Stack>
-                                    ) }
-                                </Stack>
-                            )} />
-                        </ListItem>
-                    )) }
+                    { notifications.map((n, i) => {
+                        const iconBgColor = n.type === "connection_established"
+                            ? theme.palette.info.main
+                            : n.type === "record_permissions_granted"
+                                ? theme.palette.success.main
+                                : n.type === "user_connection_created"
+                                    ? theme.palette.primary.main
+                                    : n.type === "user_connection_requested"
+                                        ? theme.palette.warning.dark
+                                        : theme.palette.grey[600];
+
+                        const icon = n.type === "connection_established"
+                            ? <Sync />
+                            : n.type === "record_permissions_granted"
+                                ? <AddModeratorOutlined />
+                                : n.type === "user_connection_created"
+                                    ? <PersonAdd />
+                                    : n.type === "user_connection_requested"
+                                        ? <PersonSearchOutlined />
+                                        : <QuestionMark />;
+
+                        const title = n.type === "connection_established"
+                            ? "Sync connection established"
+                            : n.type === "record_permissions_granted"
+                                ? "User granted access to their data"
+                                : n.type === "user_connection_created"
+                                    ? `${n.userName} accepted your connection request`
+                                    : n.type === "user_connection_requested"
+                                        ? "A user wants to connect with you"
+                                        // @ts-ignore
+                                        : n.type;
+
+                        const description = n.type === "connection_established"
+                            ? `Device ${n.deviceName} of user ${n.user} has established a peer-to-peer connection with you.`
+                            : n.type === "record_permissions_granted"
+                                ? `User ${n.ownerName} has shared with you their medical record.`
+                                : n.type === "user_connection_created"
+                                    ? "You can now exchange medical data with them and they can request medical data from you."
+                                    : n.type === "user_connection_requested"
+                                        ? `User with address ${n.userAddress} wants to connect with you. Only accept connection requests from people you know.`
+                                        // @ts-ignore
+                                        : n.type;
+                        return (
+                            <ListItem alignItems="flex-start"
+                                      key={i}>
+                                <ListItemAvatar>
+                                    <Avatar sx={{ background: iconBgColor }}>{ icon }</Avatar>
+                                </ListItemAvatar>
+                                <ListItemText primary={(
+                                    <Stack alignItems="center" direction="row">
+                                        <Typography>{ title }</Typography>
+                                        <Typography fontSize={12} color="text.secondary" sx={{ marginLeft: "auto" }}>
+                                            { formatTemporal(n.created_at, temporalFormats.ddMMyyyyHHmmss) }
+                                        </Typography>
+                                    </Stack>
+                                )} secondary={(
+                                    <Stack spacing={1}>
+                                        <Typography color="text.secondary" fontSize={14}>{ description }</Typography>
+                                        { n.type === "user_connection_requested" && (
+                                            <Stack alignItems="center" direction="row" spacing={1}>
+                                                <Button variant="contained" disableElevation size="small" color="success"
+                                                        startIcon={<Check />}
+                                                        onClick={() => {
+                                                            void sessionManager.web3.accessControlManager
+                                                                .addUserConnection(n.userAddress);
+                                                        }}>Accept</Button>
+                                                <Button size="small" color="error">Ignore</Button>
+                                            </Stack>
+                                        ) }
+                                    </Stack>
+                                )} />
+                            </ListItem>
+                        );
+                    }) }
                 </List>
             </Popover>
         </>

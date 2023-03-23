@@ -69,45 +69,102 @@ export class AccessControlManager {
         this._currentConnectionKey = null;
     }
 
+    private async _handleUserConnectionRequested(requester: string, requestee: string, hash: bigint) {
+        if (requestee !== this._web3.address)
+            return;
+
+        if (!this._currentConnectionKey)
+            return warn("no private key");
+
+        const hashLocalStr = SHA256(requester + " " + this._currentConnectionKey).toString();
+        const hashLocal = toBigInt("0x" + hashLocalStr);
+
+        if (hashLocal !== hash)
+            return warn("incoming hash doesn't match the expected hash");
+
+        await deviceService.addDevice(
+            {
+                added_at: LocalDateTime.now(),
+                friendly_name: "",
+                hash: "0x" + hashLocalStr,
+                is_current: false,
+                is_pending: true,
+                owned_by: requester,
+                private_key: this._currentConnectionKey,
+                type: "unknown"
+            },
+            sessionManager.encryption
+        );
+
+        this._notifications.push({
+            type: "user_connection_requested",
+            created_at: Instant.now(),
+            urgency: Urgency.NORMAL,
+            userAddress: requester
+        });
+    }
+
+    private async _handleUserConnectionCreated(user1: string, user2: string) {
+        const user = user1 === this._web3.address
+            ? user2
+            : user1;
+
+        await deviceService.activateAllDevicesOwnedBy(
+            user,
+            sessionManager.encryption
+        );
+
+        this._notifications.push({
+            type: "user_connection_created",
+            created_at: Instant.now(),
+            urgency: Urgency.NORMAL,
+            userAddress: user
+        });
+
+        await eventLogService.addEventLog({
+            created_by: user,
+            related_entities: [
+                {
+                    type: "profile",
+                    value: user,
+                }
+            ],
+            title: "Connection request accepted",
+            description: `${user} has accepted your connection request.`
+        });
+    }
+
     private _bindEvents() {
         const { accessControlManager } = this._web3;
         void accessControlManager.on(
             accessControlManager.filters.UserConnectionRequested,
-            async (requester, requestee, hash) => {
-                if (requestee !== this._web3.address)
-                    return;
-
-                if (!this._currentConnectionKey)
-                    return warn("no private key");
-
-                const hashLocalStr = SHA256(requester + " " + this._currentConnectionKey).toString();
-                const hashLocal = toBigInt("0x" + hashLocalStr);
-
-                if (hashLocal !== hash)
-                    return warn("incoming hash doesn't match the expected hash");
-
-                this._notifications.push({
-                    type: "user_connection_requested",
-                    created_at: Instant.now(),
-                    urgency: Urgency.NORMAL,
-                    user: requester
-                });
-
-                await deviceService.addDevice(
-                    {
-                        added_at: LocalDateTime.now(),
-                        friendly_name: "",
-                        hash: "0x" + hashLocalStr,
-                        is_current: false,
-                        is_pending: true,
-                        owned_by: requester,
-                        private_key: this._currentConnectionKey,
-                        type: "unknown"
-                    },
-                    sessionManager.encryption
-                );
-            }
+            this._handleUserConnectionRequested
         );
+        void accessControlManager.on(
+            accessControlManager.filters.UserConnectionCreated,
+            this._handleUserConnectionCreated
+        );
+
+        void accessControlManager.queryFilter(
+            accessControlManager.filters.UserConnectionRequested,
+            this._web3.lastSyncedBlockNumber
+        ).then(arr => arr.forEach(
+            e => this._handleUserConnectionRequested(
+                e.args.requester,
+                e.args.requestee,
+                e.args.hash
+            )
+        ));
+
+        void accessControlManager.queryFilter(
+            accessControlManager.filters.UserConnectionCreated,
+            this._web3.lastSyncedBlockNumber
+        ).then(arr => arr.forEach(
+            e => this._handleUserConnectionCreated(
+                e.args.user1,
+                e.args.user2
+            )
+        ));
     }
 
     readonly requestUserConnection = new AsyncAction(async (user: string, privateKey: string) => {
@@ -134,7 +191,14 @@ export class AccessControlManager {
 
             await eventLogService.addEventLog({
                 title: "Connection request pending",
-                description: `Waiting for user ${user} to confirm your connection request`
+                description: `Waiting for user ${user} to confirm your connection request`,
+                created_by: user,
+                related_entities: [
+                    {
+                        type: "profile",
+                        value: user,
+                    }
+                ],
             });
         } catch (e) {
             error(e);
@@ -152,7 +216,14 @@ export class AccessControlManager {
 
             await eventLogService.addEventLog({
                 title: "Connection request accepted",
-                description: `User ${user} has successfully connected with your account`
+                description: `You have accepted the connection request of ${user}.`,
+                created_by: this._web3.address,
+                related_entities: [
+                    {
+                        type: "profile",
+                        value: user,
+                    }
+                ],
             });
         } catch (e) {
             error(e);

@@ -1,5 +1,5 @@
 import { Instant, LocalDateTime } from "@js-joda/core";
-import { SHA256 } from "crypto-js";
+import { MD5, SHA256 } from "crypto-js";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
 import { dbService, DbService } from "./db.service";
 
@@ -92,18 +92,20 @@ export class EventLogService extends DbConsumer {
     }
 
     async addEventLog(form: EventLogForm): Promise<void> {
+        const hash = MD5(JSON.stringify(form)).toString();
+        const eventLog: EventLogEntry = {
+            ...form,
+            created_at: Instant.now(),
+            hash
+        };
+
         try {
-            const createdAt = Instant.now();
-            const eventLog: EventLogEntry = {
-                ...form,
-                created_at: createdAt,
-                hash: SHA256(createdAt.toString() + "-" + form.title + "-" + form.description).toString()
-            };
             await this._add(eventLog, reverseTransformer);
         } catch (e) {
             if (e instanceof DbRecordNotFoundError)
                 throw new EventLogNotFoundError("Event log was not found.");
-
+            if (e instanceof DOMException && e.name === "ConstraintError")
+                return;
             throw e;
         }
     }

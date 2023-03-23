@@ -1,4 +1,4 @@
-import { CalendarMonthOutlined, ForumOutlined, MapOutlined, Notes, ViewDayOutlined, Wifi, Wifi2Bar, WifiOff } from "@mui/icons-material";
+import { CalendarMonthOutlined, ForumOutlined, MapOutlined, Notes, Sync, ViewDayOutlined, Wifi, Wifi2Bar, WifiOff } from "@mui/icons-material";
 import {
     alpha,
     Badge,
@@ -81,7 +81,6 @@ const NavLinkStyled = styled(NavLink)(({ theme }) => ({
 
 export const HeaderWidget = observer(() => {
     const matches = useMatches();
-    const [connectionQuality, setConnectionQuality] = useState<"bad" | "okay" | "good">("good");
     const theme = useTheme();
     const canShowHeader = useMediaQuery(theme.breakpoints.up("md"));
     const isBigEnough = useMediaQuery(theme.breakpoints.up("md"));
@@ -122,14 +121,14 @@ export const HeaderWidget = observer(() => {
                                     <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}
                                                    to="/appointments">
                                         <Stack direction="row" alignItems="center" spacing={1}>
-                                            <Badge color="error" badgeContent={1}><CalendarMonthOutlined fontSize="medium" /></Badge>
+                                            { /* <Badge color="error" badgeContent={1}><CalendarMonthOutlined fontSize="medium" /></Badge> */ }
                                             <span>Appointments</span>
                                         </Stack>
                                     </NavLinkStyled>
                                     <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}
                                                    to="/messages">
                                         <Stack direction="row" alignItems="center" spacing={1}>
-                                            <Badge color="error" badgeContent={/* 3 */1}><ForumOutlined fontSize="medium" /></Badge>
+                                            { /* <Badge color="error" badgeContent={1}><ForumOutlined fontSize="medium" /></Badge> */ }
                                             <span>Messages</span>
                                         </Stack>
                                     </NavLinkStyled>
@@ -151,24 +150,13 @@ export const HeaderWidget = observer(() => {
                             ) }
                             <Box sx={{ flex: 1 }} />
                             { isBigEnough && (
-                                <Chip icon={connectionQuality === "good" ? <Wifi /> : connectionQuality === "okay" ? <Wifi2Bar /> : <WifiOff />}
-                                      label={connectionQuality !== "bad" ? "Connection stable" : "Connection was lost"}
+                                <Chip icon={<Sync />}
+                                      label={`${sessionManager.webrtc.peers.length} devices connected`}
                                       sx={{ fontWeight: 500 }}
-                                      color={connectionQuality === "good" ? "success" : connectionQuality === "okay" ? "warning" : "error"}
-                                      variant={connectionQuality !== "bad" ? "outlined" : "filled"}
+                                      color="success"
+                                      variant="outlined"
                                       onClick={() => {
                                           void sessionManager.webrtc.start();
-                                          /* switch (connectionQuality) {
-                                              case "bad":
-                                                  setConnectionQuality("okay");
-                                                  break;
-                                              case "okay":
-                                                  setConnectionQuality("good");
-                                                  break;
-                                              case "good":
-                                                  setConnectionQuality("bad");
-                                                  break;
-                                          } */
                                       }} />
                             ) }
                             <HeaderNotificationsWidget />

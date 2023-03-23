@@ -25,6 +25,8 @@ import { EncryptionProvider } from "../utils/encryption.provider";
 import { Web3Manager } from "./web3.manager";
 
 export type BrokerMessageData = {
+    type: "ping"
+} | {
     type: "candidate"
     candidate: RTCIceCandidateInit
 } | {
@@ -100,7 +102,6 @@ export class Peer {
     private _isMakingOffer = false;
     private _isIgnoringOffer = false;
     private _isSrdAnswerPending = false;
-    private _isConnected = false;
 
     constructor(
         device: DeviceEntry,
@@ -117,8 +118,16 @@ export class Peer {
         }
     }
 
-    get isConnected() {
-        return this._isConnected;
+    get deviceHash() {
+        return this.#device.hash;
+    }
+
+    dispose() {
+        this._dataChannel?.close();
+        this._dataChannel = null;
+
+        this._peerConnection?.close();
+        this._peerConnection = null;
     }
 
     async addIceCandidate(candidate: RTCIceCandidateInit) {
@@ -301,7 +310,11 @@ export class Peer {
 
         pc.addEventListener("connectionstatechange", event => {
             debug("connectionstatechange", pc.connectionState, event);
-            this._isConnected = pc.connectionState === "connected";
+
+            if (pc.connectionState === "disconnected") {
+                this._manager.disposePeer(this.#device.hash);
+            }
+
             if (pc.connectionState === "connected") {
                 void this._showCurrentState();
             }
@@ -402,12 +415,19 @@ export class WebRTCManager {
     }
 
     get peers() {
-        return [...this._peers.values()]
-            .filter(p => p.isConnected);
+        return [...this._peers.values()];
     }
 
     get web3Address() {
         return this._web3.address;
+    }
+
+    disposePeer(hash: string) {
+        const peer = this._peers.get(hash);
+        if (peer)
+            peer.dispose();
+
+        this._peers.delete(hash);
     }
 
     signMessage(message: string): Promise<string> {
@@ -443,11 +463,11 @@ export class WebRTCManager {
         if (!this._peers.has(deviceHash)) {
             this._peers.set(
                 deviceHash,
-                new Peer(device, this, false)
+                new Peer(device, this, true)
             );
         }
 
-        const peer = this._peers.get(deviceHash)!;
+        let peer = this._peers.get(deviceHash);
 
         const txn = await event.getTransaction();
         const txnDescription = this._web3.webRtcBroker.interface.parseTransaction(txn);
@@ -458,6 +478,11 @@ export class WebRTCManager {
                 const json = AES.decrypt(chunk, device.private_key)
                     .toString(enc.Utf8);
                 const data: BrokerMessageData = JSON.parse(json);
+
+                if (!peer) {
+                    peer = new Peer(device, this, data.type === "ping");
+                    this._peers.set(device.hash, peer);
+                }
 
                 debug("received broker message", { peer, data });
 
@@ -520,10 +545,7 @@ export class WebRTCManager {
         );
 
         for (const device of devices) {
-            this._peers.set(
-                device.hash,
-                new Peer(device, this, true)
-            );
+            this.send(device, { type: "ping" });
         }
     }
 }

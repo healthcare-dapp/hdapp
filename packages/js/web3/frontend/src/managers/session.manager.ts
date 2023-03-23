@@ -111,7 +111,9 @@ export class SessionManager {
             this._encryptionProvider = provider;
             this._walletShort = walletShort;
             this._web3Manager = new Web3Manager(wallet);
-            this._notificationsManager = new NotificationsManager();
+            this._notificationsManager = new NotificationsManager(
+                this._encryptionProvider
+            );
             this._webrtcManager = new WebRTCManager(
                 this._web3Manager,
                 this._encryptionProvider

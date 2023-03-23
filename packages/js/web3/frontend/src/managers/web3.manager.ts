@@ -2,7 +2,7 @@ import { HDMAccessControl, HDMAccessControl__factory } from "@hdapp/solidity/acc
 import { HDMAccountManager, HDMAccountManager__factory } from "@hdapp/solidity/account-manager";
 import { HDMHandshake, HDMHandshake__factory } from "@hdapp/solidity/webrtc-broker";
 import { ethers } from "ethers";
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import { HDMAccessControlAddress, HDMAccountManagerAddress, HDMHandshakeAddress, WEB3_JSON_RPC_URL } from "../contract";
 import { WalletEntry, WalletType } from "../services/wallet.service";
 import { Web3ContractProvider } from "../utils/web3-contract.provider";
@@ -20,6 +20,11 @@ export class Web3Manager {
     #webRtcBroker: Web3ContractProvider<HDMHandshake>;
 
     private _address: string;
+    private _lastSyncedBlockNumber = 0;
+
+    get lastSyncedBlockNumber() {
+        return this._lastSyncedBlockNumber;
+    }
 
     get signer() {
         return this.#signer;
@@ -39,6 +44,8 @@ export class Web3Manager {
         this.#webRtcBroker = new Web3ContractProvider(HDMHandshake__factory, HDMHandshakeAddress, signer);
 
         makeAutoObservable(this);
+
+        void this.updateBlockNumber();
     }
 
     get address() {
@@ -55,6 +62,13 @@ export class Web3Manager {
 
     get webRtcBroker() {
         return this.#webRtcBroker.contract;
+    }
+
+    async updateBlockNumber() {
+        const number = await this.signer.provider!.getBlockNumber();
+        runInAction(() => {
+            this._lastSyncedBlockNumber = number - 10000;
+        });
     }
 
     static async testPrivateKey(privateKey: string): Promise<string> {

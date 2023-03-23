@@ -23,8 +23,9 @@ export const ScanQrCodeDialog: FC<{ onClose(): void }> = x => {
 
     useEffect(() => {
         // let mediaStream: MediaStream;
-        let qr: QrScanner;
+        let qr: QrScanner | undefined;
         let isLocked = false;
+        let timeout: number;
 
         async function confirmConnection(result: QrScanner.ScanResult) {
             if (isLocked)
@@ -39,7 +40,7 @@ export const ScanQrCodeDialog: FC<{ onClose(): void }> = x => {
                     address
                 });
                 if (!isConfirmed) {
-                    await qr.start();
+                    await qr?.start();
                     return;
                 }
 
@@ -53,30 +54,33 @@ export const ScanQrCodeDialog: FC<{ onClose(): void }> = x => {
         }
 
         (async () => {
-            if (!videoRef.current)
-                return;
+            timeout = window.setTimeout(async () => {
+                if (!videoRef.current)
+                    return;
 
-            qr = new QrScanner(
-                videoRef.current,
-                confirmConnection,
-                {
-                    preferredCamera: "environment",
-                }
-            );
-            await qr.start();
+                qr = new QrScanner(
+                    videoRef.current,
+                    confirmConnection,
+                    {
+                        preferredCamera: "environment",
+                    }
+                );
+                await qr.start();
+            }, 500);
         })();
 
         return () => {
-            /* try {
-                qr.stop();
+            try {
+                window.clearTimeout(timeout);
+                qr?.stop();
             } catch (e) {
                 //
-            } */
+            }
         };
     }, []);
     return (
         <Dialog fullScreen={isMobileView} disablePortal maxWidth="lg"
-                onClose={() => x.onClose()} {...ModalProvider.modalProps(x)}>
+                onClose={() => x.onClose()} open>
             <DialogTitle align="center">
                 <IconButton sx={{ position: "absolute", top: 0, left: 0, m: 1.5 }}
                             onClick={() => x.onClose()}>
