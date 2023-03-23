@@ -28,6 +28,27 @@ export class DbService {
         });
     }
 
+    reset() {
+        return new Promise<void>((resolve, reject) => {
+            this._db?.close();
+            const request = indexedDB.deleteDatabase(dbName);
+            request.addEventListener(
+                "success",
+                () => {
+                    debug("Database has been successfully deleted.");
+                    resolve();
+                }
+            );
+            request.addEventListener(
+                "error",
+                err => {
+                    error("Error clearing the database.", err);
+                    reject();
+                }
+            );
+        });
+    }
+
     addConsumer(consumer: IDbConsumer) {
         this._consumers.push(consumer);
     }

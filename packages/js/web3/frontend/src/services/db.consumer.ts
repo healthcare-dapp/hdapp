@@ -80,6 +80,51 @@ export abstract class DbConsumer implements IDbConsumer {
         });
     }
 
+    protected _upsertOne<DbT, T>(
+        object: T,
+        reverseProcessor: (entity: T) => DbT
+    ): Promise<T> {
+        const tsn = this._db.transaction([this._storeName], "readonly");
+        const dataStore = tsn.objectStore(this._storeName);
+        const request: IDBRequest<IDBValidKey> = dataStore.put(reverseProcessor(object));
+        return new Promise((resolve, reject) => {
+            request.addEventListener("success", () => {
+                if (!request.result) {
+                    this._logger.debug("Could not find the record.", { tsn, request });
+                    reject(new DbRecordNotFoundError("Record not found."));
+                }
+                try {
+                    resolve(object);
+                } catch (cause) {
+                    this._logger.debug("Record could not be retrieved.", { tsn, cause });
+                    reject(
+                        new Error("Record could not be retrieved.")
+                    );
+                }
+            });
+            request.addEventListener("error", () => {
+                this._logger.debug("Could not retrieve file data.", { tsn, request });
+                reject(new Error("Could not retrieve file data."));
+            });
+        });
+    }
+
+    protected async _patchOne<K extends IDBValidKey, DbT, T>(
+        key: K,
+        partialObject: Partial<T> | ((object: T) => T),
+        processor: (dbEntity: DbT) => T,
+        reverseProcessor: (entity: T) => DbT
+    ): Promise<T> {
+        let object: T = await this._findOne<K, DbT, T>(key, processor);
+
+        if (typeof partialObject === "function")
+            object = partialObject(object);
+        else
+            object = Object.assign({}, object, partialObject);
+
+        return await this._upsertOne(object, reverseProcessor);
+    }
+
     protected _patchMany<DbT, T>(
         processor: (dbEntity: DbT) => T,
         patcher: (entity: T) => T | null,

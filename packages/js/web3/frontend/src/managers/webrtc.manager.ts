@@ -1,7 +1,6 @@
 import { getRightOrFail } from "@hdapp/shared/web2-common/io-ts-utils/get-right";
 import { Logger } from "@hdapp/shared/web2-common/utils";
 import * as HDMHandshake from "@hdapp/solidity/webrtc-broker/HDMHandshake";
-import { Instant } from "@js-joda/core";
 import { AES, enc } from "crypto-js";
 import { ethers, toUtf8Bytes } from "ethers";
 import {
@@ -120,6 +119,10 @@ export class Peer {
 
     get deviceHash() {
         return this.#device.hash;
+    }
+
+    get deviceOwnedBy() {
+        return this.#device.owned_by;
     }
 
     dispose() {
@@ -412,6 +415,11 @@ export class WebRTCManager {
 
     get encryption() {
         return this._encryption;
+    }
+
+    get onlinePeerAddresses() {
+        return this.peers.map(p => p.deviceOwnedBy)
+            .filter((a, i, arr) => arr.indexOf(a) === i);
     }
 
     get peers() {

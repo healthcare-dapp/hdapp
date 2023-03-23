@@ -1,7 +1,6 @@
-import { CalendarMonthOutlined, ForumOutlined, MapOutlined, Notes, Sync, ViewDayOutlined, Wifi, Wifi2Bar, WifiOff } from "@mui/icons-material";
+import { CalendarMonthOutlined, ForumOutlined, Notes, Sync, ViewDayOutlined } from "@mui/icons-material";
 import {
     alpha,
-    Badge,
     Box,
     Chip,
     Container,
@@ -13,8 +12,7 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { observer } from "mobx-react-lite";
-import { useState } from "react";
-import { NavLink, redirect, useMatches } from "react-router-dom";
+import { NavLink, redirect } from "react-router-dom";
 import RasterLogo512Outlined from "../../assets/raster/logo512_outlined.png";
 import { sessionManager } from "../../managers/session.manager";
 import { HeaderAccountWidget } from "./account.widget";
@@ -80,13 +78,10 @@ const NavLinkStyled = styled(NavLink)(({ theme }) => ({
 }));
 
 export const HeaderWidget = observer(() => {
-    const matches = useMatches();
     const theme = useTheme();
     const canShowHeader = useMediaQuery(theme.breakpoints.up("md"));
     const isBigEnough = useMediaQuery(theme.breakpoints.up("md"));
     const isVeryBigEnough = useMediaQuery(theme.breakpoints.up("lg"));
-
-    const [match] = matches;
 
     if (!canShowHeader)
         return null;
@@ -121,14 +116,14 @@ export const HeaderWidget = observer(() => {
                                     <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}
                                                    to="/appointments">
                                         <Stack direction="row" alignItems="center" spacing={1}>
-                                            { /* <Badge color="error" badgeContent={1}><CalendarMonthOutlined fontSize="medium" /></Badge> */ }
+                                            <CalendarMonthOutlined fontSize="medium" />
                                             <span>Appointments</span>
                                         </Stack>
                                     </NavLinkStyled>
                                     <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}
                                                    to="/messages">
                                         <Stack direction="row" alignItems="center" spacing={1}>
-                                            { /* <Badge color="error" badgeContent={1}><ForumOutlined fontSize="medium" /></Badge> */ }
+                                            <ForumOutlined fontSize="medium" />
                                             <span>Messages</span>
                                         </Stack>
                                     </NavLinkStyled>

@@ -17,7 +17,6 @@ import {
     Badge,
     Box,
     Button,
-    Card,
     Container,
     Fab,
     IconButton,
@@ -64,7 +63,7 @@ const ChatButton = styled(ListItemButton)(({ theme }) => ({
     }
 }));
 
-const OverflowCard = styled(Card)`
+const OverflowCard = styled(Box)`
     overflow: auto;
     overflow: overlay;
 `;
@@ -245,7 +244,7 @@ const RightPanel: FC = () => {
                 </Stack>
             </AppBar>
             <OverflowCard sx={{ flexGrow: 1, height: 0 }}
-                 ref={messagesListRef}>
+                          ref={messagesListRef}>
                 <Stack spacing={1} sx={{ pt: 2, pb: 1, px: canShowExtendedHeader ? 2 : 1, position: "relative", minHeight: "100%" }} justifyContent="flex-end">
                     <Paper variant="outlined" sx={{ background: alpha(theme.palette.primary.light, 0.3), alignSelf: "flex-end", maxWidth: "450px", width: "100%", position: "relative", display: "flex", minHeight: "100px" }}>
                         <img src="https://bollywoodfever.co.in/wp-content/uploads/2022/08/Thumbs-up-Memes13.jpg" style={{ width: "100%", borderRadius: 4 }} />

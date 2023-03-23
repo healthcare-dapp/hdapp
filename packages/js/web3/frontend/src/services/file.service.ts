@@ -1,7 +1,8 @@
-import { Logger } from "@hdapp/shared/web2-common/utils";
+import { autoBind } from "@hdapp/shared/web2-common/utils";
 import { LocalDateTime } from "@js-joda/core";
-import { makeAutoObservable } from "mobx";
+import { MD5 } from "crypto-js";
 import { EncryptionProvider } from "../utils/encryption.provider";
+import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
 import { dbService, DbService, IDbConsumer } from "./db.service";
 
 interface FileBlobDbEntry {
@@ -28,181 +29,187 @@ export interface FileEntry {
 
 export class FileNotFoundError extends Error {}
 
-export class FileService implements IDbConsumer {
-    private readonly _metadataStoreName = "files";
-    private readonly _blobStoreName = "file_blobs";
+const transformer = (dbEntry: FileMetadataDbEntry): FileEntry => {
+    return {
+        hash: dbEntry.hash,
+        name: dbEntry.name,
+        owner: dbEntry.owner,
+        type: dbEntry.type,
+        uploaded_at: LocalDateTime.parse(dbEntry.uploaded_at)
+    };
+};
 
-    private readonly _logger = new Logger("file-service");
+const blobTransformer = (provider: EncryptionProvider) => (dbEntry: FileBlobDbEntry): Blob => {
+    const decryptedResult = provider.decryptString(dbEntry.blob);
+    return new Blob(
+        [decryptedResult],
+        { type: "image/jpeg" }
+    );
+};
 
-    constructor(private _db: DbService) {
-        makeAutoObservable(this, {}, { autoBind: true });
+const reverseTransformer = (entry: FileEntry): FileMetadataDbEntry => {
+    return {
+        hash: entry.hash,
+        name: entry.name,
+        owner: entry.owner,
+        type: entry.type,
+        uploaded_at: entry.uploaded_at.toString()
+    };
+};
+
+class FileMetadataService extends DbConsumer {
+    protected readonly _storeName = "files";
+
+    constructor(protected _db: DbService) {
+        super("file-service");
+
+        autoBind(this);
     }
 
-    private _transformDbEntryToEntry(dbEntry: FileMetadataDbEntry): FileEntry {
-        return {
-            hash: dbEntry.hash,
-            name: dbEntry.name,
-            owner: dbEntry.owner,
-            type: dbEntry.type,
-            uploaded_at: LocalDateTime.parse(dbEntry.uploaded_at)
+    async getFileMetadata(hash: string): Promise<FileEntry> {
+        try {
+            const entity = await this._findOne(hash, transformer);
+            return entity;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new FileNotFoundError("File was not found.");
+
+            throw e;
+        }
+    }
+
+    async getFiles(): Promise<FileEntry[]> {
+        try {
+            const entities = await this._findMany(transformer, () => true);
+            return entities;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new FileNotFoundError("File was not found.");
+
+            throw e;
+        }
+    }
+
+    async addFileMetadata(hash: string, blob: Blob, owner_address: string): Promise<void> {
+        const metadata: FileEntry = {
+            hash,
+            name: blob.name,
+            owner: owner_address,
+            type: blob.type,
+            uploaded_at: LocalDateTime.now()
         };
+
+        try {
+            await this._add(metadata, reverseTransformer);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new FileNotFoundError("File was not found.");
+            if (e instanceof DOMException && e.name === "ConstraintError")
+                return;
+            throw e;
+        }
+    }
+
+    onDbUpgrade(db: IDBDatabase): void {
+        const store = db.createObjectStore(
+            this._storeName,
+            { keyPath: "hash" }
+        );
+
+        store.createIndex("hash", "hash", { unique: true });
+        store.createIndex("name", "name", { unique: false });
+        store.createIndex("owner", "owner", { unique: false });
+        store.createIndex("type", "type", { unique: false });
+        store.createIndex("uploaded_at", "uploaded_at", { unique: false });
+    }
+}
+
+class FileBlobService extends DbConsumer {
+    protected readonly _storeName = "file_blobs";
+
+    constructor(protected _db: DbService) {
+        super("file-blob-service");
+
+        autoBind(this);
+    }
+
+    async getFileBlob(hash: string, provider: EncryptionProvider): Promise<Blob> {
+        try {
+            const entity = await this._findOne(hash, blobTransformer(provider));
+            return entity;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new FileNotFoundError("File was not found.");
+
+            throw e;
+        }
+    }
+
+    async addFileBlob(hash: string, blob: Blob, provider: EncryptionProvider): Promise<void> {
+        const arrayBuffer = await blob.arrayBuffer();
+        const encryptedBlob = provider.encryptArrayBuffer(new Uint8Array(arrayBuffer));
+
+        const metadata: FileBlobDbEntry = {
+            hash,
+            blob: encryptedBlob,
+            mimeType: blob.type
+        };
+
+        try {
+            await this._add(metadata, a => a);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new FileNotFoundError("File was not found.");
+            if (e instanceof DOMException && e.name === "ConstraintError")
+                return;
+            throw e;
+        }
+    }
+
+    onDbUpgrade(db: IDBDatabase): void {
+        const store = db.createObjectStore(
+            this._storeName,
+            { keyPath: "hash" }
+        );
+        store.createIndex("hash", "hash", { unique: true });
+        store.createIndex("blob", "blob", { unique: false });
+    }
+}
+
+export class FileService implements IDbConsumer {
+    private _metadata: FileMetadataService;
+    private _blob: FileBlobService;
+
+    constructor(db: DbService) {
+        this._metadata = new FileMetadataService(db);
+        this._blob = new FileBlobService(db);
     }
 
     getFileBlob(hash: string, provider: EncryptionProvider): Promise<Blob> {
-        const tsn = this._db.transaction([this._blobStoreName], "readonly");
-        const blobStore = tsn.objectStore(this._blobStoreName);
-        const request: IDBRequest<FileBlobDbEntry> = blobStore.get(hash);
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not find the requested file's blob.", { tsn, hash, request });
-                    reject(new FileNotFoundError("File not found."));
-                }
-                try {
-                    const decryptedResult = provider.decryptString(request.result.blob);
-                    resolve(
-                        new Blob(
-                            [decryptedResult],
-                            { type: "image/jpeg" }
-                        )
-                    );
-                } catch (cause) {
-                    this._logger.debug("File blob could not be retrieved.", { tsn, hash, cause });
-                    reject(
-                        new Error("File blob could not be retrieved.")
-                    );
-                }
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve file blob.", { tsn, hash, request });
-                reject(new Error("Could not retrieve file blob."));
-            });
-        });
+        return this._blob.getFileBlob(hash, provider);
     }
 
     getFileMetadata(hash: string): Promise<FileEntry> {
-        const tsn = this._db.transaction([this._metadataStoreName], "readonly");
-        const metadataStore = tsn.objectStore(this._metadataStoreName);
-        const request: IDBRequest<FileMetadataDbEntry> = metadataStore.get(hash);
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not find the requested file's metadata.", { tsn, hash, request });
-                    reject(new FileNotFoundError("File not found."));
-                }
-                try {
-                    resolve(this._transformDbEntryToEntry(request.result));
-                } catch (cause) {
-                    this._logger.debug("Could not convert file metadata.", { tsn, hash, cause });
-                    reject(new Error("Could not convert file metadata."));
-                }
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve file metadata.", { tsn, hash, request });
-                reject(new Error("Could not retrieve file metadata."));
-            });
-        });
+        return this._metadata.getFileMetadata(hash);
     }
 
     getFiles(): Promise<FileEntry[]> {
-        const tsn = this._db.transaction([this._metadataStoreName], "readonly");
-        const metadataStore = tsn.objectStore(this._metadataStoreName);
-        const request: IDBRequest<FileMetadataDbEntry[]> = metadataStore.getAll();
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not list files.", { tsn, request });
-                    reject(new Error("Could not list files."));
-                }
-
-                resolve(
-                    request.result.map(
-                        dbEntry => this._transformDbEntryToEntry(dbEntry)
-                    )
-                );
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve files.", { tsn, request });
-                reject(new Error("Could not retrieve files."));
-            });
-        });
+        return this._metadata.getFiles();
     }
 
     async uploadFile(file: Blob, owner: string, provider: EncryptionProvider): Promise<string> {
-        const arrayBuffer = await new Promise<ArrayBuffer>(resolve => {
-            const fileReader = new FileReader();
-            fileReader.onload = function (event) {
-                resolve(event.target!.result as ArrayBuffer);
-            };
-            fileReader.readAsArrayBuffer(file);
-        });
-        const encryptedBlob = provider.encryptArrayBuffer(new Uint8Array(arrayBuffer));
-        const tsn = this._db.transaction([
-            this._blobStoreName,
-            this._metadataStoreName
-        ], "readwrite");
-        const blobStore = tsn.objectStore(this._blobStoreName);
-        const metadataStore = tsn.objectStore(this._metadataStoreName);
-        const hash = Date.now().toString();
-        const metadata: FileMetadataDbEntry = {
-            hash,
-            name: file.name,
-            owner,
-            type: file.type,
-            uploaded_at: LocalDateTime.now().toJSON()
-        };
-        const blobRequest: IDBRequest<IDBValidKey> = blobStore.put({ hash, blob: encryptedBlob });
-        const metadataRequest: IDBRequest<IDBValidKey> = metadataStore.put(metadata);
-        await Promise.all([
-            new Promise<void>((resolve, reject) => {
-                blobRequest.addEventListener("success", () => {
-                    if (!blobRequest.result) {
-                        this._logger.debug("Could not find the requested file's blob.", { tsn, hash });
-                        reject(new FileNotFoundError("File not found."));
-                    }
-                    resolve();
-                });
-                blobRequest.addEventListener("error", () => {
-                    this._logger.debug("Could not retrieve file blob.", { tsn, hash });
-                    reject(new Error("Could not retrieve file blob."));
-                });
-            }),
-            new Promise<void>((resolve, reject) => {
-                metadataRequest.addEventListener("success", () => {
-                    if (!metadataRequest.result) {
-                        this._logger.debug("Could not find the requested file's blob.", { tsn, hash });
-                        reject(new FileNotFoundError("File not found."));
-                    }
-                    resolve();
-                });
-                metadataRequest.addEventListener("error", () => {
-                    this._logger.debug("Could not retrieve file blob.", { tsn, hash });
-                    reject(new Error("Could not retrieve file blob."));
-                });
-            }),
-        ]);
+        const text = await file.text();
+        const hash = MD5(text).toString();
+
+        await this._blob.addFileBlob(hash, file, provider);
+        await this._metadata.addFileMetadata(hash, file, owner);
 
         return hash;
     }
 
     onDbUpgrade(db: IDBDatabase): void {
-        const metadataStore = db.createObjectStore(
-            this._metadataStoreName,
-            { keyPath: "hash" }
-        );
-
-        metadataStore.createIndex("hash", "hash", { unique: true });
-        metadataStore.createIndex("name", "name", { unique: false });
-        metadataStore.createIndex("owner", "owner", { unique: false });
-        metadataStore.createIndex("type", "type", { unique: false });
-        metadataStore.createIndex("uploaded_at", "uploaded_at", { unique: false });
-
-        const blobStore = db.createObjectStore(
-            this._blobStoreName,
-            { keyPath: "hash" }
-        );
-        blobStore.createIndex("hash", "hash", { unique: true });
-        blobStore.createIndex("blob", "blob", { unique: false });
+        this._metadata.onDbUpgrade(db);
+        this._blob.onDbUpgrade(db);
     }
 }
 

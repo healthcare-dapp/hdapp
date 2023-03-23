@@ -1,3 +1,4 @@
+import { autoBind } from "@hdapp/shared/web2-common/utils/auto-bind";
 import { Instant, LocalDateTime } from "@js-joda/core";
 import { SHA256 } from "crypto-js";
 import { EncryptionProvider } from "../utils/encryption.provider";
@@ -6,6 +7,7 @@ import { dbService, DbService } from "./db.service";
 
 interface RecordDbEntry {
     hash: string
+    is_archived: boolean
     encrypted: string
 }
 
@@ -22,6 +24,7 @@ interface RecordDbEntryEncryptedData {
 
 export interface RecordEntry {
     hash: string
+    is_archived: boolean
     title: string
     description: string
     owned_by: string
@@ -60,6 +63,7 @@ const transformer = (provider: EncryptionProvider) => (dbEntry: RecordDbEntry): 
 
     return {
         hash: dbEntry.hash,
+        is_archived: dbEntry.is_archived,
         title: encrypted.title,
         description: encrypted.description,
         attachment_ids: encrypted.attachment_ids,
@@ -85,6 +89,7 @@ const reverseTransformer = (provider: EncryptionProvider) => (entry: RecordEntry
 
     return {
         hash: entry.hash,
+        is_archived: entry.is_archived,
         encrypted: provider.encrypt(JSON.stringify(encrypted))
     };
 };
@@ -94,9 +99,11 @@ export class RecordService extends DbConsumer {
 
     constructor(protected _db: DbService) {
         super("record-service");
+
+        autoBind(this);
     }
 
-    readonly getRecord = async (hash: string, provider: EncryptionProvider): Promise<RecordEntry> => {
+    async getRecord(hash: string, provider: EncryptionProvider): Promise<RecordEntry> {
         try {
             const entity = await this._findOne(hash, transformer(provider));
             return entity;
@@ -106,9 +113,9 @@ export class RecordService extends DbConsumer {
 
             throw e;
         }
-    };
+    }
 
-    readonly searchRecords = async (_searchRequest: RecordSearchRequest, provider: EncryptionProvider): Promise<RecordEntry[]> => {
+    async searchRecords(_searchRequest: RecordSearchRequest, provider: EncryptionProvider): Promise<RecordEntry[]> {
         try {
             const devices = await this._findMany(
                 transformer(provider),
@@ -121,12 +128,13 @@ export class RecordService extends DbConsumer {
 
             throw e;
         }
-    };
+    }
 
-    readonly addRecord = async (form: RecordForm, provider: EncryptionProvider): Promise<void> => {
+    async addRecord(form: RecordForm, provider: EncryptionProvider): Promise<void> {
         try {
             await this._add({
                 ...form,
+                is_archived: false,
                 hash: SHA256(Instant.now().toString() + " " + form.title + " " + form.owned_by).toString(),
                 created_at: LocalDateTime.now()
             }, reverseTransformer(provider));
@@ -136,7 +144,18 @@ export class RecordService extends DbConsumer {
 
             throw e;
         }
-    };
+    }
+
+    async archiveRecord(hash: string, provider: EncryptionProvider): Promise<void> {
+        try {
+            await this._patchOne(hash, { is_archived: true }, transformer(provider), reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new RecordNotFoundError("Record was not found.");
+
+            throw e;
+        }
+    }
 
     onDbUpgrade(db: IDBDatabase): void {
         const metadataStore = db.createObjectStore(
@@ -145,6 +164,7 @@ export class RecordService extends DbConsumer {
         );
 
         metadataStore.createIndex("hash", "hash", { unique: true });
+        metadataStore.createIndex("is_archived", "is_archived", { unique: false });
         metadataStore.createIndex("encrypted", "encrypted", { unique: false });
     }
 }

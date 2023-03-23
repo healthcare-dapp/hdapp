@@ -27,7 +27,7 @@ export const HeaderNotificationsWidget = observer(() => {
             <IconButton aria-label="notifications"
                         aria-describedby={id}
                         onClick={handleClick}>
-                <Badge badgeContent={4} color="error">
+                <Badge badgeContent={notifications.length} color="error">
                     <Notifications />
                 </Badge>
             </IconButton>
@@ -101,7 +101,7 @@ export const HeaderNotificationsWidget = observer(() => {
                             : n.type === "record_permissions_granted"
                                 ? "User granted access to their data"
                                 : n.type === "user_connection_created"
-                                    ? `${n.userName} accepted your connection request`
+                                    ? `${n.userAddress} accepted your connection request`
                                     : n.type === "user_connection_requested"
                                         ? "A user wants to connect with you"
                                         // @ts-ignore

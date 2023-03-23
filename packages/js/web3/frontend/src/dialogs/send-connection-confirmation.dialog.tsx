@@ -28,7 +28,8 @@ export const SendConnectionConfirmationDialog: FC<{ address: string; onClose(isC
             </DialogTitle>
             <DialogContent style={{
                 margin: "auto",
-                flex: "none"
+                flex: "none",
+                width: "100%"
             }}>
                 <Stack spacing={2} alignItems="center">
                     <DialogContentText fontSize={14} align="center">

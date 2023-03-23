@@ -1,17 +1,65 @@
 import { Menu as MenuIcon, Search, Tune } from "@mui/icons-material";
-import { Box, Container, useMediaQuery, AppBar, IconButton, Typography, useTheme, Toolbar } from "@mui/material";
+import {
+    Box,
+    Container,
+    useMediaQuery,
+    AppBar,
+    IconButton,
+    Typography,
+    useTheme,
+    Toolbar,
+    Stack,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Button,
+} from "@mui/material";
+import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { DatePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { EventLogEntry, eventLogService } from "../../services/event-log.service";
+import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
 import { HeaderWidget } from "../../widgets/header";
 
+const columns: GridColDef[] = [
+    {
+        field: "created_at",
+        width: 200,
+        headerName: "Timestamp"
+    },
+    {
+        field: "title",
+        width: 200,
+        headerName: "Title"
+    },
+    {
+        field: "description",
+        width: 120,
+        headerName: "Description"
+    },
+    {
+        field: "created_by",
+        width: 220,
+        headerName: "Creator"
+    }
+];
+
 export const LogsPage = observer(() => {
     const [openCounter, setOpenCounter] = useState(0);
     const theme = useTheme();
-    const navigate = useNavigate();
     const canShowSidebar = useMediaQuery(theme.breakpoints.up("md"));
+    const [logs, setLogs] = useState<EventLogEntry[]>([]);
+
+    useDatabase(async () => {
+        const logEntries = await eventLogService.getEventLogs();
+        setLogs(logEntries);
+    });
 
     return (
         <>
@@ -47,8 +95,63 @@ export const LogsPage = observer(() => {
                     <Box mt={7} />
                 </>
             ) }
-            <Container sx={{ pt: 3 }}>
-
+            <Container sx={{ pt: 3, flex: 1, display: "flex", flexDirection: "column" }}>
+                <Grid2 container columnSpacing={2} sx={{ flex: 1 }}>
+                    <Grid2 xs={12} sm={7} lg={8} xl={8}
+                           sx={{ display: "flex", flexDirection: "column", pb: 1 }}>
+                        <Typography variant="h4" mb={3} fontSize={32}>My logs</Typography>
+                        <DataGrid columns={columns} rows={logs} />
+                    </Grid2>
+                    <Grid2 xs={12} sm={5} lg={4} xl={4}>
+                        <Stack spacing={2}>
+                            <TextField margin="dense"
+                                       placeholder="Search..."
+                                       fullWidth
+                                       size="small"
+                                       style={{ margin: 0, marginTop: 4 }}
+                                       InputProps={{ startAdornment: <Search fontSize="small" sx={{ color: "text.secondary", marginRight: "10px" }} /> }}
+                                       variant="outlined" />
+                            <Stack spacing={1}>
+                                <Typography fontWeight={600}>
+                                    Date range
+                                </Typography>
+                                <Stack alignItems="center" spacing={1} direction="row">
+                                    <DatePicker label="From"
+                                                slotProps={{ textField: { size: "small", margin: "dense", variant: "outlined" } }}
+                                                renderInput={params => <TextField {...params} InputProps={{ ...(params.InputProps ?? {}), readOnly: true }} />} />
+                                    <span>—</span>
+                                    <DatePicker label="To"
+                                                slotProps={{ textField: { size: "small", margin: "dense", variant: "outlined" } }}
+                                                renderInput={params => <TextField {...params} InputProps={{ ...(params.InputProps ?? {}), readOnly: true }} />} />
+                                </Stack>
+                            </Stack>
+                            <Stack spacing={1}>
+                                <Typography fontWeight={600}>
+                                    Created by
+                                </Typography>
+                                <FormControl size="small">
+                                    <InputLabel id="demo-simple-select-label">User</InputLabel>
+                                    <Select labelId="demo-simple-select-label"
+                                            id="demo-simple-select"
+                                            label="User">
+                                        <MenuItem value={10}>Prescription</MenuItem>
+                                        <MenuItem value={20}>Legal paper</MenuItem>
+                                        <MenuItem value={30}>Other</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Stack>
+                            <span />
+                            <Stack direction="row" spacing={2}>
+                                <Button variant="outlined"
+                                        fullWidth
+                                        color="primary">Reset</Button>
+                                <Button variant="contained" disableElevation
+                                        fullWidth
+                                        color="primary">Apply filters</Button>
+                            </Stack>
+                        </Stack>
+                    </Grid2>
+                </Grid2>
             </Container>
             <BottomBarWidget />
         </>

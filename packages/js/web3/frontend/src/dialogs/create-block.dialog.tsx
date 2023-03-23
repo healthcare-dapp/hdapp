@@ -85,7 +85,7 @@ export const CreateBlockDialog: FC<{ isDoctor?: boolean; onClose?(block?: BlockE
                 </FormControl>
                 <Stack spacing={1} direction="row">
                     <Box flexGrow={1} />
-                    <Button color="error">Discard changes</Button>
+                    <Button color="error" onClick={() => x.onClose?.()}>Discard changes</Button>
                     <Button variant="contained" disableElevation startIcon={<Add />}
                             onClick={handleCreateBlock}>Create block</Button>
                 </Stack>

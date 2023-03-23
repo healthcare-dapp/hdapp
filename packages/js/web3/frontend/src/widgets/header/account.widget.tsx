@@ -5,6 +5,7 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { sessionManager } from "../../managers/session.manager";
 import { walletManager } from "../../managers/wallet.manager";
+import { dbService } from "../../services/db.service";
 import { trimWeb3Address } from "../../utils/trim-web3-address";
 
 export const HeaderAccountWidget = observer(() => {
@@ -123,7 +124,10 @@ export const HeaderAccountWidget = observer(() => {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions disableSpacing sx={{ flexDirection: isBigEnough ? "row" : "column", gap: "8px" }}>
-                    <Button color="error">I'm aware, please sign out</Button>
+                    <Button color="error" onClick={async () => {
+                        await dbService.reset();
+                        location.reload();
+                    }}>I'm aware, please sign out</Button>
                     <Button onClick={() => setOpenModal(false)} variant="contained" disableElevation autoFocus>
                         Cancel
                     </Button>

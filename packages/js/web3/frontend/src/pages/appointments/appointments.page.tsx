@@ -1,8 +1,9 @@
-import { CalendarMonthOutlined, Menu as MenuIcon, Search, Tune } from "@mui/icons-material";
-import { Box, Container, useMediaQuery, AppBar, IconButton, Typography, useTheme, Toolbar } from "@mui/material";
+import { CalendarMonthOutlined, Menu as MenuIcon } from "@mui/icons-material";
+import { Box, Container, useMediaQuery, AppBar, IconButton, Typography, useTheme, Toolbar, Paper } from "@mui/material";
+import { Stack } from "@mui/system";
+import { DateCalendar } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
-import { useNavigate } from "react-router";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
 import { HeaderWidget } from "../../widgets/header";
@@ -10,7 +11,6 @@ import { HeaderWidget } from "../../widgets/header";
 export const AppointmentsPage = observer(() => {
     const [openCounter, setOpenCounter] = useState(0);
     const theme = useTheme();
-    const navigate = useNavigate();
     const canShowSidebar = useMediaQuery(theme.breakpoints.up("md"));
 
     return (
@@ -44,7 +44,19 @@ export const AppointmentsPage = observer(() => {
                 </>
             ) }
             <Container sx={{ pt: 3 }}>
-
+                <Stack spacing={2} direction="row">
+                    <Stack spacing={2} flexGrow={1}>
+                        <Typography variant="h4" mb={3} fontSize={32}>My appointments</Typography>
+                        <Typography color="text.secondary">
+                            You have no appointments planned.
+                        </Typography>
+                    </Stack>
+                    <Stack spacing={2}>
+                        <Paper variant="outlined">
+                            <DateCalendar />
+                        </Paper>
+                    </Stack>
+                </Stack>
             </Container>
             <BottomBarWidget />
         </>

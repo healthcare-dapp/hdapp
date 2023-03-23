@@ -6,7 +6,7 @@ import Grid2 from "@mui/material/Unstable_Grid2";
 import { FC, useState } from "react";
 import { ModalProvider } from "../../../App2";
 import { ShareRecordDialog } from "../../../dialogs/share-record.dialog";
-import { RecordGroup } from "../dashboard.vm";
+import { RecordGroup, RecordGroupType } from "../dashboard.vm";
 import { DataRecordItemWidget } from "./data-record-item.widget";
 import { DataRecordsGridWidget } from "./data-records-grid.widget";
 
@@ -50,13 +50,12 @@ export const DataGroupItemWidget: FC<{ group: RecordGroup }> = x => {
             </AccordionSummary>
             <AccordionDetails>
                 <Stack spacing={2}>
-                    <DataRecordsGridWidget>
-                        { x.group.records.map(record => (
+                    <DataRecordsGridWidget blockId={x.group.type === RecordGroupType.ByBlock ? x.group.key : void 0}>
+                        { x.group.records.filter(r => !r.is_archived).map(record => (
                             <DataRecordItemWidget key={record.hash}
                                                   hash={record.hash}
                                                   title={record.title}
                                                   imageHash={record.attachment_ids[0]}
-                                                  hasAppointment={!!record.appointment_ids.length}
                                                   time={formatTemporal(record.created_at, temporalFormats.MMMddyyyy)}
                                                   description={record.description}
                                                   itemsCount={record.attachment_ids.length} />
@@ -80,12 +79,12 @@ export const DataGroupItemWidget: FC<{ group: RecordGroup }> = x => {
                         ) }
                         { canShowSharingInfo ? (
                             <Button variant="contained" disableElevation color="success" startIcon={<ShieldOutlined />}
-                                    onClick={() => ModalProvider.show(ShareRecordDialog, {})}>
+                                    onClick={() => ModalProvider.show(ShareRecordDialog, { hash: x.group.key })}>
                                 Manage access
                             </Button>
                         ) : (
                             <IconButton color="success"
-                                        onClick={() => ModalProvider.show(ShareRecordDialog, {})}>
+                                        onClick={() => ModalProvider.show(ShareRecordDialog, { hash: x.group.key })}>
                                 <Shield />
                             </IconButton>
                         ) }
@@ -96,7 +95,15 @@ export const DataGroupItemWidget: FC<{ group: RecordGroup }> = x => {
                                 <b>Archived records</b>
                             </Typography>
                             <Grid2 container spacing={2}>
-                                <DataRecordItemWidget />
+                                { x.group.records.filter(r => r.is_archived).map(record => (
+                                    <DataRecordItemWidget key={record.hash}
+                                                          hash={record.hash}
+                                                          title={record.title}
+                                                          imageHash={record.attachment_ids[0]}
+                                                          time={formatTemporal(record.created_at, temporalFormats.MMMddyyyy)}
+                                                          description={record.description}
+                                                          itemsCount={record.attachment_ids.length} />
+                                )) }
                             </Grid2>
                         </>
                     ) }
