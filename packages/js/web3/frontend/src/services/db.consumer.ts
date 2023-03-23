@@ -143,7 +143,5 @@ export abstract class DbConsumer implements IDbConsumer {
         });
     }
 
-    onDbUpgrade(db: IDBDatabase): void {
-        throw new Error("Not implemented.");
-    }
+    abstract onDbUpgrade(db: IDBDatabase): void;
 }

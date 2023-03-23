@@ -16,7 +16,7 @@ POST {{host}}/api/auth/register HTTP/1.1
 Content-Type: application/json
 
 {
-  "email": "ruziknf+3@ruzik.xyz",
+  "email": "ruziknf+23@ruzik.xyz",
   "full_name": "cringe cringe",
   "birth_date": "2002-01-01",
   "medical_organization_name": null,

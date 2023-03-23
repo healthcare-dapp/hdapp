@@ -106,7 +106,7 @@ export class ProfileService implements IDbConsumer {
         });
     }
 
-    searchProfiles(searchRequest: ProfileSearchRequest, provider: EncryptionProvider): Promise<ProfileEntry[]> {
+    searchProfiles(sRequest: ProfileSearchRequest, provider: EncryptionProvider): Promise<ProfileEntry[]> {
         const tsn = this._db.transaction([this._storeName], "readonly");
         const dataStore = tsn.objectStore(this._storeName);
         const request = dataStore.openCursor();
@@ -123,8 +123,14 @@ export class ProfileService implements IDbConsumer {
                 try {
                     const dbEntry: ProfileDbEntry = request.result.value;
                     const encrypted: ProfileDbEntryEncryptedData = JSON.parse(provider.decrypt(dbEntry.encrypted));
-                    entries.push(this._transformDbEntryToEntry(dbEntry, encrypted));
                     request.result.continue();
+                    if (sRequest.filters?.full_name && !encrypted.full_name.toLowerCase().trim()
+                        .includes(sRequest.filters.full_name.toLowerCase().trim()))
+                        return;
+                    if (sRequest.filters?.query && !encrypted.full_name.toLowerCase().trim()
+                        .includes(sRequest.filters.query.toLowerCase().trim()))
+                        return;
+                    entries.push(this._transformDbEntryToEntry(dbEntry, encrypted));
                 } catch (cause) {
                     this._logger.debug("Profile data could not be retrieved.", { tsn, cause });
                     reject(

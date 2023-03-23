@@ -19,8 +19,8 @@ contract HDMAccessControl is AccessControl {
     mapping(address => uint256[]) public permissionsByOwners;
     mapping(address => uint256[]) public permissionsByUsers;
     mapping(address => DataRequest[]) public requests;
-    address[] public users;
     
+    mapping(bytes32 => bool) public userConnectionRequests;
     mapping(address => address[]) public userConnections;
     mapping(address => address[]) public userBlocks;
 
@@ -31,11 +31,13 @@ contract HDMAccessControl is AccessControl {
         uint256 data;
     }
 
+    // 3 slots
     struct DataPermissions {
-        uint256 hash;
-        address owner;
-        address user;
-        bool isRevoked;
+        uint256 hash;       // 32 bytes
+        address owner;      // 20 bytes
+        address user;       // 20 bytes
+        bool isRevoked;     // 1 byte
+        uint48 expiresAt;   // 6 bytes
     }
 
     event DataRequested (
@@ -47,8 +49,7 @@ contract HDMAccessControl is AccessControl {
     event DataPermissionsGranted (
         address indexed user,
         address indexed owner,
-        uint256 indexed requestIndex,
-        uint256 dataHash
+        uint256 indexed dataHash
     );
 
     event DataPermissionsRevoked (
@@ -83,13 +84,6 @@ contract HDMAccessControl is AccessControl {
         _grantRole(MANAGER_ROLE, msg.sender);
     }
 
-    function _registerUser(address _user)
-        private {
-        if (requests[_user].length == 0) {
-            users.push(_user);
-        }
-    }
-
     function requestPermissions(
         address _requestee,
         uint256 _data
@@ -98,8 +92,6 @@ contract HDMAccessControl is AccessControl {
             _requestee != msg.sender, 
             "HDMAccessControl: user cannot request data from themselves."
         );
-
-        _registerUser(msg.sender);
 
         requests[msg.sender].push(
             DataRequest(
@@ -125,34 +117,25 @@ contract HDMAccessControl is AccessControl {
         return requests[_requester][_requestIndex];
     }
 
-    function grantPermissionsFromRequest(
-        address _requester,
-        uint256 _requestIndex,
-        uint256 _dataHash
+    function grantPermissions(
+        address _user,
+        uint256 _dataHash,
+        uint48 _expiresIn
     ) public checkIfSenderIsBanned {
-        _registerUser(msg.sender);
-
-        DataRequest storage requestRef = requests[_requester][_requestIndex];
-
-        require(
-            requestRef.requestee == msg.sender, 
-            "HDMAccessControl: user has no rights to accept this data request."
-        );
-
         permissions[_dataHash] = DataPermissions(
             _dataHash,
             msg.sender,
-            _requester,
-            false
+            _user,
+            false,
+            _expiresIn == 0 ? 0 : uint48(block.timestamp) + _expiresIn
         );
 
         permissionsByOwners[msg.sender].push(_dataHash);
-        permissionsByUsers[_requester].push(_dataHash);
+        permissionsByUsers[_user].push(_dataHash);
 
         emit DataPermissionsGranted(
-            _requester,
+            _user,
             msg.sender,
-            _requestIndex,
             _dataHash
         );
     }
@@ -226,9 +209,11 @@ contract HDMAccessControl is AccessControl {
         checkIfSenderIsBanned
     {
         require(
-            _targetUser == msg.sender, 
+            _targetUser != msg.sender, 
             "HDMAccessControl: user cannot request a connection with themselves."
         );
+
+        userConnectionRequests[keccak256(abi.encodePacked(_targetUser, msg.sender))] = true;
 
         emit UserConnectionRequested(
             msg.sender,
@@ -242,8 +227,13 @@ contract HDMAccessControl is AccessControl {
         checkIfSenderIsBanned
     {
         require(
-            _targetUser == msg.sender, 
-            "HDMAccessControl: user cannot build a connection with themselves."
+            _targetUser != msg.sender,
+            "HDMAccessControl: user cannot add a connection with themselves."
+        );
+
+        require(
+            userConnectionRequests[keccak256(abi.encodePacked(msg.sender, _targetUser))] || userConnectionRequests[keccak256(abi.encodePacked(_targetUser, msg.sender))],
+            "HDMAccessControl: user cannot add a connection without an existing connection request."
         );
 
         userConnections[_targetUser].push(msg.sender);
@@ -260,7 +250,7 @@ contract HDMAccessControl is AccessControl {
         checkIfSenderIsBanned
     {
         require(
-            _targetUser == msg.sender, 
+            _targetUser != msg.sender, 
             "HDMAccessControl: user cannot block themselves."
         );
 

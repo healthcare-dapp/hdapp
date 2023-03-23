@@ -1,3 +1,4 @@
+import { autoBind } from "@hdapp/shared/web2-common/utils/auto-bind";
 import { LocalDateTime } from "@js-joda/core";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
@@ -70,6 +71,8 @@ export class DeviceService extends DbConsumer {
 
     constructor(protected _db: DbService) {
         super("device-service");
+
+        autoBind(this);
     }
 
     async activateAllDevicesOwnedBy(user: string, provider: EncryptionProvider): Promise<void> {

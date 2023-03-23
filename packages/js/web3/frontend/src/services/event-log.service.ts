@@ -8,6 +8,13 @@ interface EventLogDbEntry {
     title: string
     description: string
     created_at: string
+    created_by: string
+    related_entities: RelatedEntity[]
+}
+
+interface RelatedEntity {
+    type: string
+    value: string
 }
 
 export interface EventLogEntry {
@@ -15,11 +22,15 @@ export interface EventLogEntry {
     title: string
     description: string
     created_at: Instant
+    created_by: string
+    related_entities: RelatedEntity[]
 }
 
 export interface EventLogForm {
     title: string
     description: string
+    created_by: string
+    related_entities: RelatedEntity[]
 }
 
 export class EventLogNotFoundError extends Error {}
@@ -29,6 +40,8 @@ const transformer = (dbEntry: EventLogDbEntry): EventLogEntry => {
         hash: dbEntry.hash,
         title: dbEntry.title,
         description: dbEntry.description,
+        created_by: dbEntry.created_by,
+        related_entities: dbEntry.related_entities,
         created_at: Instant.parse(dbEntry.created_at)
     };
 };
@@ -38,6 +51,8 @@ const reverseTransformer = (entry: EventLogEntry): EventLogDbEntry => {
         hash: entry.hash,
         title: entry.title,
         description: entry.description,
+        created_by: entry.created_by,
+        related_entities: entry.related_entities,
         created_at: entry.created_at.toString()
     };
 };
@@ -52,6 +67,21 @@ export class EventLogService extends DbConsumer {
     async getEventLogs(): Promise<EventLogEntry[]> {
         try {
             const entities = await this._findMany(transformer, () => true);
+            return entities;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new EventLogNotFoundError("Event log was not found.");
+
+            throw e;
+        }
+    }
+
+    async getEventLogsWithRelatedEntity(relatedEntity: RelatedEntity): Promise<EventLogEntry[]> {
+        try {
+            const entities = await this._findMany(
+                transformer,
+                entity => entity.related_entities.some(re => re.type === relatedEntity.type && re.value === relatedEntity.value)
+            );
             return entities;
         } catch (e) {
             if (e instanceof DbRecordNotFoundError)

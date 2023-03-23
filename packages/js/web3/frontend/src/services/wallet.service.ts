@@ -1,6 +1,7 @@
-import { Logger } from "@hdapp/shared/web2-common/utils";
+import { autoBind } from "@hdapp/shared/web2-common/utils";
 import { EncryptionProvider } from "../utils/encryption.provider";
-import { dbService, DbService, IDbConsumer } from "./db.service";
+import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
+import { dbService, DbService } from "./db.service";
 
 interface WalletDbEntry {
     address: string
@@ -36,130 +37,93 @@ export type WalletEntry = WalletEntryUnencryptedData & WalletDbEntryEncryptedDat
 
 export class WalletNotFoundError extends Error {}
 
-export class WalletService implements IDbConsumer {
-    private readonly _storeName = "wallets";
+const transformer = (provider: EncryptionProvider) => (dbEntry: WalletDbEntry): WalletEntry => {
+    const encrypted: WalletDbEntryEncryptedData = JSON.parse(
+        provider.decrypt(dbEntry.encrypted)
+    );
 
-    private readonly _logger = new Logger("wallet-service");
+    return {
+        address: dbEntry.address,
+        mnemonic: encrypted.mnemonic,
+        private_key: encrypted.private_key,
+        type: encrypted.type,
+        user: {
+            avatar_file_id: dbEntry.user_avatar_file_hash,
+            full_name: dbEntry.user_full_name
+        }
+    };
+};
 
-    constructor(private _db: DbService) {
+const shortTransformer = (dbEntry: WalletDbEntry): WalletEntryShort => {
+    return {
+        address: dbEntry.address,
+        user: {
+            avatar_file_id: dbEntry.user_avatar_file_hash,
+            full_name: dbEntry.user_full_name
+        }
+    };
+};
+
+const reverseTransformer = (provider: EncryptionProvider) => (entry: WalletEntry): WalletDbEntry => {
+    const encrypted: WalletDbEntryEncryptedData = {
+        type: entry.type,
+        mnemonic: entry.mnemonic,
+        private_key: entry.private_key
+    };
+
+    return {
+        address: entry.address,
+        user_avatar_file_hash: entry.user.avatar_file_id,
+        user_full_name: entry.user.full_name,
+        encrypted: provider.encrypt(JSON.stringify(encrypted))
+    };
+};
+
+export class WalletService extends DbConsumer {
+    protected readonly _storeName = "wallets";
+
+    constructor(protected _db: DbService) {
+        super("wallet-service");
+
+        autoBind(this);
     }
 
-    private _transformDbEntryToEntry(dbEntry: WalletDbEntry, encryptedData: WalletDbEntryEncryptedData): WalletEntry {
-        return {
-            address: dbEntry.address,
-            mnemonic: encryptedData.mnemonic,
-            private_key: encryptedData.private_key,
-            type: encryptedData.type,
-            user: {
-                avatar_file_id: dbEntry.user_avatar_file_hash,
-                full_name: dbEntry.user_full_name
-            }
-        };
+    async addWallet(entry: WalletEntry, provider: EncryptionProvider): Promise<void> {
+        try {
+            await this._add(entry, reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new WalletNotFoundError("Wallet was not found.");
+
+            throw e;
+        }
     }
 
-    private _transformEntryToDbEntry(entry: WalletEntry): [WalletDbEntry, WalletDbEntryEncryptedData] {
-        return [
-            {
-                address: entry.address,
-                encrypted: "",
-                user_avatar_file_hash: entry.user.avatar_file_id,
-                user_full_name: entry.user.full_name
-            },
-            {
-                type: entry.type,
-                mnemonic: entry.mnemonic,
-                private_key: entry.private_key
-            }
-        ];
+    async getWallets(): Promise<WalletEntryShort[]> {
+        try {
+            const devices = await this._findMany(
+                shortTransformer,
+                () => true
+            );
+            return devices;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new WalletNotFoundError("Wallet was not found.");
+
+            throw e;
+        }
     }
 
-    private _transformDbEntryToEntryShort(dbEntry: WalletDbEntry): WalletEntryShort {
-        return {
-            address: dbEntry.address,
-            user: {
-                avatar_file_id: dbEntry.user_avatar_file_hash,
-                full_name: dbEntry.user_full_name
-            }
-        };
-    }
+    async getWallet(address: string, provider: EncryptionProvider): Promise<WalletEntry> {
+        try {
+            const entity = await this._findOne(address, transformer(provider));
+            return entity;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new WalletNotFoundError("Wallet was not found.");
 
-    addWallet(entry: WalletEntry, provider: EncryptionProvider): Promise<void> {
-        const tsn = this._db.transaction([this._storeName], "readwrite");
-        const store = tsn.objectStore(this._storeName);
-        const [dbEntry, data] = this._transformEntryToDbEntry(entry);
-        const encrypted = provider.encrypt(JSON.stringify(data));
-        const request = store.put({
-            ...dbEntry,
-            encrypted
-        });
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not save wallet data.", { tsn, request });
-                    reject(new Error("Could not save wallet data."));
-                }
-
-                resolve();
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not save wallet data.", { tsn, request });
-                reject(new Error("Could not save wallet data."));
-            });
-        });
-    }
-
-    getWallets(): Promise<WalletEntryShort[]> {
-        const tsn = this._db.transaction([this._storeName], "readonly");
-        const store = tsn.objectStore(this._storeName);
-        const request: IDBRequest<WalletDbEntry[]> = store.getAll();
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not list wallets.", { tsn, request });
-                    reject(new Error("Could not list wallets."));
-                }
-
-                resolve(
-                    request.result.map(
-                        dbEntry => this._transformDbEntryToEntryShort(dbEntry)
-                    )
-                );
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve wallets.", { tsn, request });
-                reject(new Error("Could not retrieve wallets."));
-            });
-        });
-    }
-
-    getWallet(address: string, provider: EncryptionProvider): Promise<WalletEntry> {
-        const tsn = this._db.transaction([this._storeName], "readonly");
-        const store = tsn.objectStore(this._storeName);
-        const request: IDBRequest<WalletDbEntry> = store.get(address);
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not find the requested wallet.", { tsn, address, request });
-                    reject(new WalletNotFoundError("Wallet not found."));
-                }
-                try {
-                    const decryptedResult = provider.decrypt(request.result.encrypted);
-                    const data: WalletDbEntryEncryptedData = JSON.parse(decryptedResult);
-                    resolve(
-                        this._transformDbEntryToEntry(request.result, data)
-                    );
-                } catch (cause) {
-                    this._logger.debug("Wallet blob could not be retrieved.", { tsn, address, cause });
-                    reject(
-                        new Error("Wallet blob could not be retrieved.")
-                    );
-                }
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve wallet.", { tsn, address, request });
-                reject(new Error("Could not retrieve wallet."));
-            });
-        });
+            throw e;
+        }
     }
 
     onDbUpgrade(db: IDBDatabase): void {

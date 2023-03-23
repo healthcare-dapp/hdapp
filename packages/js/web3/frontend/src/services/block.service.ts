@@ -1,7 +1,8 @@
-import { Logger } from "@hdapp/shared/web2-common/utils";
-import { LocalDateTime } from "@js-joda/core";
-import { makeAutoObservable } from "mobx";
-import { dbService, DbService, IDbConsumer } from "./db.service";
+import { autoBind } from "@hdapp/shared/web2-common/utils";
+import { Instant, LocalDateTime } from "@js-joda/core";
+import { SHA256 } from "crypto-js";
+import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
+import { dbService, DbService } from "./db.service";
 
 interface BlockDbEntry {
     hash: string
@@ -37,110 +38,78 @@ export interface BlockSearchRequest {
 
 export class BlockNotFoundError extends Error {}
 
-export class BlockService implements IDbConsumer {
-    private readonly _storeName = "blocks";
+const transformer = (dbEntry: BlockDbEntry): BlockEntry => {
+    return {
+        hash: dbEntry.hash,
+        friendly_name: dbEntry.friendly_name,
+        created_by: dbEntry.created_by,
+        meta_tag_ids: dbEntry.meta_tag_ids,
+        owned_by: dbEntry.owned_by,
+        created_at: LocalDateTime.parse(dbEntry.created_at)
+    };
+};
 
-    private readonly _logger = new Logger("block-service");
+const reverseTransformer = (entry: BlockEntry): BlockDbEntry => {
+    return {
+        hash: entry.hash,
+        friendly_name: entry.friendly_name,
+        created_by: entry.created_by,
+        meta_tag_ids: entry.meta_tag_ids,
+        owned_by: entry.owned_by,
+        created_at: entry.created_at.toString()
+    };
+};
 
-    constructor(private _db: DbService) {
-        makeAutoObservable(this, {}, { autoBind: true });
+export class BlockService extends DbConsumer {
+    protected readonly _storeName = "blocks";
+
+    constructor(protected _db: DbService) {
+        super("block-service");
+
+        autoBind(this);
     }
 
-    private _transformDbEntryToEntry(dbEntry: BlockDbEntry): BlockEntry {
-        return {
-            hash: dbEntry.hash,
-            friendly_name: dbEntry.friendly_name,
-            created_by: dbEntry.created_by,
-            meta_tag_ids: dbEntry.meta_tag_ids,
-            owned_by: dbEntry.owned_by,
-            created_at: LocalDateTime.parse(dbEntry.created_at)
-        };
+    async getBlock(hash: string): Promise<BlockEntry> {
+        try {
+            const entity = await this._findOne(hash, transformer);
+            return entity;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new BlockNotFoundError("Block was not found.");
+
+            throw e;
+        }
     }
 
-    getBlock(hash: string): Promise<BlockEntry> {
-        const tsn = this._db.transaction([this._storeName], "readonly");
-        const dataStore = tsn.objectStore(this._storeName);
-        const request: IDBRequest<BlockDbEntry> = dataStore.get(hash);
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not find the requested file's data.", { tsn, hash, request });
-                    reject(new BlockNotFoundError("File not found."));
-                }
-                try {
-                    resolve(this._transformDbEntryToEntry(request.result));
-                } catch (cause) {
-                    this._logger.debug("Block data could not be retrieved.", { tsn, hash, cause });
-                    reject(
-                        new Error("Block data could not be retrieved.")
-                    );
-                }
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve file data.", { tsn, hash, request });
-                reject(new Error("Could not retrieve file data."));
-            });
-        });
+    async getBlocks(): Promise<BlockEntry[]> {
+        try {
+            const devices = await this._findMany(
+                transformer,
+                () => true
+            );
+            return devices;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new BlockNotFoundError("Block was not found.");
+
+            throw e;
+        }
     }
 
-    getBlocks(): Promise<BlockEntry[]> {
-        const tsn = this._db.transaction([this._storeName], "readonly");
-        const dataStore = tsn.objectStore(this._storeName);
-        const request = dataStore.openCursor();
-        if (!request)
-            return Promise.resolve([]);
+    async addBlock(form: BlockForm): Promise<void> {
+        try {
+            const hash = SHA256(Instant.now().toString() + " " + form.friendly_name + " " + form.owned_by).toString();
+            await this._add({
+                ...form,
+                hash,
+                created_at: LocalDateTime.now()
+            }, reverseTransformer);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new BlockNotFoundError("Block was not found.");
 
-        const entries: BlockEntry[] = [];
-
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result)
-                    return resolve(entries);
-
-                try {
-                    const dbEntry: BlockDbEntry = request.result.value;
-                    const entry: BlockEntry = this._transformDbEntryToEntry(dbEntry);
-                    entries.push(entry);
-                    request.result.continue();
-                } catch (cause) {
-                    this._logger.debug("Block data could not be retrieved.", { tsn, cause });
-                    reject(
-                        new Error("Block data could not be retrieved.")
-                    );
-                }
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not retrieve file data.", { tsn, request });
-                reject(new Error("Could not retrieve file data."));
-            });
-        });
-    }
-
-    addBlock(form: BlockForm): Promise<void> {
-        const tsn = this._db.transaction([this._storeName], "readwrite");
-        const dataStore = tsn.objectStore(this._storeName);
-        const hash = Date.now().toString();
-        const dbEntry: BlockDbEntry = {
-            ...form,
-            hash,
-            created_at: LocalDateTime.now().toString(),
-        };
-        const request: IDBRequest<IDBValidKey> = dataStore.add(dbEntry);
-        return new Promise((resolve, reject) => {
-            request.addEventListener("success", () => {
-                if (!request.result) {
-                    this._logger.debug("Could not add a new record.", { tsn, hash, request });
-                    reject(new BlockNotFoundError("File not found."));
-                    return;
-                }
-
-                resolve();
-            });
-            request.addEventListener("error", () => {
-                this._logger.debug("Could not add a new record.", { tsn, hash, request });
-                reject(new Error("Could not add a new record."));
-            });
-        });
+            throw e;
+        }
     }
 
     onDbUpgrade(db: IDBDatabase): void {

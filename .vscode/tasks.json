@@ -25,7 +25,7 @@
         {
             "type": "shell",
             "command": "yarn nx serve js-web2-backend",
-            "detail": "With local Docker infra",
+            "detail": "With local Docker infrastructure",
             "label": "Serve Web2 Backend",
             "problemMatcher": [],
             "options": {
@@ -45,7 +45,7 @@
             "options": {
                 "shell": {
                     "args": [
-                        "${workspaceFolder}/prod.env"
+                        "${workspaceFolder}/misc/env/dev-local.env"
                     ]
                 }
             }

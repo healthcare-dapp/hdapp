@@ -100,6 +100,7 @@ export class Peer {
     private _isMakingOffer = false;
     private _isIgnoringOffer = false;
     private _isSrdAnswerPending = false;
+    private _isConnected = false;
 
     constructor(
         device: DeviceEntry,
@@ -114,6 +115,10 @@ export class Peer {
         if (_isPolite) {
             this._initDataChannel();
         }
+    }
+
+    get isConnected() {
+        return this._isConnected;
     }
 
     async addIceCandidate(candidate: RTCIceCandidateInit) {
@@ -296,6 +301,7 @@ export class Peer {
 
         pc.addEventListener("connectionstatechange", event => {
             debug("connectionstatechange", pc.connectionState, event);
+            this._isConnected = pc.connectionState === "connected";
             if (pc.connectionState === "connected") {
                 void this._showCurrentState();
             }
@@ -393,6 +399,11 @@ export class WebRTCManager {
 
     get encryption() {
         return this._encryption;
+    }
+
+    get peers() {
+        return [...this._peers.values()]
+            .filter(p => p.isConnected);
     }
 
     get web3Address() {

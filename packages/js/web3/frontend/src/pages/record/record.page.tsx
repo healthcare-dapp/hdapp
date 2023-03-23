@@ -23,12 +23,13 @@ import {
 import Grid from "@mui/system/Unstable_Grid";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import Carousel from "react-material-ui-carousel";
 import { useNavigate, useParams } from "react-router-dom";
 import { ModalProvider } from "../../App2";
-import Paper1 from "../../assets/raster/mocks/paper1.png";
 import { ShareRecordDialog } from "../../dialogs/share-record.dialog";
 import { sessionManager } from "../../managers/session.manager";
 import { BlockEntry, blockService } from "../../services/block.service";
+import { EventLogEntry, eventLogService } from "../../services/event-log.service";
 import { FileEntry, fileService } from "../../services/file.service";
 import { ProfileEntry, profileService } from "../../services/profile.service";
 import { RecordEntry, recordService } from "../../services/record.service";
@@ -43,6 +44,11 @@ const getRecordCreatorProfileAction = new AsyncAction(profileService.getProfile)
 const getRecordCreatorAvatarAction = new AsyncAction(fileService.getFileBlob);
 const getRecordOwnerAvatarAction = new AsyncAction(fileService.getFileBlob);
 const getRecordOwnerProfileAction = new AsyncAction(profileService.getProfile);
+const getRecordEventLogsAction = new AsyncAction(
+    (recordId: string) => eventLogService.getEventLogsWithRelatedEntity(
+        { type: "record", value: recordId }
+    )
+);
 
 export const RecordPage = () => {
     const { recordId } = useParams();
@@ -53,6 +59,7 @@ export const RecordPage = () => {
     const [attachments, setAttachments] = useState<FileEntry[]>([]);
     const [attachmentUrls, setAttachmentUrls] = useState<string[]>([]);
     const [creatorAvatarUrl, setCreatorAvatarUrl] = useState<string>();
+    const [logs, setLogs] = useState<(EventLogEntry & { profile: (ProfileEntry & { avatarUrl: string | null }) | null })[]>([]);
 
     useDatabase(async () => {
         if (!recordId)
@@ -70,13 +77,38 @@ export const RecordPage = () => {
                     return profile;
                 })
                 .then(setCreatorProfile),
-            await getRecordOwnerProfileAction.run(result.owned_by, sessionManager.encryption).then(setOwnerProfile),
-            Promise.all(result.block_ids.map(id => blockService.getBlock(id))).then(setBlocks),
-            Promise.all(result.attachment_ids.map(id => fileService.getFileMetadata(id))).then(setAttachments),
+            await getRecordOwnerProfileAction.run(result.owned_by, sessionManager.encryption)
+                .then(setOwnerProfile),
+            Promise.all(result.block_ids.map(id => blockService.getBlock(id)))
+                .then(setBlocks),
+            Promise.all(result.attachment_ids.map(id => fileService.getFileMetadata(id)))
+                .then(setAttachments),
             Promise.all(result.attachment_ids.map(id => fileService.getFileBlob(id, sessionManager.encryption)))
                 .then(atts => {
                     setAttachmentUrls(atts.map(blob => URL.createObjectURL(blob)));
                 }),
+            await getRecordEventLogsAction.run(recordId)
+                .then(logEntries => {
+                    return Promise.all(
+                        logEntries.map(async entry => {
+                            const profile = await profileService.getProfile(entry.created_by, sessionManager.encryption)
+                                .catch(() => null);
+                            const profileAvatarBlob = profile?.avatar_hash
+                                ? await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption)
+                                : null;
+                            return {
+                                ...entry,
+                                profile: profile ? {
+                                    ...profile,
+                                    avatarUrl: profileAvatarBlob
+                                        ? URL.createObjectURL(profileAvatarBlob)
+                                        : null
+                                } : null
+                            };
+                        })
+                    );
+                })
+                .then(setLogs)
         ]);
     });
 
@@ -116,7 +148,16 @@ export const RecordPage = () => {
                     <Box mt={7} />
                 </>
             ) }
-            { !canShowSidebar && <img src={Paper1} style={{ width: "100%", height: "400px", objectFit: "contain", background: theme.palette.grey[200], marginTop: "-64px" }} /> }
+            { !canShowSidebar && (
+                <Carousel>
+                    {
+                        attachmentUrls.map(url => (
+                            <img src={url} key={url}
+                                 style={{ borderRadius: "16px", width: "100%", height: "400px", objectFit: "contain", background: theme.palette.grey[200], marginTop: "-64px" }} />
+                        ))
+                    }
+                </Carousel>
+            ) }
             <Container sx={{ pt: 3, pb: 2 }}>
                 <Grid container spacing={2}>
                     { canShowSidebar && (
@@ -134,7 +175,7 @@ export const RecordPage = () => {
                                                 Archive
                                             </Button>
                                             <Button variant="contained" disableElevation color="success" startIcon={<Share />}
-                                                    onClick={() => ModalProvider.show(ShareRecordDialog, {})}>
+                                                    onClick={() => ModalProvider.show(ShareRecordDialog, { hash: recordId! })}>
                                                 Share
                                             </Button>
                                         </>
@@ -153,13 +194,14 @@ export const RecordPage = () => {
                                 <Grid xs={12} md={8}>
                                     <Stack spacing={2} alignItems="flex-start">
                                         { canShowSidebar && (
-                                            <Stack spacing={1} alignItems="center" sx={{ width: "100%" }}>
-                                                <img src={attachmentUrls[0]}
-                                                     style={{ borderRadius: "16px", width: "100%", height: "400px", objectFit: "contain", background: theme.palette.grey[200] }} />
-                                                <Stack spacing={1} direction="row">
-                                                    <Box style={{ width: "8px", height: "8px", borderRadius: "4px", background: theme.palette.primary.main }} />
-                                                </Stack>
-                                            </Stack>
+                                            <Carousel>
+                                                {
+                                                    attachmentUrls.map(url => (
+                                                        <img src={url} key={url}
+                                                             style={{ borderRadius: "16px", width: "100%", height: "400px", objectFit: "contain", background: theme.palette.grey[200] }} />
+                                                    ))
+                                                }
+                                            </Carousel>
                                         ) }
                                         <Typography fontSize={24}>{ record.title }</Typography>
                                         <Typography fontSize={16} paragraph>
@@ -260,6 +302,28 @@ export const RecordPage = () => {
                                                 </Typography>
                                             </CardContent>
                                             <MenuList sx={{ pt: 0, minHeight: "300px" }}>
+                                                { logs.map(log => (
+                                                    <MenuItem key={log.hash}>
+                                                        <Stack spacing={1} width="100%">
+                                                            <Stack spacing={2} direction="row" alignItems="center" width="100%">
+                                                                <Avatar sx={{ width: 40, height: 40 }}
+                                                                        src={log.profile?.avatarUrl ?? void 0} />
+                                                                <Stack width={0} flexGrow={1}>
+                                                                    <Stack direction="row" spacing={0.5} alignItems="center">
+                                                                        <Typography variant="subtitle2">
+                                                                            { log.profile?.full_name ?? log.created_by }
+                                                                        </Typography>
+                                                                        <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400, marginLeft: "auto" }}>
+                                                                            { formatTemporal(log.created_at) }
+                                                                        </Typography>
+                                                                    </Stack>
+                                                                    <Typography noWrap variant="subtitle2" sx={{ fontWeight: 400 }}>{ log.profile?.medical_organization_name }</Typography>
+                                                                </Stack>
+                                                            </Stack>
+                                                            <Typography whiteSpace="normal" variant="subtitle2" fontSize={12} pl={7} sx={{ fontWeight: 400 }}>{ log.title }</Typography>
+                                                        </Stack>
+                                                    </MenuItem>
+                                                )) }
                                                 { creatorProfile && (
                                                     <MenuItem>
                                                         <Stack spacing={1} width="100%">
@@ -281,29 +345,6 @@ export const RecordPage = () => {
                                                         </Stack>
                                                     </MenuItem>
                                                 ) }
-                                                { /* <MenuItem>
-                                                    <Stack spacing={1} width="100%">
-                                                        <Stack spacing={2} direction="row" alignItems="center" width="100%">
-                                                            <Avatar sx={{ width: 40, height: 40, backgroundColor: theme.palette.success.light }} />
-                                                            <Stack width={0} flexGrow={1}>
-                                                                <Stack direction="row" spacing={0.5} alignItems="center">
-                                                                    <Typography variant="subtitle2">
-                                                                        Anna Cutemon
-                                                                    </Typography>
-                                                                    <Typography variant="subtitle2" color={theme.palette.grey[600]} sx={{ fontWeight: 400 }}>
-                                                                        (0x23...54af)
-                                                                    </Typography>
-                                                                    <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400, marginLeft: "auto" }}>
-                                                                        3 hours ago
-                                                                    </Typography>
-                                                                </Stack>
-                                                                <Typography noWrap variant="subtitle2" sx={{ fontWeight: 400 }}>Physchiatrist at the State Hospital of St. Petersburg</Typography>
-                                                            </Stack>
-                                                        </Stack>
-                                                        <Typography whiteSpace="normal" variant="subtitle2" fontSize={12} pl={7} sx={{ fontWeight: 400 }}>Created an appointment linked to this record</Typography>
-                                                        <Typography whiteSpace="normal" variant="subtitle2" fontSize={12} pl={7} sx={{ fontWeight: 400 }}>Created this record</Typography>
-                                                    </Stack>
-                                                </MenuItem> */ }
                                             </MenuList>
                                         </Card>
                                     </Stack>
