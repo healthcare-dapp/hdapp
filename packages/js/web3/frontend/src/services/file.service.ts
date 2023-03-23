@@ -183,6 +183,8 @@ export class FileService implements IDbConsumer {
     constructor(db: DbService) {
         this._metadata = new FileMetadataService(db);
         this._blob = new FileBlobService(db);
+
+        autoBind(this);
     }
 
     getFileBlob(hash: string, provider: EncryptionProvider): Promise<Blob> {

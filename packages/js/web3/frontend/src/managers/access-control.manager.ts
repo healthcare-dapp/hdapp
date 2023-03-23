@@ -55,7 +55,7 @@ export class AccessControlManager {
         private _web3: Web3Manager,
         private _notifications: NotificationsManager
     ) {
-        makeAutoObservable(this);
+        makeAutoObservable(this, {}, { autoBind: true });
 
         void this._bindEvents();
     }

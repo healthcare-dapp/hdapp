@@ -4,6 +4,7 @@ import { IconButton, Badge, Popover, Typography, Stack, Box, Button, List, Avata
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { sessionManager } from "../../managers/session.manager";
+import { trimWeb3Address } from "../../utils/trim-web3-address";
 
 export const HeaderNotificationsWidget = observer(() => {
     const notifications = sessionManager.notifications.array;
@@ -101,7 +102,7 @@ export const HeaderNotificationsWidget = observer(() => {
                             : n.type === "record_permissions_granted"
                                 ? "User granted access to their data"
                                 : n.type === "user_connection_created"
-                                    ? `${n.userAddress} accepted your connection request`
+                                    ? `${trimWeb3Address(n.userAddress)} accepted your connection request`
                                     : n.type === "user_connection_requested"
                                         ? "A user wants to connect with you"
                                         // @ts-ignore
@@ -114,7 +115,7 @@ export const HeaderNotificationsWidget = observer(() => {
                                 : n.type === "user_connection_created"
                                     ? "You can now exchange medical data with them and they can request medical data from you."
                                     : n.type === "user_connection_requested"
-                                        ? `User with address ${n.userAddress} wants to connect with you. Only accept connection requests from people you know.`
+                                        ? `User with address ${trimWeb3Address(n.userAddress)} wants to connect with you. Only accept connection requests from people you know.`
                                         // @ts-ignore
                                         : n.type;
                         return (

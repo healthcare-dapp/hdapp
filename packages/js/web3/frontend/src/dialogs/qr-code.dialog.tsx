@@ -85,7 +85,7 @@ export const QrCodeDialog: FC<{ onClose(): void }> = observer(x => {
     }, [ac.currentConnectionKey]);
 
     const connectionRequests = sessionManager.notifications.array
-        .filter(n => n.type === "user_connection_requested");
+        .flatMap(n => n.type === "user_connection_requested" ? n : []);
 
     const secondsUntilRegeneration = Math.floor(
         (regenerationTimeout + (ac.connectionKeyGeneratedAt ?? 0) - Date.now()) / 1000
@@ -130,7 +130,7 @@ export const QrCodeDialog: FC<{ onClose(): void }> = observer(x => {
                                                             User
                                                         </Typography>
                                                         <Typography fontSize={12} color={theme.palette.grey[600]} sx={{ fontWeight: 400 }}>
-                                                            { r.user }
+                                                            { r.userAddress }
                                                         </Typography>
                                                     </Stack>
                                                 </Stack>
@@ -153,7 +153,7 @@ export const QrCodeDialog: FC<{ onClose(): void }> = observer(x => {
                                                     <LoadingButton variant="contained" disableElevation
                                                                    loading={sessionManager.accessControl.addUserConnection.pending}
                                                                    onClick={async () => {
-                                                                       await sessionManager.accessControl.addUserConnection.run(r.user);
+                                                                       await sessionManager.accessControl.addUserConnection.run(r.userAddress);
                                                                        x.onClose();
                                                                    }}>Accept</LoadingButton>
                                                 </Stack>
