@@ -120,7 +120,7 @@ export abstract class DbConsumer implements IDbConsumer {
     protected _add<DbT, T>(
         object: T,
         reverseProcessor: (entity: T) => DbT
-    ): Promise<void> {
+    ): Promise<T> {
         const tsn = this._db.transaction([this._storeName], "readwrite");
         const dataStore = tsn.objectStore(this._storeName);
         const request: IDBRequest<IDBValidKey> = dataStore.add(
@@ -134,7 +134,7 @@ export abstract class DbConsumer implements IDbConsumer {
                     return;
                 }
 
-                resolve();
+                resolve(object);
             });
             request.addEventListener("error", () => {
                 this._logger.debug("Could not add a new record.", { tsn, object, request });

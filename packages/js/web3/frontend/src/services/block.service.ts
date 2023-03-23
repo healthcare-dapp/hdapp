@@ -96,14 +96,15 @@ export class BlockService extends DbConsumer {
         }
     }
 
-    async addBlock(form: BlockForm): Promise<void> {
+    async addBlock(form: BlockForm): Promise<BlockEntry> {
         try {
             const hash = SHA256(Instant.now().toString() + " " + form.friendly_name + " " + form.owned_by).toString();
-            await this._add({
+            const block = await this._add({
                 ...form,
                 hash,
                 created_at: LocalDateTime.now()
             }, reverseTransformer);
+            return block;
         } catch (e) {
             if (e instanceof DbRecordNotFoundError)
                 throw new BlockNotFoundError("Block was not found.");

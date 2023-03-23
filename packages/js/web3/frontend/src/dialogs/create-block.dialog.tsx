@@ -23,11 +23,11 @@ import { observer } from "mobx-react-lite";
 import { FC, useState } from "react";
 import { ModalProvider } from "../App2";
 import { sessionManager } from "../managers/session.manager";
-import { BlockForm, blockService } from "../services/block.service";
+import { BlockEntry, BlockForm, blockService } from "../services/block.service";
 
 const addBlockAction = new AsyncAction((form: BlockForm) => blockService.addBlock(form));
 
-export const CreateBlockDialog: FC<{ isDoctor?: boolean; onClose?(): void }> = observer(x => {
+export const CreateBlockDialog: FC<{ isDoctor?: boolean; onClose?(block?: BlockEntry): void }> = observer(x => {
     const { wallet } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
@@ -35,13 +35,13 @@ export const CreateBlockDialog: FC<{ isDoctor?: boolean; onClose?(): void }> = o
     const [metaTagIds, setMetaTagIds] = useState<string[]>([]);
 
     async function handleCreateBlock() {
-        await addBlockAction.run({
+        const block = await addBlockAction.run({
             friendly_name: name,
             meta_tag_ids: metaTagIds,
             created_by: wallet.address,
             owned_by: wallet.address
         });
-        x.onClose?.();
+        x.onClose?.(block);
     }
 
     return (

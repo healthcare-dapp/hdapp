@@ -33,10 +33,10 @@ const reverseTransformer = (provider: EncryptionProvider) => (entry: RecordNoteE
 };
 
 export class RecordNoteService extends DbConsumer {
-    protected readonly _storeName = "records";
+    protected readonly _storeName = "record-notes";
 
     constructor(protected _db: DbService) {
-        super("record-service");
+        super("record-note-service");
     }
 
     readonly getRecordNote = async (hash: string, provider: EncryptionProvider): Promise<RecordNoteEntry> => {

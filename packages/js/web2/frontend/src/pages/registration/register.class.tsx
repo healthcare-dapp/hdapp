@@ -211,7 +211,7 @@ export class Registration extends React.Component<{}, {
                             onFilesChange={this.updateFiles}
                             maxUploadFiles={10}
                             allowedExtensions={["jpg", "jpeg", "pdf"]}
-                            onContextReady={context => {}}
+                            onContextReady={() => {}}
                             showPlaceholderImage={false}
                             title="Upload your medical documents" />
                 <Button onClick={this.uploadFiles} variant="contained" id="uploadButton">
@@ -233,11 +233,10 @@ export class Registration extends React.Component<{}, {
                 const files = await MediaService.upload(formData);
                 console.log(files);
                 this.setState({
-                    fileIDs: files.map(file => file.id),
                     isBusy: false
                 });
                 console.log("Files are succesfully uploaded");
-                return true;
+                return files.map(file => file.id);
             } alert("Cannot upload right now. Server is busy!");
         } catch (e) {
             console.log("Upload Exception:");
@@ -246,7 +245,7 @@ export class Registration extends React.Component<{}, {
                 isBusy: false
             });
         }
-        return false;
+        return [];
     }
 
     async handleSubmit(e: FormEvent) {
@@ -271,19 +270,18 @@ export class Registration extends React.Component<{}, {
                 //     /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/))
                 //     throw new IllegalArgumentException("Email is incorrect");
 
-                if (this.state.isDoctor) {
-                    const res = await this.uploadFiles();
-                    if (!res) {
-                        alert("You need to upload your medical files to confirm your specialty");
-                        throw new IllegalArgumentException("No files?!");
-                    }
+                const fileIds = await this.uploadFiles();
+                if (!fileIds.length && this.state.isDoctor) {
+                    alert("You need to upload your medical files to confirm your specialty");
+                    throw new IllegalArgumentException("No files?!");
                 }
+
                 const data: CreateUserDto = {
                     email: this.state.mailValue as EmailAddress,
                     full_name: this.state.nameValue,
                     birth_date: dateF,
                     medical_organization_name: this.state.medicalNameValue,
-                    confirmation_document_ids: this.state.fileIDs,
+                    confirmation_document_ids: fileIds,
                     has_doctor_capabilities: this.state.isDoctor
                 };
 

@@ -16,7 +16,6 @@ interface RecordDbEntryEncryptedData {
     created_by: string
     type: string
     block_ids: string[]
-    appointment_ids: string[]
     attachment_ids: string[]
     created_at: string
 }
@@ -29,7 +28,6 @@ export interface RecordEntry {
     created_by: string
     type: string
     block_ids: string[]
-    appointment_ids: string[]
     attachment_ids: string[]
     created_at: LocalDateTime
 }
@@ -41,7 +39,6 @@ export interface RecordForm {
     created_by: string
     type: string
     block_ids: string[]
-    appointment_ids: string[]
     attachment_ids: string[]
 }
 
@@ -65,7 +62,6 @@ const transformer = (provider: EncryptionProvider) => (dbEntry: RecordDbEntry): 
         hash: dbEntry.hash,
         title: encrypted.title,
         description: encrypted.description,
-        appointment_ids: encrypted.appointment_ids,
         attachment_ids: encrypted.attachment_ids,
         block_ids: encrypted.block_ids,
         created_by: encrypted.created_by,
@@ -79,7 +75,6 @@ const reverseTransformer = (provider: EncryptionProvider) => (entry: RecordEntry
     const encrypted: RecordDbEntryEncryptedData = {
         title: entry.title,
         description: entry.description,
-        appointment_ids: entry.appointment_ids,
         attachment_ids: entry.attachment_ids,
         block_ids: entry.block_ids,
         created_by: entry.created_by,

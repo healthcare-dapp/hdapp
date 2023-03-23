@@ -26,13 +26,14 @@ import { createTheme } from "@mui/material/styles";
 import { stateToMarkdown } from "draft-js-export-markdown";
 import { observer } from "mobx-react-lite";
 import MUIRichTextEditor from "mui-rte";
-import { FC, useEffect, useState } from "react";
+import { FC, useState } from "react";
 import { ModalProvider } from "../App2";
 import { sessionManager } from "../managers/session.manager";
 import { blockService } from "../services/block.service";
 import { fileService } from "../services/file.service";
 import { RecordForm, recordService } from "../services/record.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
+import { useDatabase } from "../utils/use-database";
 import { CreateBlockDialog } from "./create-block.dialog";
 import type { EditorState } from "draft-js";
 
@@ -75,27 +76,25 @@ Object.assign(defaultTheme, {
     }
 });
 
-export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = observer(x => {
+export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onClose(): void }> = observer(x => {
     const { wallet, encryption } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [blockIds, setBlockIds] = useState<string[]>([]);
+    const [blockIds, setBlockIds] = useState<string[]>(x.blockId ? [x.blockId] : []);
     const [type, setType] = useState("");
     const [isBlockIdSelectorOpen, setIsBlockIdSelectorOpen] = useState(false);
     const [blockEntries, setBlockEntries] = useState<{ key: string; title: string }[]>([]);
     const [attachments, setAttachments] = useState<File[]>([]);
 
-    useEffect(() => {
-        blockService.getBlocks()
-            .then(blks => {
-                setBlockEntries(
-                    blks.map(b => ({ key: b.hash, title: b.friendly_name }))
-                );
-            })
-            .catch(console.error);
-    }, []);
+    useDatabase(async () => {
+        const blks = await blockService.getBlocks();
+
+        setBlockEntries(
+            blks.map(b => ({ key: b.hash, title: b.friendly_name }))
+        );
+    });
 
     async function handleRecordCreate() {
         const attachmentIds: string[] = [];
@@ -115,7 +114,6 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
             block_ids: blockIds,
             created_by: wallet.address,
             owned_by: wallet.address,
-            appointment_ids: [],
             attachment_ids: attachmentIds
         }, encryption);
         x.onClose();
@@ -154,14 +152,17 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
                                 onClose={() => setIsBlockIdSelectorOpen(false)}
                                 onOpen={() => setIsBlockIdSelectorOpen(true)}
                                 value={blockIds}
-                                onChange={e => {
+                                onChange={async e => {
                                     const value = typeof e.target.value === "string"
                                         ? e.target.value.split(",")
                                         : e.target.value;
 
                                     if (value.includes(addRecordStr)) {
                                         setIsBlockIdSelectorOpen(false);
-                                        void ModalProvider.show(CreateBlockDialog, {});
+                                        const block = await ModalProvider.show(CreateBlockDialog, {});
+                                        if (!block)
+                                            return;
+                                        setBlockIds(ids => [...ids, block.hash]);
                                         return;
                                     }
 
@@ -218,19 +219,6 @@ export const CreateRecordDialog: FC<{ isDoctor?: boolean; onClose(): void }> = o
                                 <input type="file" style={{ opacity: 0, position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
                                        onChange={e => setAttachments(a => [...a, ...e.target.files! as unknown as File[]])} />
                             </div>
-                        </Stack>
-                    </Card>
-                    <Card variant="outlined" sx={{ pr: 2, py: 2, paddingLeft: "14px" }}>
-                        <Stack spacing={1}>
-                            <Typography fontWeight="500">Appointments</Typography>
-                            <Stack direction={isMobileView ? "column" : "row"} spacing={1}>
-                                <Button variant="outlined" startIcon={<Add />}>
-                                    Create an appointment
-                                </Button>
-                                <Button>
-                                    Link an existing one
-                                </Button>
-                            </Stack>
                         </Stack>
                     </Card>
                     <Stack spacing={1} justifyContent="center" direction="row">
