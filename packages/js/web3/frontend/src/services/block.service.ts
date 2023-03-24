@@ -113,6 +113,17 @@ export class BlockService extends DbConsumer {
         }
     }
 
+    async upsertBlock(record: BlockEntry): Promise<void> {
+        try {
+            await this._upsertOne(record, reverseTransformer);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new BlockNotFoundError("Block was not found.");
+
+            throw e;
+        }
+    }
+
     onDbUpgrade(db: IDBDatabase): void {
         const metadataStore = db.createObjectStore(
             this._storeName,

@@ -157,6 +157,17 @@ export class RecordService extends DbConsumer {
         }
     }
 
+    async upsertRecord(record: RecordEntry, provider: EncryptionProvider): Promise<void> {
+        try {
+            await this._upsertOne(record, reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new RecordNotFoundError("Record was not found.");
+
+            throw e;
+        }
+    }
+
     onDbUpgrade(db: IDBDatabase): void {
         const metadataStore = db.createObjectStore(
             this._storeName,

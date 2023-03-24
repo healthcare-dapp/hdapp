@@ -139,7 +139,8 @@ export const RecordPage = () => {
                                     <Share />
                                 </IconButton>
                                 <IconButton size="large"
-                                            color="inherit">
+                                            color="inherit"
+                                            onClick={() => ModalProvider.show(ShareRecordDialog, { hash: recordId! })}>
                                     <MoreVert />
                                 </IconButton>
                             </div>
@@ -149,7 +150,7 @@ export const RecordPage = () => {
                 </>
             ) }
             { !canShowSidebar && (
-                <Carousel>
+                <Carousel sx={{ width: "100%" }}>
                     {
                         attachmentUrls.map(url => (
                             <img src={url} key={url}
@@ -194,7 +195,7 @@ export const RecordPage = () => {
                                 <Grid xs={12} md={8}>
                                     <Stack spacing={2} alignItems="flex-start">
                                         { canShowSidebar && (
-                                            <Carousel>
+                                            <Carousel sx={{ width: "100%" }}>
                                                 {
                                                     attachmentUrls.map(url => (
                                                         <img src={url} key={url}
@@ -264,36 +265,6 @@ export const RecordPage = () => {
                                                 ) }
                                             </Stack>
                                         </Card>
-                                        { record.appointment_ids.map(appointment => (
-                                            <Card variant="outlined" key={appointment}>
-                                                <CardActionArea>
-                                                    <Stack spacing={2} sx={{ px: 3, p: 2 }}>
-                                                        <Stack direction="row" alignItems="center" spacing={2}>
-                                                            <Avatar sx={{ backgroundColor: theme.palette.primary.main }}><Event /></Avatar>
-
-                                                            <Stack spacing={0} flexGrow={1} width="0">
-                                                                <Typography fontWeight="500">Appointment assigned</Typography>
-                                                                <Typography fontSize={12} noWrap textOverflow="ellipsis">Additional checkup on bacteria infection</Typography>
-                                                            </Stack>
-                                                            <Stack spacing={0} alignItems="flex-end">
-                                                                <Typography fontSize={14} fontWeight="500" noWrap>March 3rd</Typography>
-                                                                <Typography fontWeight="500" noWrap>3:00 PM</Typography>
-                                                            </Stack>
-                                                        </Stack>
-                                                        <Stack direction="row" spacing={1} alignItems="center">
-                                                            <Chip variant="outlined"
-                                                                  clickable size="small"
-                                                                  icon={<LocationOn />}
-                                                                  label="State Hospital of St. Petersburg" />
-                                                            <Chip variant="outlined"
-                                                                  clickable size="small"
-                                                                  avatar={<Avatar sx={{ background: theme.palette.success.light, color: "white !important" }} />}
-                                                                  label="Anna Cutemon" />
-                                                        </Stack>
-                                                    </Stack>
-                                                </CardActionArea>
-                                            </Card>
-                                        )) }
 
                                         <Card variant="outlined" sx={{ width: "100%" }}>
                                             <CardContent>

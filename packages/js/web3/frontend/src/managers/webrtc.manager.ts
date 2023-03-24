@@ -5,7 +5,9 @@ import { AES, enc } from "crypto-js";
 import { ethers, toUtf8Bytes } from "ethers";
 import {
     any,
+    AnyType,
     array,
+    boolean,
     intersection,
     literal,
     Mixed,
@@ -16,9 +18,15 @@ import {
     union,
     unknown,
 } from "io-ts";
+import { blockService } from "../services/block.service";
+import { chatMessageService } from "../services/chat-message.service";
+import { chatService } from "../services/chat.service";
+import { dbService } from "../services/db.service";
 import { DeviceEntry, deviceService } from "../services/device.service";
+import { eventLogService } from "../services/event-log.service";
 import { fileService } from "../services/file.service";
 import { profileService } from "../services/profile.service";
+import { recordNoteService } from "../services/record-note.service";
 import { recordService } from "../services/record.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { Web3Manager } from "./web3.manager";
@@ -46,8 +54,8 @@ export const IPeerMessage = <T extends string, D extends Mixed>(
 export const PeerMessageShowCurrentState = IPeerMessage(
     "SHOW_CURRENT_STATE",
     type({
-        records: array(string),
-        devices: array(string),
+        dbRecords: array(string),
+        files: array(string),
     })
 );
 export type PeerMessageShowCurrentState = TypeOf<typeof PeerMessageShowCurrentState>;
@@ -59,6 +67,7 @@ export const PeerMessageSyncSummary = IPeerMessage(
         fileRecordsCount: number,
     })
 );
+export type PeerMessageSyncSummary = TypeOf<typeof PeerMessageSyncSummary>;
 
 export const PeerMessageSyncDbRecordsChunk = IPeerMessage(
     "SYNC_DB_RECORDS_CHUNK",
@@ -67,16 +76,18 @@ export const PeerMessageSyncDbRecordsChunk = IPeerMessage(
         records: array(any)
     })
 );
+export type PeerMessageSyncDbRecordsChunk = TypeOf<typeof PeerMessageSyncDbRecordsChunk>;
 
 export const PeerMessageSyncFileChunk = IPeerMessage(
     "SYNC_FILE_CHUNK",
     type({
         hash: string,
         start: number,
-        end: number,
-        data: unknown
+        hasEnded: boolean,
+        data: new AnyType()
     })
 );
+export type PeerMessageSyncFileChunk = TypeOf<typeof PeerMessageSyncFileChunk>;
 
 export const PeerMessage = union([
     PeerMessageShowCurrentState,
@@ -200,10 +211,10 @@ export class Peer {
                 void this._handleShowCurrentState(msg);
                 break;
             case "SYNC_DB_RECORDS_CHUNK":
-                debug("SYNC_DB_RECORDS_CHUNK", msg.data);
+                void this._handleDbRecordsChunk(msg);
                 break;
             case "SYNC_FILE_CHUNK":
-                debug("SYNC_FILE_CHUNK", msg.data);
+                void this._handleFileChunk(msg);
                 break;
             case "SYNC_SUMMARY":
                 debug("SYNC_SUMMARY", msg.data);
@@ -211,22 +222,103 @@ export class Peer {
         }
     }
 
-    private async _handleShowCurrentState(_msg: PeerMessageShowCurrentState) {
+    private _filesInProgress = new Map<string, Uint8Array>();
+
+    private async _handleFileChunk(msg: PeerMessageSyncFileChunk) {
+        if (!this._filesInProgress.has(msg.data.hash)) {
+            const metadata = await fileService.getFileMetadata(msg.data.hash);
+            this._filesInProgress.set(msg.data.hash, new Uint8Array(metadata.byte_length));
+        }
+
+        const arr = this._filesInProgress.get(msg.data.hash)!;
+        console.log(arr, msg.data);
+        arr.set(msg.data.data as number[], msg.data.start);
+        this._filesInProgress.set(msg.data.hash, arr);
+        if (msg.data.hasEnded) {
+            await fileService.upsertFileBlob(msg.data.hash, new Blob([arr]), this._manager.encryption);
+        }
+    }
+
+    private _handleDbRecordsChunk(msg: PeerMessageSyncDbRecordsChunk) {
+        for (const record of msg.data.records) {
+            debug("Received db record", record);
+            switch (record.__type) {
+                case "record":
+                    void recordService.upsertRecord(record, this._manager.encryption);
+                    break;
+                case "device":
+                    void deviceService.upsertDevice(record, this._manager.encryption);
+                    break;
+                case "profile":
+                    void profileService.upsertProfile(record, this._manager.encryption);
+                    break;
+                case "chat":
+                    void chatService.upsertChat(record);
+                    break;
+                case "file":
+                    void fileService.upsertFileMetadata(record);
+                    this._filesInProgress.set(record.hash, new Uint8Array(record.byte_length));
+                    break;
+                case "block":
+                    void blockService.upsertBlock(record);
+                    break;
+                case "chatMessage":
+                    void chatMessageService.upsertChatMessage(record, this._manager.encryption);
+                    break;
+                case "recordNote":
+                    void recordNoteService.upsertRecordNote(record, this._manager.encryption);
+                    break;
+                case "eventLog":
+                    void eventLogService.upsertEventLog(record);
+                    break;
+            }
+        }
+    }
+
+    private async _handleShowCurrentState(msg: PeerMessageShowCurrentState) {
         const devices = await deviceService.getDevicesOwnedBy(this._manager.web3Address, this._manager.encryption);
         const records = await recordService.searchRecords({}, this._manager.encryption);
         const profiles = await profileService.searchProfiles({}, this._manager.encryption);
+        const blocks = await blockService.getBlocks();
+        const chats = await chatService.searchChats({});
+        const chatMessages = await chatMessageService.searchChatMessages({}, this._manager.encryption);
+        const recordNotes = await recordNoteService.getRecordNotes(this._manager.encryption);
         const files = await fileService.getFiles();
+        const eventLogs = await eventLogService.getEventLogs();
 
         const dbRecordsToSend = [
             ...devices.map(d => ({ ...d, __type: "device" })),
-            ...records.map(d => ({ ...d, __type: "record" })),
-            ...profiles.map(d => ({ ...d, __type: "profile" }))
+            ...records.map(d => ({ ...d, __type: "record" }))
+                .filter(d => !msg.data.dbRecords.includes(d.hash)),
+            ...profiles.map(d => ({ ...d, __type: "profile" })),
+            ...chats.map(d => ({ ...d, __type: "chat" }))
+                .filter(d => !msg.data.dbRecords.includes(d.hash)),
+            ...files.map(d => ({ ...d, __type: "file" }))
+                .filter(d => !msg.data.dbRecords.includes(d.hash)),
+            ...blocks.map(d => ({ ...d, __type: "block" }))
+                .filter(d => !msg.data.dbRecords.includes(d.hash)),
+            ...chatMessages.map(d => ({ ...d, __type: "chatMessage" }))
+                .filter(d => !msg.data.dbRecords.includes(d.hash)),
+            ...recordNotes.map(d => ({ ...d, __type: "recordNote" }))
+                .filter(d => !msg.data.dbRecords.includes(d.hash)),
+            ...eventLogs.map(d => ({ ...d, __type: "eventLog" }))
+                .filter(d => !msg.data.dbRecords.includes(d.hash)),
         ];
 
         await this._sendMessage("SYNC_SUMMARY", {
             dbRecordsCount: dbRecordsToSend.length,
             fileRecordsCount: files.length,
         });
+
+        const maxChunkSize = 8; // 8 elements
+        for (let i = 0; i < Math.ceil(dbRecordsToSend.length / maxChunkSize); i++) {
+            const chunk = dbRecordsToSend.slice(maxChunkSize * i, maxChunkSize * (i + 1));
+
+            await this._sendMessage("SYNC_DB_RECORDS_CHUNK", {
+                recordsRemainingCount: dbRecordsToSend.length - maxChunkSize * (i + 1),
+                records: chunk
+            });
+        }
 
         for (const file of files) {
             const blob = await fileService.getFileBlob(file.hash, this._manager.encryption);
@@ -237,22 +329,12 @@ export class Peer {
                 const chunk = ab.slice(chunkIndex * maxChunkSize, (chunkIndex + 1) * maxChunkSize);
 
                 await this._sendMessage("SYNC_FILE_CHUNK", {
-                    data: chunk,
-                    end: chunkIndex * maxChunkSize + chunk.byteLength,
+                    data: Array.from(new Uint8Array(chunk)),
+                    hasEnded: chunkIndex === chunksCount - 1,
                     hash: file.hash,
                     start: chunkIndex * maxChunkSize
                 });
             }
-        }
-
-        const maxChunkSize = 8; // 8 elements
-        for (let i = 0; i < Math.ceil(dbRecordsToSend.length / maxChunkSize); i++) {
-            const chunk = dbRecordsToSend.slice(maxChunkSize * i, maxChunkSize * (i + 1));
-
-            await this._sendMessage("SYNC_DB_RECORDS_CHUNK", {
-                recordsRemainingCount: dbRecordsToSend.length - maxChunkSize * (i + 1),
-                records: chunk
-            });
         }
     }
 
@@ -317,10 +399,6 @@ export class Peer {
             if (pc.connectionState === "disconnected") {
                 this._manager.disposePeer(this.#device.hash);
             }
-
-            if (pc.connectionState === "connected") {
-                void this._showCurrentState();
-            }
         });
 
         pc.addEventListener("icecandidateerror", e => {
@@ -355,6 +433,7 @@ export class Peer {
 
         sendChannel.addEventListener("open", () => {
             debug("data channel opened", sendChannel);
+            void this._showCurrentState();
         });
         sendChannel.addEventListener(
             "message",
@@ -373,12 +452,25 @@ export class Peer {
     private async _showCurrentState() {
         debug("sending showcurrentstate", this.#device);
 
-        const devices = await deviceService.getDevicesOwnedBy(this._manager.web3Address, this._manager.encryption);
         const records = await recordService.searchRecords({}, this._manager.encryption);
+        const blocks = await blockService.getBlocks();
+        const chats = await chatService.searchChats({});
+        const chatMessages = await chatMessageService.searchChatMessages({}, this._manager.encryption);
+        const recordNotes = await recordNoteService.getRecordNotes(this._manager.encryption);
+        const files = await fileService.getFiles();
+        const eventLogs = await eventLogService.getEventLogs();
 
         await this._sendMessage("SHOW_CURRENT_STATE", {
-            devices: devices.map(d => d.hash),
-            records: records.map(d => d.hash),
+            files: files.map(d => d.hash),
+            dbRecords: [
+                ...records.map(d => d.hash),
+                ...blocks.map(d => d.hash),
+                ...chats.map(d => d.hash),
+                ...chatMessages.map(d => d.hash),
+                ...recordNotes.map(d => d.hash),
+                ...eventLogs.map(d => d.hash),
+                ...files.map(d => d.hash),
+            ],
         });
     }
 
@@ -411,6 +503,11 @@ export class WebRTCManager {
         private _encryption: EncryptionProvider
     ) {
         void this._bindWeb3Events();
+
+        /* dbService.on("txn_completed", (stores: string[]) => {
+            if (stores.includes("devices"))
+                void this._bindWeb3Events();
+        }); */
     }
 
     get encryption() {
@@ -443,7 +540,11 @@ export class WebRTCManager {
     }
 
     private async _bindWeb3Events() {
+        void this._web3.webRtcBroker.removeAllListeners();
+
         const devices = await deviceService.getDevicesNotOwnedBy(this._web3.address, this._encryption);
+
+        console.log(devices);
 
         for (const device of devices) {
             // @ts-ignore
@@ -457,6 +558,7 @@ export class WebRTCManager {
     private readonly _handleBrokerMessage = async (event: HDMHandshake.MessageEvent.Log) => {
         if (event.args.sender === this._web3.address)
             return;
+        debug("received broker message", event);
 
         const deviceHash = "0x" + event.args.deviceHash.toString(16);
         const device = await deviceService.getDevice(deviceHash, this._encryption)
@@ -467,13 +569,6 @@ export class WebRTCManager {
 
         if (device.owned_by !== event.args.sender)
             return warn("message from broker mentions device hash not owned by the user", { device, event });
-
-        if (!this._peers.has(deviceHash)) {
-            this._peers.set(
-                deviceHash,
-                new Peer(device, this, true)
-            );
-        }
 
         let peer = this._peers.get(deviceHash);
 

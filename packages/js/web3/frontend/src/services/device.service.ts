@@ -121,7 +121,7 @@ export class DeviceService extends DbConsumer {
         try {
             const devices = await this._findMany(
                 transformer(provider),
-                entity => entity.owned_by !== owner
+                entity => entity.owned_by !== owner && !entity.is_current
             );
             return devices;
         } catch (e) {
@@ -150,6 +150,17 @@ export class DeviceService extends DbConsumer {
     async addDevice(form: DeviceEntry, provider: EncryptionProvider): Promise<void> {
         try {
             await this._add(form, reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new DeviceNotFoundError("Device was not found.");
+
+            throw e;
+        }
+    }
+
+    async upsertDevice(record: DeviceEntry, provider: EncryptionProvider): Promise<void> {
+        try {
+            await this._upsertOne(record, reverseTransformer(provider));
         } catch (e) {
             if (e instanceof DbRecordNotFoundError)
                 throw new DeviceNotFoundError("Device was not found.");

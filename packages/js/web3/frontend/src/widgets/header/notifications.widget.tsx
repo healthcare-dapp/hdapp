@@ -125,9 +125,10 @@ export const HeaderNotificationsWidget = observer(() => {
                                     <Avatar sx={{ background: iconBgColor }}>{ icon }</Avatar>
                                 </ListItemAvatar>
                                 <ListItemText primary={(
-                                    <Stack alignItems="center" direction="row">
-                                        <Typography>{ title }</Typography>
-                                        <Typography fontSize={12} color="text.secondary" sx={{ marginLeft: "auto" }}>
+                                    <Stack spacing={2} alignItems="center" direction="row">
+                                        <Typography noWrap>{ title }</Typography>
+                                        <Typography fontSize={12} color="text.secondary" sx={{ marginLeft: "auto", flexShrink: 0 }}
+                                                    align="right" noWrap>
                                             { formatTemporal(n.created_at, temporalFormats.ddMMyyyyHHmmss) }
                                         </Typography>
                                     </Stack>

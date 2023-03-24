@@ -110,6 +110,17 @@ export class EventLogService extends DbConsumer {
         }
     }
 
+    async upsertEventLog(record: EventLogEntry): Promise<void> {
+        try {
+            await this._upsertOne(record, reverseTransformer);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new EventLogNotFoundError("Event log was not found.");
+
+            throw e;
+        }
+    }
+
     onDbUpgrade(db: IDBDatabase): void {
         const store = db.createObjectStore(
             this._storeName,

@@ -118,10 +118,10 @@ export class DbService {
         const stack = [new Error().stack];
 
         transaction.addEventListener("complete", () => {
-            debug("Transaction completed.", { storeNames, mode, transaction, stack });
             if (mode === "readwrite") {
+                debug("RW transaction completed.", { storeNames, mode, transaction, stack });
                 this._channel.postMessage("txn_completed");
-                this._emit("txn_completed");
+                this._emit("txn_completed", storeNames);
             }
         });
         transaction.addEventListener("abort", event => {

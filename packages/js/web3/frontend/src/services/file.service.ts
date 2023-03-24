@@ -7,7 +7,6 @@ import { dbService, DbService, IDbConsumer } from "./db.service";
 
 interface FileBlobDbEntry {
     hash: string
-    mimeType: string
     blob: string
 }
 
@@ -17,6 +16,7 @@ interface FileMetadataDbEntry {
     owner: string
     type: string
     uploaded_at: string
+    byte_length: number
 }
 
 export interface FileEntry {
@@ -25,6 +25,7 @@ export interface FileEntry {
     owner: string
     type: string
     uploaded_at: LocalDateTime
+    byte_length: number
 }
 
 export class FileNotFoundError extends Error {}
@@ -35,6 +36,7 @@ const transformer = (dbEntry: FileMetadataDbEntry): FileEntry => {
         name: dbEntry.name,
         owner: dbEntry.owner,
         type: dbEntry.type,
+        byte_length: dbEntry.byte_length,
         uploaded_at: LocalDateTime.parse(dbEntry.uploaded_at)
     };
 };
@@ -53,6 +55,7 @@ const reverseTransformer = (entry: FileEntry): FileMetadataDbEntry => {
         name: entry.name,
         owner: entry.owner,
         type: entry.type,
+        byte_length: entry.byte_length,
         uploaded_at: entry.uploaded_at.toString()
     };
 };
@@ -90,12 +93,13 @@ class FileMetadataService extends DbConsumer {
         }
     }
 
-    async addFileMetadata(hash: string, blob: Blob, owner_address: string): Promise<void> {
+    async addFileMetadata(hash: string, name: string, owner_address: string, byte_length: number, type: string): Promise<void> {
         const metadata: FileEntry = {
             hash,
-            name: blob.name,
+            name,
             owner: owner_address,
-            type: blob.type,
+            type,
+            byte_length,
             uploaded_at: LocalDateTime.now()
         };
 
@@ -106,6 +110,17 @@ class FileMetadataService extends DbConsumer {
                 throw new FileNotFoundError("File was not found.");
             if (e instanceof DOMException && e.name === "ConstraintError")
                 return;
+            throw e;
+        }
+    }
+
+    async upsertFileMetadata(record: FileEntry): Promise<void> {
+        try {
+            await this._upsertOne(record, reverseTransformer);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new FileNotFoundError("File was not found.");
+
             throw e;
         }
     }
@@ -145,18 +160,31 @@ class FileBlobService extends DbConsumer {
         }
     }
 
-    async addFileBlob(hash: string, blob: Blob, provider: EncryptionProvider): Promise<void> {
-        const arrayBuffer = await blob.arrayBuffer();
-        const encryptedBlob = provider.encryptArrayBuffer(new Uint8Array(arrayBuffer));
-
+    async addFileBlob(hash: string, encryptedBlob: string): Promise<void> {
         const metadata: FileBlobDbEntry = {
             hash,
-            blob: encryptedBlob,
-            mimeType: blob.type
+            blob: encryptedBlob
         };
 
         try {
             await this._add(metadata, a => a);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new FileNotFoundError("File was not found.");
+            if (e instanceof DOMException && e.name === "ConstraintError")
+                return;
+            throw e;
+        }
+    }
+
+    async upsertFileBlob(hash: string, encryptedBlob: string): Promise<void> {
+        const metadata: FileBlobDbEntry = {
+            hash,
+            blob: encryptedBlob
+        };
+
+        try {
+            await this._upsertOne(metadata, a => a);
         } catch (e) {
             if (e instanceof DbRecordNotFoundError)
                 throw new FileNotFoundError("File was not found.");
@@ -199,14 +227,36 @@ export class FileService implements IDbConsumer {
         return this._metadata.getFiles();
     }
 
-    async uploadFile(file: Blob, owner: string, provider: EncryptionProvider): Promise<string> {
-        const text = await file.text();
+    async uploadFile(blob: Blob, owner: string, provider: EncryptionProvider): Promise<string> {
+        const text = await blob.text();
         const hash = MD5(text).toString();
 
-        await this._blob.addFileBlob(hash, file, provider);
-        await this._metadata.addFileMetadata(hash, file, owner);
+        const arrayBuffer = await blob.arrayBuffer();
+        const encryptedBlob = provider.encryptArrayBuffer(new Uint8Array(arrayBuffer));
+
+        await this._blob.addFileBlob(hash, encryptedBlob);
+        await this._metadata.addFileMetadata(hash, blob.name, owner, arrayBuffer.byteLength, blob.type);
 
         return hash;
+    }
+
+    async upsertFileBlob(hash: string, blob: Blob, provider: EncryptionProvider): Promise<string> {
+        const arrayBuffer = await blob.arrayBuffer();
+        const encryptedBlob = provider.encryptArrayBuffer(new Uint8Array(arrayBuffer));
+
+        await this._blob.upsertFileBlob(hash, encryptedBlob);
+        return hash;
+    }
+
+    async upsertFileMetadata(record: FileEntry): Promise<void> {
+        try {
+            await this._metadata.upsertFileMetadata(record);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new FileNotFoundError("File was not found.");
+
+            throw e;
+        }
     }
 
     onDbUpgrade(db: IDBDatabase): void {

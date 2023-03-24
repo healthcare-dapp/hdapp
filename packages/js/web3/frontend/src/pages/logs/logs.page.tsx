@@ -30,7 +30,6 @@ import { HeaderWidget } from "../../widgets/header";
 const columns: GridColDef[] = [
     {
         field: "created_at",
-        width: 200,
         headerName: "Timestamp"
     },
     {
@@ -40,12 +39,12 @@ const columns: GridColDef[] = [
     },
     {
         field: "description",
-        width: 120,
+        width: 350,
         headerName: "Description"
     },
     {
         field: "created_by",
-        width: 220,
+        width: 250,
         headerName: "Creator"
     }
 ];
@@ -100,7 +99,8 @@ export const LogsPage = observer(() => {
                     <Grid2 xs={12} sm={7} lg={8} xl={8}
                            sx={{ display: "flex", flexDirection: "column", pb: 1 }}>
                         <Typography variant="h4" mb={3} fontSize={32}>My logs</Typography>
-                        <DataGrid columns={columns} rows={logs} />
+                        <DataGrid<EventLogEntry> columns={columns} rows={logs}
+                                                 getRowId={s => s.hash} />
                     </Grid2>
                     <Grid2 xs={12} sm={5} lg={4} xl={4}>
                         <Stack spacing={2}>

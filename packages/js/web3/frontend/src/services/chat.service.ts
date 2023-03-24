@@ -1,3 +1,4 @@
+import { autoBind } from "@hdapp/shared/web2-common/utils/auto-bind";
 import { Instant, LocalDateTime } from "@js-joda/core";
 import { SHA256 } from "crypto-js";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
@@ -54,9 +55,11 @@ export class ChatService extends DbConsumer {
 
     constructor(protected _db: DbService) {
         super("chat-service");
+
+        autoBind(this);
     }
 
-    readonly getChat = async (hash: string): Promise<ChatEntry> => {
+    async getChat(hash: string): Promise<ChatEntry> {
         try {
             const entity = await this._findOne(hash, transformer);
             return entity;
@@ -66,9 +69,9 @@ export class ChatService extends DbConsumer {
 
             throw e;
         }
-    };
+    }
 
-    readonly searchChats = async (_searchRequest: ChatSearchRequest): Promise<ChatEntry[]> => {
+    async searchChats(_searchRequest: ChatSearchRequest): Promise<ChatEntry[]> {
         try {
             const devices = await this._findMany(
                 transformer,
@@ -81,9 +84,9 @@ export class ChatService extends DbConsumer {
 
             throw e;
         }
-    };
+    }
 
-    readonly addChat = async (form: ChatForm): Promise<void> => {
+    async addChat(form: ChatForm): Promise<void> {
         try {
             await this._add({
                 ...form,
@@ -96,7 +99,18 @@ export class ChatService extends DbConsumer {
 
             throw e;
         }
-    };
+    }
+
+    async upsertChat(record: ChatEntry): Promise<void> {
+        try {
+            await this._upsertOne(record, reverseTransformer);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new ChatNotFoundError("Chat was not found.");
+
+            throw e;
+        }
+    }
 
     onDbUpgrade(db: IDBDatabase): void {
         const metadataStore = db.createObjectStore(

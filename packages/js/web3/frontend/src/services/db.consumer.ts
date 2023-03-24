@@ -21,6 +21,10 @@ export abstract class DbConsumer implements IDbConsumer {
         const tsn = this._db.transaction([this._storeName], "readonly");
         const dataStore = tsn.objectStore(this._storeName);
         const request: IDBRequest<DbT> = dataStore.get(key);
+
+        const stack = [new Error().stack];
+        this._logger.debug("Find one transaction", { key, storeName: this._storeName, stack });
+
         return new Promise((resolve, reject) => {
             request.addEventListener("success", () => {
                 if (!request.result) {
@@ -53,6 +57,9 @@ export abstract class DbConsumer implements IDbConsumer {
         if (!request)
             return Promise.resolve([]);
 
+        const stack = [new Error().stack];
+        this._logger.debug("Find many transaction", { storeName: this._storeName, stack });
+
         const entries: T[] = [];
 
         return new Promise((resolve, reject) => {
@@ -84,9 +91,13 @@ export abstract class DbConsumer implements IDbConsumer {
         object: T,
         reverseProcessor: (entity: T) => DbT
     ): Promise<T> {
-        const tsn = this._db.transaction([this._storeName], "readonly");
+        const tsn = this._db.transaction([this._storeName], "readwrite");
         const dataStore = tsn.objectStore(this._storeName);
         const request: IDBRequest<IDBValidKey> = dataStore.put(reverseProcessor(object));
+
+        const stack = [new Error().stack];
+        this._logger.debug("Upsert one transaction", { object, storeName: this._storeName, stack });
+
         return new Promise((resolve, reject) => {
             request.addEventListener("success", () => {
                 if (!request.result) {
@@ -136,6 +147,9 @@ export abstract class DbConsumer implements IDbConsumer {
         if (!request)
             return Promise.resolve();
 
+        const stack = [new Error().stack];
+        this._logger.debug("Patch many transaction", { storeName: this._storeName, stack });
+
         return new Promise((resolve, reject) => {
             request.addEventListener("success", () => {
                 if (!request.result)
@@ -171,6 +185,10 @@ export abstract class DbConsumer implements IDbConsumer {
         const request: IDBRequest<IDBValidKey> = dataStore.add(
             reverseProcessor(object)
         );
+
+        const stack = [new Error().stack];
+        this._logger.debug("Add transaction", { object, storeName: this._storeName, stack });
+
         return new Promise((resolve, reject) => {
             request.addEventListener("success", () => {
                 if (!request.result) {

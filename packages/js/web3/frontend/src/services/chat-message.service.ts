@@ -120,6 +120,17 @@ export class ChatMessageService extends DbConsumer {
         }
     };
 
+    async upsertChatMessage(record: ChatMessageEntry, provider: EncryptionProvider): Promise<void> {
+        try {
+            await this._upsertOne(record, reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new ChatMessageNotFoundError("Chat message was not found.");
+
+            throw e;
+        }
+    }
+
     onDbUpgrade(db: IDBDatabase): void {
         const metadataStore = db.createObjectStore(
             this._storeName,

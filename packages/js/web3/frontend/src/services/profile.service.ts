@@ -169,6 +169,17 @@ export class ProfileService extends DbConsumer {
         }
     }
 
+    async upsertProfile(record: ProfileEntry, provider: EncryptionProvider): Promise<void> {
+        try {
+            await this._upsertOne(record, reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new ProfileNotFoundError("Profile was not found.");
+
+            throw e;
+        }
+    }
+
     onDbUpgrade(db: IDBDatabase): void {
         const metadataStore = db.createObjectStore(
             this._storeName,

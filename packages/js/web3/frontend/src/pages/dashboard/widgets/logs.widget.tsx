@@ -23,7 +23,7 @@ import { useDatabase } from "../../../utils/use-database";
 export const LogsWidget: React.FC = () => {
     const theme = useTheme();
     const navigate = useNavigate();
-    const [logs, setLogs] = useState<(EventLogEntry & { created_by_full: ProfileEntry & { avatar_url: string | null } })[]>([]);
+    const [logs, setLogs] = useState<(EventLogEntry & { created_by_full: (ProfileEntry & { avatar_url: string | null }) | null })[]>([]);
 
     useDatabase(async () => {
         const eventLogs = await eventLogService.getEventLogs();
@@ -33,11 +33,16 @@ export const LogsWidget: React.FC = () => {
                 .reverse()
                 .slice(0, 3)
                 .map(async log => {
-                    const profile = await profileService.getProfile(log.created_by, sessionManager.encryption);
-                    const avatarUrl = profile.avatar_hash
-                        ? URL.createObjectURL(await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption))
-                        : null;
-                    return { ...log, created_by_full: { ...profile, avatar_url: avatarUrl } };
+                    try {
+                        const profile = await profileService.getProfile(log.created_by, sessionManager.encryption);
+                        const avatarBlob = profile.avatar_hash
+                            ? await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption)
+                                .catch(() => null)
+                            : null;
+                        return { ...log, created_by_full: { ...profile, avatar_url: avatarBlob ? URL.createObjectURL(avatarBlob) : null } };
+                    } catch (e) {
+                        return { ...log, created_by_full: null };
+                    }
                 })
         );
         setLogs(mapped);
@@ -65,21 +70,23 @@ export const LogsWidget: React.FC = () => {
                     <MenuItem key={log.hash}>
                         <Stack spacing={1} width="100%">
                             <Stack spacing={2} direction="row" alignItems="center" width="100%">
-                                <Avatar src={log.created_by_full.avatar_url ?? void 0}
+                                <Avatar src={log.created_by_full?.avatar_url ?? void 0}
                                         sx={{ width: 40, height: 40, backgroundColor: theme.palette.success.light }} />
                                 <Stack width={0} flexGrow={1}>
                                     <Stack direction="row" spacing={0.5} alignItems="center">
                                         <Typography variant="subtitle2">
-                                            { log.created_by_full.full_name }
+                                            { log.created_by_full?.full_name ?? trimWeb3Address(log.created_by) }
                                         </Typography>
-                                        <Typography variant="subtitle2" color={theme.palette.grey[600]} sx={{ fontWeight: 400 }}>
-                                            ({ trimWeb3Address(log.created_by) })
-                                        </Typography>
+                                        { log.created_by_full && (
+                                            <Typography variant="subtitle2" color={theme.palette.grey[600]} sx={{ fontWeight: 400 }}>
+                                                ({ trimWeb3Address(log.created_by) })
+                                            </Typography>
+                                        ) }
                                         <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400, marginLeft: "auto" }}>
                                             { formatTemporal(log.created_at) }
                                         </Typography>
                                     </Stack>
-                                    <Typography noWrap variant="subtitle2" sx={{ fontWeight: 400 }}>{ log.created_by_full.medical_organization_name }</Typography>
+                                    <Typography noWrap variant="subtitle2" sx={{ fontWeight: 400 }}>{ log.created_by_full?.medical_organization_name }</Typography>
                                 </Stack>
                             </Stack>
                             { log.title.split("\n").map(line => (

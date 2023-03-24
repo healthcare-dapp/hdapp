@@ -1,3 +1,4 @@
+import { autoBind } from "@hdapp/shared/web2-common/utils/auto-bind";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
 import { dbService, DbService } from "./db.service";
@@ -37,30 +38,55 @@ export class RecordNoteService extends DbConsumer {
 
     constructor(protected _db: DbService) {
         super("record-note-service");
+
+        autoBind(this);
     }
 
-    readonly getRecordNote = async (hash: string, provider: EncryptionProvider): Promise<RecordNoteEntry> => {
+    async getRecordNote(hash: string, provider: EncryptionProvider): Promise<RecordNoteEntry> {
         try {
             const entity = await this._findOne(hash, transformer(provider));
             return entity;
         } catch (e) {
             if (e instanceof DbRecordNotFoundError)
-                throw new RecordNoteNotFoundError("Record was not found.");
+                throw new RecordNoteNotFoundError("Record note was not found.");
 
             throw e;
         }
-    };
+    }
 
-    readonly addRecordNote = async (form: RecordNoteEntry, provider: EncryptionProvider): Promise<void> => {
+    async getRecordNotes(provider: EncryptionProvider): Promise<RecordNoteEntry[]> {
+        try {
+            const entities = await this._findMany(transformer(provider), () => true);
+            return entities;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new RecordNoteNotFoundError("Record note was not found.");
+
+            throw e;
+        }
+    }
+
+    async addRecordNote(form: RecordNoteEntry, provider: EncryptionProvider): Promise<void> {
         try {
             await this._add(form, reverseTransformer(provider));
         } catch (e) {
             if (e instanceof DbRecordNotFoundError)
-                throw new RecordNoteNotFoundError("Record was not found.");
+                throw new RecordNoteNotFoundError("Record note was not found.");
 
             throw e;
         }
-    };
+    }
+
+    async upsertRecordNote(record: RecordNoteEntry, provider: EncryptionProvider): Promise<void> {
+        try {
+            await this._upsertOne(record, reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new RecordNoteNotFoundError("Record note was not found.");
+
+            throw e;
+        }
+    }
 
     onDbUpgrade(db: IDBDatabase): void {
         const metadataStore = db.createObjectStore(
