@@ -16,7 +16,7 @@ POST {{host}}/api/auth/register HTTP/1.1
 Content-Type: application/json
 
 {
-  "email": "ruziknf+23@ruzik.xyz",
+  "email": "ruziknf+234567@ruzik.xyz",
   "full_name": "cringe cringe",
   "birth_date": "2002-01-01",
   "medical_organization_name": null,
@@ -40,7 +40,7 @@ Content-Type: application/json
 
 ###
 
-@verifyToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJydXppa25mKzNAcnV6aWsueHl6IiwiaWF0IjoxNjc3NzUwMzkzfQ.mlRw5rsRx7HFWWb9wNcuyuw8qLO3NJQRa1lEuH68BTY
+@verifyToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwiZW1haWwiOiJydXppa25mKzIzNDU2N0BydXppay54eXoiLCJpYXQiOjE2Nzk2NTYwMzV9.sCJeVxXZUWqU5t-PvlKilVb0sKmk8Hh5n-NkRCC15MQ
 GET {{host}}/api/auth/verify/{{verifyToken}} HTTP/1.1
 
 ####

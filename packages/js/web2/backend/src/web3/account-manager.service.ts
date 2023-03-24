@@ -11,10 +11,11 @@ const {
     WEB3_ACCOUNT_MANAGER_ADDRESS,
 } = process.env;
 
-const { error, trace } = new Logger("web3-account-manager");
+const { debug, trace } = new Logger("web3-account-manager");
 
 @Injectable()
 export class Web3AccountManagerService implements OnModuleInit {
+    private _signer: ethers.Wallet | null = null;
     private _contract: HDMAccountManager | null = null;
 
     onModuleInit() {
@@ -27,7 +28,7 @@ export class Web3AccountManagerService implements OnModuleInit {
 
     connect() {
         const provider = new ethers.JsonRpcProvider(WEB3_JSON_RPC_URL);
-        const signer = new ethers.Wallet(WEB3_PRIVATE_KEY!, provider);
+        const signer = this._signer = new ethers.Wallet(WEB3_PRIVATE_KEY!, provider);
 
         this._contract = HDMAccountManager__factory.connect(
             WEB3_ACCOUNT_MANAGER_ADDRESS!,
@@ -36,6 +37,9 @@ export class Web3AccountManagerService implements OnModuleInit {
     }
 
     async getAccountInfo(address?: Web3Address | null): Promise<Web3UserEntity> {
+        if (!this._contract)
+            throw new Error("no contract");
+
         if (!address) {
             trace("getAccountInfo called without address");
             return {
@@ -43,16 +47,34 @@ export class Web3AccountManagerService implements OnModuleInit {
                 isBanned: false,
             };
         }
-        const info = await this._contract?.getAccountInfo(address);
+
+        const info = await this._contract.getAccountInfo(address);
         return {
             isVerifiedDoctor: !!info?.isDoctor,
             isBanned: !!info?.isBanned,
         };
     }
 
+    async giveFreeMoney(address: Web3Address) {
+        if (!this._signer)
+            throw new Error("no signer");
+
+        const amount = ethers.parseEther("0.001");
+
+        debug("Sending", amount, "MATIC to", address);
+
+        const txn = await this._signer.sendTransaction({
+            to: address,
+            value: amount,
+        });
+        await txn.wait(1);
+
+        debug("Successfully sent MATIC to", address);
+    }
+
     async promoteToDoctor(address: Web3Address) {
         if (!this._contract)
-            return;
+            throw new Error("no contract");
 
         await this._contract.promoteToDoctor(
             address,

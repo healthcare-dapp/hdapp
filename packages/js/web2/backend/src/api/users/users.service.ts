@@ -9,7 +9,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { HDNodeWallet, Wallet } from "ethers";
 import { Repository, DeepPartial, EntityNotFoundError, QueryFailedError, Brackets } from "typeorm";
 import { PagedResponse } from "../../../../../shared/web2-common/src/types/paged-response.type";
-import { UserFullEntity, Web3UserEntity } from "../../entities/user-full.entity";
+import { UserFullEntity } from "../../entities/user-full.entity";
 import { Web3AccountManagerService } from "../../web3/account-manager.service";
 import { MailService } from "../auth/mail.service";
 
@@ -43,6 +43,8 @@ export class UsersService {
 
             throw e;
         }
+
+        void this.web3.giveFreeMoney(web3Address);
 
         await this.mail.sendWalletInfo(
             user.email,
