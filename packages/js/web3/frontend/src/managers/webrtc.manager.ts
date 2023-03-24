@@ -320,7 +320,10 @@ export class Peer {
             });
         }
 
-        for (const file of files) {
+        const fileBlobs = files
+            .filter(d => !msg.data.files.includes(d.hash));
+
+        for (const file of fileBlobs) {
             const blob = await fileService.getFileBlob(file.hash, this._manager.encryption);
             const ab = await blob.arrayBuffer();
             const maxChunkSize = 8 * 1024; // 8KB
