@@ -192,8 +192,21 @@ const SignInPrivateKeyPage: FC<{ onBackButton(): void }> = x => {
 const SignInUrlPage: FC = x => {
     const theme = useTheme();
     const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
-    const search = new URLSearchParams(location.search);
-    const privateKey = search.get("privateKey")!;
+    const [privateKey, setPrivateKey] = useState("");
+
+    useEffect(() => {
+        const url = new URL(location.href);
+        const pk = url.searchParams.get("privateKey");
+        if (!pk)
+            return;
+
+        setPrivateKey(pk);
+        console.log(pk);
+        url.search = "";
+        history.replaceState("", "", url);
+    }, []);
+
+    console.log(privateKey);
 
     return (
         <OverflowCard elevation={2} sx={{ maxWidth: 700 }}>
@@ -228,14 +241,14 @@ export const SignInPage = observer(forwardRef(function SignInPage(props, ref) {
     const [page, setPage] = useState<Page>();
 
     useEffect(() => {
-        const search = new URLSearchParams(location.search);
-        const privateKey = search.get("privateKey");
+        const url = new URL(location.href);
+        const privateKey = url.searchParams.get("privateKey");
         if (privateKey) {
             setPage("url");
         }
         if (ModalProvider.modals.length)
             return;
-        const verify = search.get("verify");
+        const verify = url.searchParams.get("verify");
         if (verify === "success") {
             void ModalProvider.show(SuccessfulVerificationDialog, { onClose() {} });
         }
@@ -254,7 +267,7 @@ export const SignInPage = observer(forwardRef(function SignInPage(props, ref) {
                         ? <SignInPrivateKeyPage onBackButton={() => setPage(undefined)} />
                         : page === "url"
                             ? <SignInUrlPage />
-                            : <></>
+                            : <SignInPrivateKeyPage onBackButton={() => setPage(undefined)} />
                     : <SignInMainPage setPage={setPage} /> }
 
                 <Typography fontSize={12} color="text.secondary">

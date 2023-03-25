@@ -5,6 +5,8 @@ import { makeAutoObservable, runInAction, toJS } from "mobx";
 import { observer } from "mobx-react-lite";
 import { FC, ReactElement, useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
+import { SendConnectionConfirmationDialog } from "./dialogs/send-connection-confirmation.dialog";
+import { WaitingForConnectionDialog } from "./dialogs/waiting-for-connection.dialog";
 import { sessionManager } from "./managers/session.manager";
 import { walletManager } from "./managers/wallet.manager";
 import { LockScreenPage } from "./pages/lock-screen";
@@ -79,6 +81,35 @@ export const AppRoot = observer(function App() {
         setIsDbLoading(!dbService.isInitialized);
         dbService.on("ready", () => setIsDbLoading(false));
     }, []);
+
+    useEffect(() => {
+        (async () => {
+            if (!sessionManager.isSignedIn)
+                return;
+
+            const url = new URL(location.href);
+            const address = url.searchParams.get("connect");
+            const key = url.searchParams.get("key");
+            if (!address || !key)
+                return;
+
+            url.search = "";
+            history.replaceState("", "", url);
+
+            const isConfirmed = await ModalProvider.show(SendConnectionConfirmationDialog, {
+                address
+            });
+
+            if (!isConfirmed)
+                return;
+
+            await sessionManager.accessControl.requestUserConnection
+                .run(address, key);
+
+            console.log("confirmed");
+            await ModalProvider.show(WaitingForConnectionDialog, {});
+        })();
+    }, [sessionManager.isSignedIn]);
 
     if (isDbLoading || !hasWalletsListEverLoaded)
         return (

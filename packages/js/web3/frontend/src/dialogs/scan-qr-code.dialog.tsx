@@ -13,7 +13,6 @@ import { FC, useEffect, useRef } from "react";
 import { ModalProvider } from "../App2";
 import { sessionManager } from "../managers/session.manager";
 import { SendConnectionConfirmationDialog } from "./send-connection-confirmation.dialog";
-import { UserInviteConfirmationDialog } from "./user-invite-confirmation.dialog";
 import { WaitingForConnectionDialog } from "./waiting-for-connection.dialog";
 
 export const ScanQrCodeDialog: FC<{ onClose(): void }> = x => {
@@ -93,11 +92,7 @@ export const ScanQrCodeDialog: FC<{ onClose(): void }> = x => {
                             sx={{ px: 2 }}>
                     Please use your camera to scan the QR code to add a person to Contacts
                 </Typography>
-                <video id="video" style={{ background: "black", flexGrow: 1, minHeight: "500px" }} autoPlay ref={videoRef}
-                       onClick={() => {
-                           x.onClose();
-                           void ModalProvider.show(UserInviteConfirmationDialog, { onClose() {} });
-                       }} />
+                <video id="video" style={{ background: "black", flexGrow: 1, minHeight: "500px" }} autoPlay ref={videoRef} />
             </Stack>
         </Dialog>
     );

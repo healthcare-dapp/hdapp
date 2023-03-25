@@ -193,10 +193,9 @@ export const QrCodeDialog: FC<{ onClose(): void }> = observer(x => {
                                            }}>
                                         <code style={{
                                             width: "100%",
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
                                             maxWidth: "450px",
-                                            whiteSpace: "nowrap"
+                                            fontSize: "12px",
+                                            wordBreak: "break-all"
                                         }}>
                                             { connectionUrl }
                                         </code>
