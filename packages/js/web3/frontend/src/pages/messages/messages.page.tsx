@@ -32,7 +32,8 @@ import {
     useMediaQuery,
     useTheme,
 } from "@mui/material";
-import { FC, useRef, useState } from "react";
+import { observer } from "mobx-react-lite";
+import { FC, useEffect, useRef, useState } from "react";
 import { useMatches, useNavigate, useParams } from "react-router-dom";
 import { ModalProvider } from "../../App2";
 import { CreateChatDialog } from "../../dialogs/create-chat.dialog";
@@ -65,9 +66,7 @@ const ChatButton = styled(ListItemButton)(({ theme }) => ({
         },
         ".MuiBadge-overlapCircular": {
             borderColor: theme.palette.primary.dark,
-            "&.MuiBadge-colorSuccess": {
-                background: "white"
-            }
+            background: "white !important"
         }
     }
 }));
@@ -77,15 +76,24 @@ const OverflowCard = styled(Box)`
     overflow: overlay;
 `;
 
-const LeftPanel: FC = () => {
+const LeftPanel: FC = observer(() => {
     const theme = useTheme();
     const navigate = useNavigate();
     const matches = useMatches();
     const [match] = matches;
     const canShowBothPanels = useMediaQuery(theme.breakpoints.up("md"));
-    const [chats, setChats] = useState<(ChatEntry & { last_message: ChatMessageEntry; participants: (ProfileEntry & { avatar_url: string | null })[] })[]>([]);
+    const [chats, setChats] = useState<(ChatEntry & {
+        name: string
+        pictureUrl?: string
+        participant_address?: string
+        last_message?: ChatMessageEntry
+        participants: (ProfileEntry & {
+            avatar_url?: string
+        })[]
+    })[]>([]);
+    const onlineAddresses = sessionManager.webrtc.onlinePeerAddresses;
 
-    useDatabase(async () => {
+    async function reload() {
         const chatEntities = await chatService.searchChats({});
         const mapped = await Promise.all(
             chatEntities.map(async chat => {
@@ -103,15 +111,34 @@ const LeftPanel: FC = () => {
                     participants.map(async profile => {
                         const avatarUrl = profile.avatar_hash
                             ? URL.createObjectURL(await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption))
-                            : null;
+                            : void 0;
                         return { ...profile, avatar_url: avatarUrl };
                     })
                 );
-                return { ...chat, participants: participantsWithAvatars, last_message: lastMessage };
+                return {
+                    ...chat,
+                    pictureUrl: participantsWithAvatars
+                        .filter(p => p.address !== sessionManager.wallet.address)[0]
+                        ?.avatar_url,
+                    participant_address: participantsWithAvatars
+                        .filter(p => p.address !== sessionManager.wallet.address)[0]
+                        ?.address,
+                    name: chat.friendly_name.trim() || participants
+                        .filter(p => p.address !== sessionManager.wallet.address)
+                        .map(p => p.full_name)
+                        .join(", "),
+                    participants: participantsWithAvatars,
+                    last_message: lastMessage
+                };
             })
         );
         setChats(mapped);
-    }, ["chats", "chat_messages", "file_blobs", "profiles"]);
+    }
+
+    useDatabase(reload, ["chats", "chat-messages", "file_blobs", "profiles"]);
+    useEffect(() => {
+        void reload();
+    }, [matches]);
 
     return (
         <Paper variant="outlined" sx={{ borderRadius: 0, maxWidth: canShowBothPanels ? 300 : "unset", width: "100%", position: "relative", border: 0 }}>
@@ -137,33 +164,44 @@ const LeftPanel: FC = () => {
                                 <Badge overlap="circular"
                                        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                                        variant="dot"
-                                       color="success"
-                                       sx={{ ".MuiBadge-badge": { width: "12px", height: "12px", borderRadius: "6px", border: "2px solid white" } }}>
+                                       sx={{
+                                           ".MuiBadge-badge": {
+                                               background: onlineAddresses.includes(chat.participant_address!)
+                                                   ? theme.palette.success.main
+                                                   : theme.palette.grey[700],
+                                               width: "12px",
+                                               height: "12px",
+                                               borderRadius: "6px",
+                                               border: chat.participant_address ? "2px solid white" : void 0
+                                           }
+                                       }}>
                                     <Avatar sx={{ width: 40, height: 40, background: theme.palette.success.light }}
-                                            src={chat.participants.find(u => u.address !== sessionManager.wallet.address)?.avatar_url ?? void 0} />
+                                            src={chat.pictureUrl} />
                                 </Badge>
                                 <Stack spacing={0.25} flexGrow={1} width={0}>
                                     <Stack direction="row" alignItems="center" spacing={2}>
                                         <Typography fontSize={14} fontWeight={500} color="inherit">
-                                            { chat.friendly_name }
+                                            { chat.name }
                                         </Typography>
                                         <Typography variant="subtitle2" color="inherit" fontSize={12} style={{ fontWeight: 400, marginLeft: "auto", opacity: 0.5 }}>
-                                            { formatTemporal(chat.last_message.created_at) }
+                                            { formatTemporal(chat.last_message?.created_at) }
                                         </Typography>
                                     </Stack>
                                     <Stack direction="row" alignItems="center" spacing={0.25}>
-                                        { chat.last_message.attachment_ids.length
-                                            ? (
-                                                <>
-                                                    <ImageOutlined fontSize="small" />
-                                                    <Typography noWrap overflow="hidden" textOverflow="ellipsis" variant="subtitle2" fontWeight="500">
-                                                        <span>Image</span>
-                                                        <span style={{ fontWeight: 400, opacity: 0.75, margin: "0 4px" }}>&mdash;</span>
-                                                        <span>{ chat.last_message.content }</span>
-                                                    </Typography>
-                                                </>
-                                            )
-                                            : <Typography fontSize={14} noWrap overflow="hidden" textOverflow="ellipsis" fontWeight="500" color="inherit">{ chat.last_message.content }</Typography> }
+                                        { chat.last_message?.attachment_ids.length ? (
+                                            <>
+                                                <ImageOutlined fontSize="small" />
+                                                <Typography noWrap overflow="hidden" textOverflow="ellipsis" variant="subtitle2" fontWeight="500">
+                                                    <span>Image</span>
+                                                    <span style={{ fontWeight: 400, opacity: 0.75, margin: "0 4px" }}>&mdash;</span>
+                                                    <span>{ chat.last_message.content }</span>
+                                                </Typography>
+                                            </>
+                                        ) : (
+                                            <Typography fontSize={14} noWrap overflow="hidden" textOverflow="ellipsis" fontWeight="500" color="inherit">
+                                                { chat.last_message?.content }
+                                            </Typography>
+                                        ) }
                                         <Box flexGrow={1} />
                                         { /* <Badge color="error" badgeContent={3} style={{ marginRight: "8px", marginLeft: "16px" }} /> */ }
                                     </Stack>
@@ -188,9 +226,9 @@ const LeftPanel: FC = () => {
             ) }
         </Paper>
     );
-};
+});
 
-const RightPanel: FC = () => {
+const RightPanel: FC = observer(() => {
     const theme = useTheme();
     const navigate = useNavigate();
     const matches = useMatches();
@@ -204,12 +242,23 @@ const RightPanel: FC = () => {
     const [chat, setChat] = useState<ChatEntry>();
     const [participants, setParticipants] = useState<(ProfileEntry & { avatar_url?: string })[]>([]);
     const [messages, setMessages] = useState<(ChatMessageEntry & { attachments: string[] })[]>([]);
+    const onlineAddresses = sessionManager.webrtc.onlinePeerAddresses;
 
-    useDatabase(async () => {
-        if (!chatHash)
+    const otherParticipants = participants
+        .filter(p => p.address !== sessionManager.wallet.address);
+    const chatName = chat
+        ? (
+            chat.friendly_name.trim() || otherParticipants
+                .map(p => p.full_name)
+                .join(", ")
+        ) : "Loading...";
+
+    const reload = async (inputHash?: string) => {
+        const hash = inputHash ?? chat?.hash;
+        if (!hash)
             return;
 
-        const chatEntry = await chatService.getChat(chatHash);
+        const chatEntry = await chatService.getChat(hash);
         setChat(chatEntry);
 
         const profiles = await Promise.all(
@@ -226,7 +275,7 @@ const RightPanel: FC = () => {
 
         const chatMessages = await chatMessageService.searchChatMessages({
             filters: {
-                chat_hash: chatHash,
+                chat_hash: hash,
             },
             sort_by: "created_at",
             limit: 50
@@ -245,7 +294,16 @@ const RightPanel: FC = () => {
         );
 
         setMessages(mapped);
-    });
+
+        setTimeout(() => {
+            messagesListRef.current?.scrollTo({ top: messagesListRef.current!.scrollHeight, behavior: "smooth" });
+        }, 200);
+    };
+
+    useDatabase(reload, ["chats", "chat-messages", "files", "profiles"], [chat]);
+    useEffect(() => {
+        chatHash && void reload(chatHash);
+    }, [chatHash]);
 
     if (!chatHash) {
         return (
@@ -261,6 +319,8 @@ const RightPanel: FC = () => {
             content: messageText,
             created_by: sessionManager.wallet.address
         }, sessionManager.encryption);
+
+        setMessageText("");
     }
 
     return (
@@ -269,8 +329,11 @@ const RightPanel: FC = () => {
                 <Stack direction="row" alignItems="center">
                     { !canShowBothPanels && <IconButton onClick={() => navigate("/messages")}><ArrowBack /></IconButton> }
                     <Stack spacing={-0.5} sx={{ pl: 1 }}>
-                        <Typography fontSize={16} fontWeight="500">Anna Cutemon</Typography>
-                        <Typography fontSize={14} fontWeight="500" color="success.main">online</Typography>
+                        <Typography fontSize={16} fontWeight="500">{ chatName }</Typography>
+                        <Typography fontSize={14} fontWeight="500"
+                                    color={onlineAddresses.includes(otherParticipants[0]?.address) ? "success" : "text.secondary"}>
+                            { onlineAddresses.includes(otherParticipants[0]?.address) ? "online" : "offline" }
+                        </Typography>
                     </Stack>
                     <Box flexGrow={1} />
                     { canShowExtendedHeader
@@ -338,7 +401,7 @@ const RightPanel: FC = () => {
             </Stack>
         </Paper>
     );
-};
+});
 
 export const MessagesPage = () => {
     const theme = useTheme();

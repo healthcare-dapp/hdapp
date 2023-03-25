@@ -109,7 +109,7 @@ export class ChatMessageService extends DbConsumer {
                 },
                 request.limit,
                 request.sort_by ?? void 0,
-                "prev"
+                "next"
             );
             return devices;
         } catch (e) {

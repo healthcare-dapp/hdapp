@@ -1,3 +1,4 @@
+import { formatTemporal } from "@hdapp/shared/web2-common/utils/temporal";
 import { Menu as MenuIcon, Search, Tune } from "@mui/icons-material";
 import {
     Box,
@@ -22,15 +23,20 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { EventLogEntry, eventLogService } from "../../services/event-log.service";
+import { trimWeb3Address } from "../../utils/trim-web3-address";
 import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
 import { HeaderWidget } from "../../widgets/header";
 
-const columns: GridColDef[] = [
+const columns: GridColDef<EventLogEntry>[] = [
     {
         field: "created_at",
-        headerName: "Timestamp"
+        headerName: "Timestamp",
+        width: 135,
+        renderCell(params) {
+            return formatTemporal(params.row.created_at);
+        }
     },
     {
         field: "title",
@@ -45,7 +51,10 @@ const columns: GridColDef[] = [
     {
         field: "created_by",
         width: 250,
-        headerName: "Creator"
+        headerName: "Creator",
+        renderCell(params) {
+            return trimWeb3Address(params.row.created_by);
+        }
     }
 ];
 
@@ -97,7 +106,7 @@ export const LogsPage = observer(() => {
             <Container sx={{ pt: 3, flex: 1, display: "flex", flexDirection: "column" }}>
                 <Grid2 container columnSpacing={2} sx={{ flex: 1 }}>
                     <Grid2 xs={12} sm={7} lg={8} xl={8}
-                           sx={{ display: "flex", flexDirection: "column", pb: 1 }}>
+                           sx={{ display: "flex", flexDirection: "column", pb: 1, minHeight: 400 }}>
                         <Typography variant="h4" mb={3} fontSize={32}>My logs</Typography>
                         <DataGrid<EventLogEntry> columns={columns} rows={logs}
                                                  getRowId={s => s.hash} />

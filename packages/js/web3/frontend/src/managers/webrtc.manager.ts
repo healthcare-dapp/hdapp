@@ -16,8 +16,8 @@ import {
     type,
     TypeOf,
     union,
-    unknown,
 } from "io-ts";
+import { makeAutoObservable } from "mobx";
 import { blockService } from "../services/block.service";
 import { chatMessageService } from "../services/chat-message.service";
 import { chatService } from "../services/chat.service";
@@ -29,6 +29,7 @@ import { profileService } from "../services/profile.service";
 import { recordNoteService } from "../services/record-note.service";
 import { recordService } from "../services/record.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
+import { trimWeb3Address } from "../utils/trim-web3-address";
 import { Web3Manager } from "./web3.manager";
 
 export type BrokerMessageData = {
@@ -89,11 +90,25 @@ export const PeerMessageSyncFileChunk = IPeerMessage(
 );
 export type PeerMessageSyncFileChunk = TypeOf<typeof PeerMessageSyncFileChunk>;
 
+export const PeerMessageSyncRequested = IPeerMessage(
+    "SYNC_REQUESTED",
+    type({})
+);
+export type PeerMessageSyncRequested = TypeOf<typeof PeerMessageSyncRequested>;
+
+export const PeerMessageSyncFinished = IPeerMessage(
+    "SYNC_FINISHED",
+    type({})
+);
+export type PeerMessageSyncFinished = TypeOf<typeof PeerMessageSyncFinished>;
+
 export const PeerMessage = union([
     PeerMessageShowCurrentState,
     PeerMessageSyncSummary,
     PeerMessageSyncDbRecordsChunk,
-    PeerMessageSyncFileChunk
+    PeerMessageSyncFileChunk,
+    PeerMessageSyncRequested,
+    PeerMessageSyncFinished
 ]);
 export type PeerMessage = TypeOf<typeof PeerMessage>;
 
@@ -112,6 +127,7 @@ export class Peer {
     private _isMakingOffer = false;
     private _isIgnoringOffer = false;
     private _isSrdAnswerPending = false;
+    private _isSyncing = false;
 
     constructor(
         device: DeviceEntry,
@@ -134,6 +150,10 @@ export class Peer {
 
     get deviceOwnedBy() {
         return this.#device.owned_by;
+    }
+
+    get isConnecting() {
+        return this._peerConnection?.connectionState === "connecting";
     }
 
     dispose() {
@@ -162,7 +182,7 @@ export class Peer {
             throw new Error("no peer connection");
 
         const isStable = this._peerConnection.signalingState === "stable"
-          || (this._peerConnection.signalingState === "have-local-offer" && this._isSrdAnswerPending);
+            || (this._peerConnection.signalingState === "have-local-offer" && this._isSrdAnswerPending);
 
         this._isIgnoringOffer = !this._isPolite
             && description.type === "offer"
@@ -192,7 +212,7 @@ export class Peer {
         }
     }
 
-    private _handleMessage(event: MessageEvent<unknown>) {
+    private async _handleMessage(event: MessageEvent<unknown>) {
         debug("Received message", event);
         if (typeof event.data !== "string")
             throw new Error("who?");
@@ -217,7 +237,36 @@ export class Peer {
                 void this._handleFileChunk(msg);
                 break;
             case "SYNC_SUMMARY":
+                this._isSyncing = true;
                 debug("SYNC_SUMMARY", msg.data);
+                break;
+            case "SYNC_REQUESTED":
+                void this.sync();
+                debug("SYNC_REQUESTED", msg.data);
+                break;
+            case "SYNC_FINISHED":
+                await eventLogService.addEventLog({
+                    created_by: this._manager.web3Address,
+                    description: "Sync with user " + trimWeb3Address(this.#device.owned_by) + "has been completed.",
+                    title: "Sync complete",
+                    related_entities: [
+                        {
+                            type: "device",
+                            value: this.#device.hash
+                        },
+                        {
+                            type: "profile",
+                            value: this._manager.web3Address
+                        },
+                        {
+                            type: "profile",
+                            value: this.#device.owned_by
+                        },
+                    ]
+                });
+                window.setTimeout(() => {
+                    this._isSyncing = false;
+                }, 2000);
                 break;
         }
     }
@@ -339,17 +388,26 @@ export class Peer {
                 });
             }
         }
+
+        await this._sendMessage("SYNC_FINISHED", {});
     }
 
     private _initPeerConnection() {
         const pc = this._peerConnection = new RTCPeerConnection({
-            iceServers: [
-                {
-                    urls: [
-                        "stun:stun.fitauto.ru:3478",
-                    ]
-                },
-            ]
+            iceServers: [{
+                urls: ["stun:fr-turn1.xirsys.com"]
+            }, {
+                username: "BmMvwO5UEaaJ_QO5_HEnpVjJ-_0wjaKFatkI14PBirFHB0qvJUGrrpLTs-14oUsXAAAAAGQfN2NydXNsYW5nMDI=",
+                credential: "50b7e4e4-cb37-11ed-8a9e-0242ac120004",
+                urls: [
+                    "turn:fr-turn1.xirsys.com:80?transport=udp",
+                    "turn:fr-turn1.xirsys.com:3478?transport=udp",
+                    "turn:fr-turn1.xirsys.com:80?transport=tcp",
+                    "turn:fr-turn1.xirsys.com:3478?transport=tcp",
+                    "turns:fr-turn1.xirsys.com:443?transport=tcp",
+                    "turns:fr-turn1.xirsys.com:5349?transport=tcp"
+                ]
+            }]
         });
 
         pc.addEventListener("negotiationneeded", async () => {
@@ -436,7 +494,7 @@ export class Peer {
 
         sendChannel.addEventListener("open", () => {
             debug("data channel opened", sendChannel);
-            void this._showCurrentState();
+            void this.sync();
         });
         sendChannel.addEventListener(
             "message",
@@ -452,7 +510,15 @@ export class Peer {
         this._dataChannel = sendChannel;
     }
 
-    private async _showCurrentState() {
+    async requestSync() {
+        await this._sendMessage("SYNC_REQUESTED", {});
+    }
+
+    async sync() {
+        if (this._isSyncing)
+            return;
+
+        this._isSyncing = true;
         debug("sending showcurrentstate", this.#device);
 
         const records = await recordService.searchRecords({}, this._manager.encryption);
@@ -497,6 +563,7 @@ export class Peer {
 
 export class WebRTCManager {
     private _peers = new Map<string, Peer>();
+    private _waitingPongDevices: string[] = [];
 
     private _web3TransactionQueue: [string, string][] = [];
     private _isProcessingWeb3TransactionQueue = false;
@@ -505,16 +572,32 @@ export class WebRTCManager {
         private _web3: Web3Manager,
         private _encryption: EncryptionProvider
     ) {
+        makeAutoObservable(this);
+
         void this._bindWeb3Events();
 
         /* dbService.on("txn_completed", (stores: string[]) => {
             if (stores.includes("devices"))
                 void this._bindWeb3Events();
         }); */
+        let timeout: number | undefined;
+
+        dbService.on("txn_completed", (stores: string[]) => {
+            window.clearTimeout(timeout);
+            timeout = window.setTimeout(() => {
+                this._peers.forEach(peer => {
+                    void peer.requestSync();
+                });
+            }, 500);
+        });
     }
 
     get encryption() {
         return this._encryption;
+    }
+
+    get waitingDevices() {
+        return this._waitingPongDevices;
     }
 
     get onlinePeerAddresses() {
@@ -569,6 +652,8 @@ export class WebRTCManager {
 
         if (!device)
             return warn("could not find device", deviceHash);
+
+        this._waitingPongDevices.splice(this._waitingPongDevices.indexOf(device.hash), 1);
 
         if (device.owned_by !== event.args.sender)
             return warn("message from broker mentions device hash not owned by the user", { device, event });
@@ -652,6 +737,7 @@ export class WebRTCManager {
 
         for (const device of devices) {
             this.send(device, { type: "ping" });
+            this._waitingPongDevices.push(device.hash);
         }
     }
 }

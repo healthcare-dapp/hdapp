@@ -86,6 +86,10 @@ export const HeaderWidget = observer(() => {
     if (!canShowHeader)
         return null;
 
+    const waitingPeers = sessionManager.webrtc.waitingDevices;
+    const connectingPeers = sessionManager.webrtc.peers.filter(p => p.isConnecting);
+    const connectedPeers = sessionManager.webrtc.onlinePeerAddresses;
+
     return (
         <>
             <Header>
@@ -146,10 +150,16 @@ export const HeaderWidget = observer(() => {
                             <Box sx={{ flex: 1 }} />
                             { isBigEnough && (
                                 <Chip icon={<Sync />}
-                                      label={`${sessionManager.webrtc.peers.length} devices connected`}
+                                      label={connectedPeers.length
+                                          ? `${connectedPeers.length} devices connected`
+                                          : connectingPeers.length
+                                              ? `Connecting to ${connectingPeers.length} devices...`
+                                              : waitingPeers.length
+                                                  ? `Waiting for ${waitingPeers.length} devices...`
+                                                  : "Start sync"}
                                       sx={{ fontWeight: 500 }}
                                       color="success"
-                                      variant="outlined"
+                                      variant={!connectedPeers.length && !connectingPeers.length && !waitingPeers.length ? "filled" : "outlined"}
                                       onClick={() => {
                                           void sessionManager.webrtc.start();
                                       }} />

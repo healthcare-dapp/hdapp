@@ -25,7 +25,10 @@ export const MyChatsWidget: React.FC = () => {
     const theme = useTheme();
     const navigate = useNavigate();
     const [chats, setChats] = useState<(ChatEntry & {
-        messages: ChatMessageEntry[]
+        name: string
+        pictureUrl?: string
+        participant_address?: string
+        last_message?: ChatMessageEntry
         participants: (ProfileEntry & {
             avatar_url?: string
         })[]
@@ -49,9 +52,27 @@ export const MyChatsWidget: React.FC = () => {
                         })
                 );
 
-                const messages = await chatMessageService.searchChatMessages({}, sessionManager.encryption);
+                const [lastMessage] = await chatMessageService.searchChatMessages({
+                    filters: {
+                        chat_hash: chat.hash
+                    },
+                    sort_by: "created_at",
+                    limit: 1
+                }, sessionManager.encryption);
 
-                return { ...chat, messages, participants };
+                return { ...chat,
+                    pictureUrl: participants
+                        .filter(p => p.address !== sessionManager.wallet.address)[0]
+                        ?.avatar_url,
+                    participant_address: participants
+                        .filter(p => p.address !== sessionManager.wallet.address)[0]
+                        ?.address,
+                    name: chat.friendly_name.trim() || participants
+                        .filter(p => p.address !== sessionManager.wallet.address)
+                        .map(p => p.full_name)
+                        .join(", "),
+                    last_message: lastMessage,
+                    participants };
             })
         );
 
@@ -85,20 +106,20 @@ export const MyChatsWidget: React.FC = () => {
                                    color="success"
                                    sx={{ ".MuiBadge-badge": { width: "12px", height: "12px", borderRadius: "6px", border: "2px solid white" } }}>
                                 <Avatar sx={{ background: theme.palette.success.light, width: 40, height: 40 }}
-                                        src={chat.participants[0].avatar_url} />
+                                        src={chat.pictureUrl} />
                             </Badge>
                             <Stack width={0} flexGrow={1}>
                                 <Stack direction="row" alignItems="center" spacing={2}>
                                     <Typography variant="subtitle2">
-                                        { chat.participants[0].full_name }
+                                        { chat.name }
                                     </Typography>
-                                    <Badge color="error" badgeContent={3} />
+                                    { /* <Badge color="error" badgeContent={3} /> */ }
                                     <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400, marginLeft: "auto" }}>
                                         { formatTemporal(chat.created_at) }
                                     </Typography>
                                 </Stack>
                                 <Typography noWrap variant="subtitle2" fontWeight="500">
-                                    When would you like to make an appointment? At 13:30 or 15:30?
+                                    { chat.last_message?.content }
                                 </Typography>
                             </Stack>
                         </Stack>

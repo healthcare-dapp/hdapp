@@ -39,11 +39,11 @@ import { trimWeb3Address } from "../utils/trim-web3-address";
 const getProfilesAction = new AsyncAction(profileService.searchProfiles);
 const createChatAction = new AsyncAction(async (
     name: string,
-    participants: ProfileEntry[]
+    participantIds: string[]
 ) => {
     await chatService.addChat({
         friendly_name: name,
-        participant_ids: participants.map(p => p.address)
+        participant_ids: participantIds
     });
 });
 
@@ -74,9 +74,8 @@ export const CreateChatDialog = observer<{ onClose?(): void }>(x => {
     const [contacts, setContacts] = useState<ProfileEntry[]>([]);
     const [contactAvatars, setContactAvatars] = useState<Record<string, string>>({});
     const [selectedContact, setSelectedContact] = useState<ProfileEntry>();
-    useEffect(() => {
-        selectedContact && setFriendlyName(selectedContact.full_name);
-    }, [selectedContact]);
+    const onlineAddresses = sessionManager.webrtc.onlinePeerAddresses;
+
     useEffect(() => {
         (async () => {
             const profiles = (await getProfilesAction.run({ filters: { query } }, sessionManager.encryption))
@@ -129,7 +128,10 @@ export const CreateChatDialog = observer<{ onClose?(): void }>(x => {
                                             <Avatar src={p.avatar_hash ? contactAvatars[p.avatar_hash] : void 0} />
                                             <Stack direction="column">
                                                 <Typography noWrap color="inherit" fontSize="14px" fontWeight="500">{ p.full_name } <Typography component="span" fontSize="14px" fontWeight="500" color="text.secondary">({ trimWeb3Address(p.address) })</Typography></Typography>
-                                                <Typography fontSize="12px" fontWeight="500" color="success.dark">online</Typography>
+                                                <Typography fontSize="12px" fontWeight={onlineAddresses.includes(p.address) ? "500" : "400"}
+                                                            color={onlineAddresses.includes(p.address) ? "success.dark" : "text.secondary"}>
+                                                    { onlineAddresses.includes(p.address) ? "online" : "offline" }
+                                                </Typography>
                                             </Stack>
                                         </Stack>
                                     </ListItemButton>
@@ -145,7 +147,6 @@ export const CreateChatDialog = observer<{ onClose?(): void }>(x => {
                     <TextField autoFocus
                                margin="dense"
                                label="Chat name"
-                               type="password"
                                fullWidth
                                variant="outlined"
                                value={friendlyName}
@@ -157,7 +158,7 @@ export const CreateChatDialog = observer<{ onClose?(): void }>(x => {
                                            return;
                                        await createChatAction.run(
                                            friendlyName,
-                                           [selectedContact],
+                                           [selectedContact.address, sessionManager.wallet.address],
                                        );
                                        x.onClose?.();
                                    }}
