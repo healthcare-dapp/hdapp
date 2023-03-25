@@ -396,24 +396,11 @@ export class Peer {
         const pc = this._peerConnection = new RTCPeerConnection({
             iceServers: [
                 {
-                    urls: "stun:relay.metered.ca:80",
+                    urls: [
+                        "stun:stun.fitauto.ru:3478",
+                    ]
                 },
-                {
-                    urls: "turn:relay.metered.ca:80",
-                    username: "e81ef65700589ebb6122de0e",
-                    credential: "U1lmdSZvXc1eLO0x",
-                },
-                {
-                    urls: "turn:relay.metered.ca:443",
-                    username: "e81ef65700589ebb6122de0e",
-                    credential: "U1lmdSZvXc1eLO0x",
-                },
-                {
-                    urls: "turn:relay.metered.ca:443?transport=tcp",
-                    username: "e81ef65700589ebb6122de0e",
-                    credential: "U1lmdSZvXc1eLO0x",
-                },
-            ],
+            ]
         });
 
         pc.addEventListener("negotiationneeded", async () => {
