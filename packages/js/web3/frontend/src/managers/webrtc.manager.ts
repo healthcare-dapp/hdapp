@@ -394,13 +394,20 @@ export class Peer {
 
     private _initPeerConnection() {
         const pc = this._peerConnection = new RTCPeerConnection({
-            iceServers: [
-                {
-                    urls: [
-                        "stun:stun.fitauto.ru:3478",
-                    ]
-                },
-            ]
+            iceServers: [{
+                urls: ["stun:fr-turn1.xirsys.com"]
+            }, {
+                username: "BmMvwO5UEaaJ_QO5_HEnpVjJ-_0wjaKFatkI14PBirFHB0qvJUGrrpLTs-14oUsXAAAAAGQfN2NydXNsYW5nMDI=",
+                credential: "50b7e4e4-cb37-11ed-8a9e-0242ac120004",
+                urls: [
+                    "turn:fr-turn1.xirsys.com:80?transport=udp",
+                    "turn:fr-turn1.xirsys.com:3478?transport=udp",
+                    "turn:fr-turn1.xirsys.com:80?transport=tcp",
+                    "turn:fr-turn1.xirsys.com:3478?transport=tcp",
+                    "turns:fr-turn1.xirsys.com:443?transport=tcp",
+                    "turns:fr-turn1.xirsys.com:5349?transport=tcp"
+                ]
+            }]
         });
 
         pc.addEventListener("negotiationneeded", async () => {
