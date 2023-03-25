@@ -125,6 +125,7 @@ export class SessionManager {
                 this._web3Manager,
                 this._notificationsManager
             );
+            void this._webrtcManager.start();
         });
     }
 

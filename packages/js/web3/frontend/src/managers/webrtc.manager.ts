@@ -670,6 +670,11 @@ export class WebRTCManager {
                     .toString(enc.Utf8);
                 const data: BrokerMessageData = JSON.parse(json);
 
+                if (peer && data.type === "ping") {
+                    peer.dispose();
+                    this._peers.delete(device.hash);
+                }
+
                 if (!peer) {
                     peer = new Peer(device, this, data.type === "ping");
                     this._peers.set(device.hash, peer);
