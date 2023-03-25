@@ -7,13 +7,14 @@ import { dbService, DbService } from "./db.service";
 interface ChatMessageDbEntry {
     hash: string
     encrypted: string
+    created_at: string
 }
 
 interface ChatMessageDbEntryEncryptedData {
     content: string
     attachment_ids: string[]
     created_by: string
-    created_at: string
+    chat_hash: string
 }
 
 export interface ChatMessageEntry {
@@ -22,12 +23,14 @@ export interface ChatMessageEntry {
     attachment_ids: string[]
     created_by: string
     created_at: LocalDateTime
+    chat_hash: string
 }
 
 export interface ChatMessageForm {
     content: string
     attachment_ids: string[]
     created_by: string
+    chat_hash: string
 }
 
 export interface ChatMessageSearchRequest {
@@ -37,8 +40,10 @@ export interface ChatMessageSearchRequest {
         has_attachments?: string | null
         from_date?: LocalDate | null
         to_date?: LocalDate | null
+        chat_hash?: string | null
     }
-    sort_by?: "created_by" | null
+    sort_by?: "created_at" | null
+    limit?: number
 }
 
 export class ChatMessageNotFoundError extends Error { }
@@ -53,7 +58,8 @@ const transformer = (provider: EncryptionProvider) => (dbEntry: ChatMessageDbEnt
         attachment_ids: encrypted.attachment_ids,
         created_by: encrypted.created_by,
         content: encrypted.content,
-        created_at: LocalDateTime.parse(encrypted.created_at)
+        chat_hash: encrypted.chat_hash,
+        created_at: LocalDateTime.parse(dbEntry.created_at)
     };
 };
 
@@ -62,12 +68,13 @@ const reverseTransformer = (provider: EncryptionProvider) => (entry: ChatMessage
         attachment_ids: entry.attachment_ids,
         created_by: entry.created_by,
         content: entry.content,
-        created_at: entry.created_at.toString()
+        chat_hash: entry.chat_hash,
     };
 
     return {
         hash: entry.hash,
-        encrypted: provider.encrypt(JSON.stringify(encrypted))
+        encrypted: provider.encrypt(JSON.stringify(encrypted)),
+        created_at: entry.created_at.toString()
     };
 };
 
@@ -90,11 +97,19 @@ export class ChatMessageService extends DbConsumer {
         }
     };
 
-    readonly searchChatMessages = async (_: ChatMessageSearchRequest, provider: EncryptionProvider): Promise<ChatMessageEntry[]> => {
+    readonly searchChatMessages = async (request: ChatMessageSearchRequest, provider: EncryptionProvider): Promise<ChatMessageEntry[]> => {
         try {
             const devices = await this._findMany(
                 transformer(provider),
-                () => true
+                message => {
+                    if (request.filters?.chat_hash && message.chat_hash !== request.filters.chat_hash)
+                        return false;
+
+                    return true;
+                },
+                request.limit,
+                request.sort_by ?? void 0,
+                "prev"
             );
             return devices;
         } catch (e) {
@@ -139,6 +154,7 @@ export class ChatMessageService extends DbConsumer {
 
         metadataStore.createIndex("hash", "hash", { unique: true });
         metadataStore.createIndex("encrypted", "encrypted", { unique: false });
+        metadataStore.createIndex("created_at", "created_at", { unique: false });
     }
 }
 

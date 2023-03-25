@@ -49,11 +49,16 @@ export abstract class DbConsumer implements IDbConsumer {
 
     protected _findMany<DbT, T>(
         processor: (dbEntity: DbT) => T,
-        predicate: (entity: T) => boolean
+        predicate: (entity: T) => boolean,
+        limit?: number,
+        index?: string,
+        cursorDirection?: IDBCursorDirection
     ): Promise<T[]> {
         const tsn = this._db.transaction([this._storeName], "readonly");
         const dataStore = tsn.objectStore(this._storeName);
-        const request = dataStore.openCursor();
+        const request = index
+            ? dataStore.index(index).openCursor(undefined, cursorDirection)
+            : dataStore.openCursor(undefined, cursorDirection);
         if (!request)
             return Promise.resolve([]);
 
@@ -71,6 +76,9 @@ export abstract class DbConsumer implements IDbConsumer {
                     const entry = processor(request.result.value);
                     if (predicate(entry))
                         entries.push(entry);
+
+                    if (limit && entries.length === limit)
+                        return resolve(entries);
 
                     request.result.continue();
                 } catch (cause) {

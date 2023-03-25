@@ -1,4 +1,4 @@
-import { Logger, formatBytes } from "@hdapp/shared/web2-common/utils";
+import { Logger, autoBind, formatBytes } from "@hdapp/shared/web2-common/utils";
 import EventEmitter from "events";
 
 const dbName = "hdapp-pwa-frontend";
@@ -26,6 +26,8 @@ export class DbService {
         this._channel.addEventListener("messageerror", event => {
             error("Error in broadcast channel. ", { event });
         });
+
+        autoBind(this);
     }
 
     reset() {
@@ -138,9 +140,9 @@ export class DbService {
         return !!this._db;
     }
 
-    on = this._events.addListener;
-    off = this._events.removeListener;
-    private _emit = this._events.emit;
+    on = this._events.addListener.bind(this._events);
+    off = this._events.removeListener.bind(this._events);
+    private _emit = this._events.emit.bind(this._events);
 }
 
 export const dbService = new DbService();

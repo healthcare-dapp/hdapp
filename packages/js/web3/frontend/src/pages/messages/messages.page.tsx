@@ -1,3 +1,4 @@
+import { formatTemporal } from "@hdapp/shared/web2-common/utils";
 import {
     Add,
     AddCommentOutlined,
@@ -33,6 +34,14 @@ import {
 } from "@mui/material";
 import { FC, useRef, useState } from "react";
 import { useMatches, useNavigate, useParams } from "react-router-dom";
+import { ModalProvider } from "../../App2";
+import { CreateChatDialog } from "../../dialogs/create-chat.dialog";
+import { sessionManager } from "../../managers/session.manager";
+import { ChatMessageEntry, chatMessageService } from "../../services/chat-message.service";
+import { ChatEntry, chatService } from "../../services/chat.service";
+import { fileService } from "../../services/file.service";
+import { ProfileEntry, profileService } from "../../services/profile.service";
+import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
 import { HeaderWidget } from "../../widgets/header";
@@ -74,6 +83,35 @@ const LeftPanel: FC = () => {
     const matches = useMatches();
     const [match] = matches;
     const canShowBothPanels = useMediaQuery(theme.breakpoints.up("md"));
+    const [chats, setChats] = useState<(ChatEntry & { last_message: ChatMessageEntry; participants: (ProfileEntry & { avatar_url: string | null })[] })[]>([]);
+
+    useDatabase(async () => {
+        const chatEntities = await chatService.searchChats({});
+        const mapped = await Promise.all(
+            chatEntities.map(async chat => {
+                const [lastMessage] = await chatMessageService.searchChatMessages({
+                    filters: {
+                        chat_hash: chat.hash
+                    },
+                    sort_by: "created_at",
+                    limit: 1
+                }, sessionManager.encryption);
+                const participants = await Promise.all(
+                    chat.participant_ids.map(id => profileService.getProfile(id, sessionManager.encryption))
+                );
+                const participantsWithAvatars = await Promise.all(
+                    participants.map(async profile => {
+                        const avatarUrl = profile.avatar_hash
+                            ? URL.createObjectURL(await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption))
+                            : null;
+                        return { ...profile, avatar_url: avatarUrl };
+                    })
+                );
+                return { ...chat, participants: participantsWithAvatars, last_message: lastMessage };
+            })
+        );
+        setChats(mapped);
+    }, ["chats", "chat_messages", "file_blobs", "profiles"]);
 
     return (
         <Paper variant="outlined" sx={{ borderRadius: 0, maxWidth: canShowBothPanels ? 300 : "unset", width: "100%", position: "relative", border: 0 }}>
@@ -87,117 +125,52 @@ const LeftPanel: FC = () => {
                     </AppBar>
                 ) }
                 <List disablePadding>
-                    <ChatButton selected={match?.pathname === "/messages/0"}
-                                onClick={() => navigate("/messages/0")}>
-                        <Stack alignItems="center" direction="row" spacing={1.5} flexGrow={1}>
-                            <Badge overlap="circular"
-                                   anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                                   variant="dot"
-                                   color="success"
-                                   sx={{ ".MuiBadge-badge": { width: "12px", height: "12px", borderRadius: "6px", border: "2px solid white" } }}>
-                                <Avatar sx={{ width: 40, height: 40, background: theme.palette.success.light }} />
-                            </Badge>
-                            <Stack spacing={0.25} flexGrow={1} width={0}>
-                                <Stack direction="row" alignItems="center" spacing={2}>
-                                    <Typography fontSize={14} fontWeight={500} color="inherit">
-                                        Anna Cutemon
-                                    </Typography>
-                                    <Typography variant="subtitle2" color="inherit" fontSize={12} style={{ fontWeight: 400, marginLeft: "auto", opacity: 0.5 }}>
-                                        32 minutes ago
-                                    </Typography>
-                                </Stack>
-                                <Stack direction="row" alignItems="center" spacing={0.25}>
-                                    <Typography fontSize={14} noWrap overflow="hidden" textOverflow="ellipsis" fontWeight="500" color="inherit">When would you like to make an appointment? At 13:30 or 15:30?</Typography>
-                                    <Box flexGrow={1} />
-                                    <Badge color="error" badgeContent={3} style={{ marginRight: "8px", marginLeft: "16px" }} />
-                                </Stack>
-                            </Stack>
-                        </Stack>
-                    </ChatButton>
-                    <ChatButton selected={match?.pathname === "/messages/1"}
-                                onClick={() => navigate("/messages/1")}>
-                        <Stack alignItems="center" direction="row" spacing={1.5} flexGrow={1}>
-                            <Badge overlap="circular"
-                                   anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                                   variant="dot"
-                                   sx={{ ".MuiBadge-badge": { width: "12px", height: "12px", borderRadius: "6px", border: "2px solid white", background: theme.palette.grey[500] } }}>
-                                <Avatar sx={{ width: 40, height: 40, background: theme.palette.warning.light }} />
-                            </Badge>
-                            <Stack spacing={0.25} flexGrow={1} width={0}>
-                                <Stack direction="row" alignItems="center" spacing={2}>
-                                    <Typography fontSize={14} fontWeight={500} color="inherit">
-                                        Tom Hanks
-                                    </Typography>
-                                    <Typography variant="subtitle2" color="inherit" fontSize={12} style={{ fontWeight: 400, marginLeft: "auto", opacity: 0.5 }}>
-                                        1 hour ago
-                                    </Typography>
-                                </Stack>
-                                <Stack direction="row" alignItems="center" spacing={0.25}>
-                                    <ImageOutlined fontSize="small" />
-                                    <Typography noWrap overflow="hidden" textOverflow="ellipsis" variant="subtitle2" fontWeight="500">
-                                        <span>Image</span>
-                                        <span style={{ fontWeight: 400, opacity: 0.75, margin: "0 4px" }}>&mdash;</span>
-                                        <span>I have uploaded your x-ray results.</span>
-                                    </Typography>
-                                    <Box flexGrow={1} />
-                                    <Badge color="error" badgeContent={1} style={{ marginRight: "8px", marginLeft: "16px" }} />
+                    { !chats.length && (
+                        <Typography color="text.secondary" align="center" fontSize={14} mt={2}>
+                            You have no chats yet.
+                        </Typography>
+                    ) }
+                    { chats.map(chat => (
+                        <ChatButton selected={match?.pathname === "/messages/" + chat.hash}
+                                    onClick={() => navigate("/messages/" + chat.hash)} key={chat.hash}>
+                            <Stack alignItems="center" direction="row" spacing={1.5} flexGrow={1}>
+                                <Badge overlap="circular"
+                                       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                                       variant="dot"
+                                       color="success"
+                                       sx={{ ".MuiBadge-badge": { width: "12px", height: "12px", borderRadius: "6px", border: "2px solid white" } }}>
+                                    <Avatar sx={{ width: 40, height: 40, background: theme.palette.success.light }}
+                                            src={chat.participants.find(u => u.address !== sessionManager.wallet.address)?.avatar_url ?? void 0} />
+                                </Badge>
+                                <Stack spacing={0.25} flexGrow={1} width={0}>
+                                    <Stack direction="row" alignItems="center" spacing={2}>
+                                        <Typography fontSize={14} fontWeight={500} color="inherit">
+                                            { chat.friendly_name }
+                                        </Typography>
+                                        <Typography variant="subtitle2" color="inherit" fontSize={12} style={{ fontWeight: 400, marginLeft: "auto", opacity: 0.5 }}>
+                                            { formatTemporal(chat.last_message.created_at) }
+                                        </Typography>
+                                    </Stack>
+                                    <Stack direction="row" alignItems="center" spacing={0.25}>
+                                        { chat.last_message.attachment_ids.length
+                                            ? (
+                                                <>
+                                                    <ImageOutlined fontSize="small" />
+                                                    <Typography noWrap overflow="hidden" textOverflow="ellipsis" variant="subtitle2" fontWeight="500">
+                                                        <span>Image</span>
+                                                        <span style={{ fontWeight: 400, opacity: 0.75, margin: "0 4px" }}>&mdash;</span>
+                                                        <span>{ chat.last_message.content }</span>
+                                                    </Typography>
+                                                </>
+                                            )
+                                            : <Typography fontSize={14} noWrap overflow="hidden" textOverflow="ellipsis" fontWeight="500" color="inherit">{ chat.last_message.content }</Typography> }
+                                        <Box flexGrow={1} />
+                                        { /* <Badge color="error" badgeContent={3} style={{ marginRight: "8px", marginLeft: "16px" }} /> */ }
+                                    </Stack>
                                 </Stack>
                             </Stack>
-                        </Stack>
-                    </ChatButton>
-                    <ChatButton selected={match?.pathname === "/messages/2"}
-                                onClick={() => navigate("/messages/2")}>
-                        <Stack alignItems="center" direction="row" spacing={1.5} flexGrow={1}>
-                            <Badge overlap="circular"
-                                   anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                                   variant="dot"
-                                   sx={{ ".MuiBadge-badge": { width: "12px", height: "12px", borderRadius: "6px", border: "2px solid white", background: theme.palette.grey[500] } }}>
-                                <Avatar sx={{ width: 40, height: 40, background: theme.palette.secondary.light }} />
-                            </Badge>
-                            <Stack spacing={0.25} flexGrow={1} width={0}>
-                                <Stack direction="row" alignItems="center" spacing={2}>
-                                    <Typography fontSize={14} fontWeight={500} color="inherit">
-                                        Alexander Mironov
-                                    </Typography>
-                                    <Typography variant="subtitle2" color="inherit" fontSize={12} style={{ fontWeight: 400, marginLeft: "auto", opacity: 0.5 }}>
-                                        2 days ago
-                                    </Typography>
-                                </Stack>
-                                <Stack direction="row" alignItems="center" spacing={0.25}>
-                                    <Typography noWrap overflow="hidden" textOverflow="ellipsis" fontSize={14}>
-                                        Please do not forget to install the HDApp mobile app.
-                                    </Typography>
-                                </Stack>
-                            </Stack>
-                        </Stack>
-                    </ChatButton>
-                    <ChatButton selected={match?.pathname === "/messages/3"}
-                                onClick={() => navigate("/messages/3")}>
-                        <Stack alignItems="center" direction="row" spacing={1.5} flexGrow={1}>
-                            <Badge overlap="circular"
-                                   anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                                   variant="dot"
-                                   sx={{ ".MuiBadge-badge": { width: "12px", height: "12px", borderRadius: "6px", border: "2px solid white", background: theme.palette.grey[500] } }}>
-                                <Avatar sx={{ width: 40, height: 40, background: theme.palette.primary.light }} />
-                            </Badge>
-                            <Stack spacing={0.25} flexGrow={1} width={0}>
-                                <Stack direction="row" alignItems="center" spacing={2}>
-                                    <Typography fontSize={14} fontWeight={500} color="inherit">
-                                        Tatiana Smirnova
-                                    </Typography>
-                                    <Typography variant="subtitle2" color="inherit" fontSize={12} style={{ fontWeight: 400, marginLeft: "auto", opacity: 0.5 }}>
-                                        4 days ago
-                                    </Typography>
-                                </Stack>
-                                <Stack direction="row" alignItems="center" spacing={0.25}>
-                                    <Slideshow fontSize="small" />
-                                    <Typography noWrap overflow="hidden" textOverflow="ellipsis" fontSize={14}>
-                                        Video
-                                    </Typography>
-                                </Stack>
-                            </Stack>
-                        </Stack>
-                    </ChatButton>
+                        </ChatButton>
+                    )) }
                 </List>
             </Stack>
             { canShowBothPanels && (
@@ -207,7 +180,8 @@ const LeftPanel: FC = () => {
                          right: 0,
                          bottom: 0
                      }} style={{ margin: 16 }}
-                     variant="extended">
+                     variant="extended"
+                     onClick={() => ModalProvider.show(CreateChatDialog, {})}>
                     <AddCommentOutlined sx={{ mr: 1 }} />
                     New message
                 </Fab>
@@ -219,12 +193,75 @@ const LeftPanel: FC = () => {
 const RightPanel: FC = () => {
     const theme = useTheme();
     const navigate = useNavigate();
+    const matches = useMatches();
+    const [match] = matches;
+    const chatHash = match.params.chatId;
     const [messageText, setMessageText] = useState("");
-    const [messages, setMessages] = useState<{ text: string; date: Date; my: boolean }[]>([]);
     const isMessageTextValid = !!messageText.trim();
     const canShowExtendedHeader = useMediaQuery(theme.breakpoints.up("sm"));
     const canShowBothPanels = useMediaQuery(theme.breakpoints.up("md"));
     const messagesListRef = useRef<HTMLDivElement>(null);
+    const [chat, setChat] = useState<ChatEntry>();
+    const [participants, setParticipants] = useState<(ProfileEntry & { avatar_url?: string })[]>([]);
+    const [messages, setMessages] = useState<(ChatMessageEntry & { attachments: string[] })[]>([]);
+
+    useDatabase(async () => {
+        if (!chatHash)
+            return;
+
+        const chatEntry = await chatService.getChat(chatHash);
+        setChat(chatEntry);
+
+        const profiles = await Promise.all(
+            chatEntry.participant_ids.map(async id => {
+                const profile = await profileService.getProfile(id, sessionManager.encryption);
+
+                const avatarUrl = profile.avatar_hash
+                    ? URL.createObjectURL(await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption))
+                    : void 0;
+                return { ...profile, avatar_url: avatarUrl };
+            })
+        );
+        setParticipants(profiles);
+
+        const chatMessages = await chatMessageService.searchChatMessages({
+            filters: {
+                chat_hash: chatHash,
+            },
+            sort_by: "created_at",
+            limit: 50
+        }, sessionManager.encryption);
+
+        const mapped = await Promise.all(
+            chatMessages.map(async msg => {
+                const attachments = await Promise.all(
+                    msg.attachment_ids.map(
+                        id => fileService.getFileBlob(id, sessionManager.encryption)
+                            .then(blob => URL.createObjectURL(blob))
+                    )
+                );
+                return { ...msg, attachments };
+            })
+        );
+
+        setMessages(mapped);
+    });
+
+    if (!chatHash) {
+        return (
+            <Paper variant="outlined"
+                   sx={{ borderRadius: 0, height: "100%", border: 0, overflow: "hidden", flexGrow: 1, display: "flex", flexDirection: "column" }} />
+        );
+    }
+
+    async function send() {
+        await chatMessageService.addChatMessage({
+            attachment_ids: [],
+            chat_hash: chatHash!,
+            content: messageText,
+            created_by: sessionManager.wallet.address
+        }, sessionManager.encryption);
+    }
 
     return (
         <Paper variant="outlined" sx={{ borderRadius: 0, height: "100%", border: 0, overflow: "hidden", flexGrow: 1, display: "flex", flexDirection: "column" }}>
@@ -246,123 +283,36 @@ const RightPanel: FC = () => {
             <OverflowCard sx={{ flexGrow: 1, height: 0 }}
                           ref={messagesListRef}>
                 <Stack spacing={1} sx={{ pt: 2, pb: 1, px: canShowExtendedHeader ? 2 : 1, position: "relative", minHeight: "100%" }} justifyContent="flex-end">
-                    <Paper variant="outlined" sx={{ background: alpha(theme.palette.primary.light, 0.3), alignSelf: "flex-end", maxWidth: "450px", width: "100%", position: "relative", display: "flex", minHeight: "100px" }}>
-                        <img src="https://bollywoodfever.co.in/wp-content/uploads/2022/08/Thumbs-up-Memes13.jpg" style={{ width: "100%", borderRadius: 4 }} />
-
-                        <Typography color="text.secondary" fontSize={14} style={{ flexShrink: 0, alignSelf: "flex-end", bottom: 4, right: 4, background: "rgba(0, 0, 0, 0.7)", borderRadius: 4, padding: "2px 6px", position: "absolute", color: "white" }}>
-                            4:58:00 PM
-                        </Typography>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ background: alpha(theme.palette.primary.light, 0.3), p: 1, alignSelf: "flex-end", maxWidth: "450px" }}>
-                        <Stack spacing={1}>
-                            <Stack spacing={1} direction="row">
-                                <Typography fontSize={14}>
-                                    I think I'm feeling a lot better!
-                                </Typography>
-                                <Box flexGrow={1} />
-                                <Typography color="text.secondary" fontSize={14} style={{ flexShrink: 0, alignSelf: "flex-end" }}>
-                                    4:58:00 PM
-                                </Typography>
+                    { messages.map(msg => (
+                        <Paper variant="outlined"
+                               sx={
+                                   msg.created_by === sessionManager.wallet.address
+                                       ? { background: alpha(theme.palette.primary.light, 0.3), p: 1, alignSelf: "flex-end", maxWidth: "450px" }
+                                       : { background: theme.palette.grey[50], p: 1, alignSelf: "flex-start" }
+                               }
+                               key={msg.hash}>
+                            <Stack spacing={1}>
+                                { msg.attachments.map(url =>
+                                    <img src={url} key={url} style={{ width: "100%", borderRadius: 4 }} />
+                                ) }
+                                <Stack spacing={1} direction="row">
+                                    <Typography fontSize={14}>
+                                        { msg.content }
+                                    </Typography>
+                                    <Box flexGrow={1} />
+                                    <Typography color="text.secondary" fontSize={14} style={{ flexShrink: 0, alignSelf: "flex-end" }}>
+                                        { formatTemporal(msg.created_at) }
+                                    </Typography>
+                                </Stack>
                             </Stack>
-                        </Stack>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ background: alpha(theme.palette.primary.light, 0.3), p: 1, alignSelf: "flex-end", maxWidth: "450px" }}>
-                        <Stack spacing={1}>
-                            <Stack spacing={1} direction="row">
-                                <Typography fontSize={14}>
-                                    Thank you a lot!
-                                </Typography>
-                                <Box flexGrow={1} />
-                                <Typography color="text.secondary" fontSize={14} style={{ flexShrink: 0, alignSelf: "flex-end" }}>
-                                    4:59:00 PM
-                                </Typography>
-                            </Stack>
-                        </Stack>
-                    </Paper>
-                    { !messages.length && (
+                        </Paper>
+                    )) }
+                    { /*  !messages.length && (
                         <Box sx={{ borderRadius: "4px", padding: "4px 12px", color: "white", background: theme.palette.error.main, alignSelf: "center", zIndex: 0 }}>
                             <Typography fontSize={14} fontWeight={500}>New messages</Typography>
                             <Box sx={{ border: "1px solid " + theme.palette.error.main, position: "absolute", left: 0, right: 0, margin: "-10px 16px", zIndex: -1 }} />
                         </Box>
-                    ) }
-                    <Paper variant="outlined" sx={{ background: theme.palette.grey[50], p: 1, alignSelf: "flex-start" }}>
-                        <Stack spacing={0.5}>
-                            <Stack spacing={1} direction="row">
-                                <Typography color="success.dark" fontSize={14} fontWeight={500}>
-                                    Anna Cutemon
-                                </Typography>
-                                <Box flexGrow={1} />
-                                <Typography color="text.secondary" fontSize={14}>
-                                    10:21:00 AM
-                                </Typography>
-                            </Stack>
-                            <Typography fontSize={14}>
-                                Hello Ruslan!
-                            </Typography>
-                        </Stack>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ background: theme.palette.grey[50], p: 1, alignSelf: "flex-start", maxWidth: "450px" }}>
-                        <Stack spacing={1}>
-                            <Stack spacing={1} direction="row">
-                                <Typography fontSize={14}>
-                                    I would like to remind you that we wanted to do a check up today.
-                                </Typography>
-                                <Box flexGrow={1} />
-                                <Typography color="text.secondary" fontSize={14} style={{ flexShrink: 0, alignSelf: "flex-end" }}>
-                                    10:23:00 AM
-                                </Typography>
-                            </Stack>
-                        </Stack>
-                    </Paper>
-                    <Paper variant="outlined" sx={{ background: theme.palette.grey[50], p: 1, alignSelf: "flex-start", maxWidth: "450px" }}>
-                        <Stack spacing={1}>
-                            <Stack spacing={1} direction="row">
-                                <Typography fontSize={14}>
-                                    When would you like to make an appointment? At 13:30 or 15:30?
-                                </Typography>
-                                <Box flexGrow={1} />
-                                <Typography color="text.secondary" fontSize={14} style={{ flexShrink: 0, alignSelf: "flex-end" }}>
-                                    10:24:00 AM
-                                </Typography>
-                            </Stack>
-                        </Stack>
-                    </Paper>
-                    { messages.map(({ text, date, my }, index) => (
-                        <Paper variant="outlined" sx={{ background: my ? alpha(theme.palette.primary.light, 0.3) : theme.palette.grey[50], p: 1, alignSelf: my ? "flex-end" : "flex-start", maxWidth: "450px" }}
-                               key={date.toString()}>
-                            { text
-                                ? (
-                                    <Stack spacing={0.5}>
-                                        <Stack spacing={1} direction="row">
-                                            <Typography color="success.dark" fontSize={14} fontWeight={500}>
-                                                { my ? "Ruslan Garifullin" : "Anna Cutemon" }
-                                            </Typography>
-                                            <Box flexGrow={1} />
-                                            <Typography color="text.secondary" fontSize={14}>
-                                                { date.toLocaleTimeString() }
-                                            </Typography>
-                                        </Stack>
-                                        <Typography fontSize={14}>
-                                            { text }
-                                        </Typography>
-                                    </Stack>
-                                )
-                                : (
-                                    <Stack spacing={1}>
-                                        <Stack spacing={1} direction="row">
-                                            <Typography fontSize={14}>
-                                                { text }
-                                            </Typography>
-                                            <Box flexGrow={1} />
-                                            <Typography color="text.secondary" fontSize={14} style={{ flexShrink: 0, alignSelf: "flex-end" }}>
-                                                { date.toLocaleTimeString() }
-                                            </Typography>
-                                        </Stack>
-                                    </Stack>
-                                ) }
-
-                        </Paper>
-                    )) }
+                    )  */ }
                 </Stack>
             </OverflowCard>
             <Stack direction="row" sx={{ px: canShowExtendedHeader ? 2 : 1, py: 1 }} spacing={1} alignItems="stretch">
@@ -375,37 +325,13 @@ const RightPanel: FC = () => {
                 { canShowExtendedHeader ? (
                     <Button variant="contained" disableElevation style={{ borderRadius: 100 }}
                             startIcon={<Send />} disabled={!isMessageTextValid}
-                            onClick={() => {
-                                setMessages([...messages, { text: messageText, date: new Date(), my: true }]);
-                                setMessageText("");
-                                setTimeout(() => {
-                                    messagesListRef.current?.scrollTo({ top: 1000000000, behavior: "smooth" });
-                                }, 50);
-                                setTimeout(() => {
-                                    setMessages(msgs => ([...msgs, { text: "Okay! Got it!", date: new Date(), my: false }]));
-                                    setTimeout(() => {
-                                        messagesListRef.current?.scrollTo({ top: 1000000000, behavior: "smooth" });
-                                    }, 50);
-                                }, 3000);
-                            }}>
+                            onClick={send}>
                         Send
                     </Button>
                 ) : (
                     <Button variant="contained" disableElevation style={{ borderRadius: 100, padding: 0, minWidth: "unset" }}
                             disabled={!isMessageTextValid}
-                            onClick={() => {
-                                setMessages([...messages, { text: messageText, date: new Date(), my: true }]);
-                                setMessageText("");
-                                setTimeout(() => {
-                                    messagesListRef.current?.scrollTo({ top: 1000000000, behavior: "smooth" });
-                                }, 50);
-                                setTimeout(() => {
-                                    setMessages(msgs => ([...msgs, { text: "Okay! Got it!", date: new Date(), my: false }]));
-                                    setTimeout(() => {
-                                        messagesListRef.current?.scrollTo({ top: 1000000000, behavior: "smooth" });
-                                    }, 50);
-                                }, 3000);
-                            }}>
+                            onClick={send}>
                         <Send fontSize="small" sx={{ m: "0 10px" }} />
                     </Button>
                 ) }

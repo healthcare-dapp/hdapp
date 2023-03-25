@@ -127,3 +127,5 @@ export class ChatService extends DbConsumer {
 
 export const chatService = new ChatService(dbService);
 dbService.addConsumer(chatService);
+
+window.chatService = chatService;
