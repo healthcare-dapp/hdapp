@@ -77,7 +77,7 @@ export const MyChatsWidget: React.FC = () => {
         );
 
         setChats(mapped);
-    });
+    }, ["chats", "chat-messages", "profiles", "file_blobs"]);
 
     return (
         <Card variant="outlined" sx={{ width: "100%" }}>

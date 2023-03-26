@@ -46,7 +46,7 @@ export const LogsWidget: React.FC = () => {
                 })
         );
         setLogs(mapped);
-    });
+    }, ["event-logs", "profiles", "file_blobs"]);
 
     return (
         <Card variant="outlined" sx={{ width: "100%" }}>

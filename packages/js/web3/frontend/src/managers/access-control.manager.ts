@@ -76,17 +76,22 @@ export class AccessControlManager {
         if (!this._currentConnectionKey)
             return warn("no private key");
 
-        const hashLocalStr = SHA256(requester + " " + this._currentConnectionKey).toString();
-        const hashLocal = toBigInt("0x" + hashLocalStr);
+        const hashLocalStr = "0x" + SHA256(requester + " " + this._currentConnectionKey).toString();
+        const hashLocal = toBigInt(hashLocalStr);
 
         if (hashLocal !== hash)
             return warn("incoming hash doesn't match the expected hash");
+
+        const device = await deviceService.getDevice(hashLocalStr, sessionManager.encryption)
+            .catch(() => null);
+        if (device)
+            return;
 
         await deviceService.addDevice(
             {
                 added_at: LocalDateTime.now(),
                 friendly_name: "",
-                hash: "0x" + hashLocalStr,
+                hash: hashLocalStr,
                 is_current: false,
                 is_pending: true,
                 owned_by: requester,
@@ -109,10 +114,17 @@ export class AccessControlManager {
             ? user2
             : user1;
 
-        await deviceService.activateAllDevicesOwnedBy(
-            user,
-            sessionManager.encryption
-        );
+        const devices = await deviceService.getDevicesOwnedBy(user, sessionManager.encryption);
+        if (!devices.length)
+            return;
+
+        for (const device of devices) {
+            if (device.is_pending)
+                await deviceService.upsertDevice(
+                    { ...device, is_pending: false },
+                    sessionManager.encryption
+                );
+        }
 
         this._notifications.push({
             type: "user_connection_created",
@@ -121,17 +133,22 @@ export class AccessControlManager {
             userAddress: user
         });
 
-        await eventLogService.addEventLog({
-            created_by: user,
-            related_entities: [
-                {
-                    type: "profile",
-                    value: user,
-                }
-            ],
-            title: "Connection request accepted",
-            description: `${user} has accepted your connection request.`
+        const eventLogs = await eventLogService.getEventLogsWithRelatedEntity({
+            type: "profile",
+            value: user,
         });
+        if (!eventLogs.some(el => el.title === "Connection request accepted" && el.created_at.isBefore(Instant.now().minusSeconds(60 * 60 * 1))))
+            await eventLogService.addEventLog({
+                created_by: user,
+                related_entities: [
+                    {
+                        type: "profile",
+                        value: user,
+                    }
+                ],
+                title: "Connection request accepted",
+                description: `${user} has accepted your connection request.`
+            });
     }
 
     private _bindEvents() {

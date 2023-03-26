@@ -112,7 +112,7 @@ export const RecordPage = () => {
                 })
                 .then(setLogs)
         ]);
-    });
+    }, ["records", "file_blobs", "profiles", "blocks", "event-logs"], [recordId]);
 
     const theme = useTheme();
     const navigate = useNavigate();

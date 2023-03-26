@@ -92,7 +92,7 @@ export class EventLogService extends DbConsumer {
     }
 
     async addEventLog(form: EventLogForm): Promise<void> {
-        const hash = MD5(JSON.stringify(form) + "-" + Instant.now().toString()).toString();
+        const hash = MD5(JSON.stringify(form)).toString();
         const eventLog: EventLogEntry = {
             ...form,
             created_at: Instant.now(),

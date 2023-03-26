@@ -94,7 +94,7 @@ export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onCl
         setBlockEntries(
             blks.map(b => ({ key: b.hash, title: b.friendly_name }))
         );
-    });
+    }, ["blocks"]);
 
     async function handleRecordCreate() {
         const attachmentIds: string[] = [];

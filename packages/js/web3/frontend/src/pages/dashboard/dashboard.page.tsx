@@ -59,7 +59,7 @@ export const DashboardPage = observer(() => {
 
         const result = await getProfileAction.forceRun(sessionManager.wallet.address, sessionManager.encryption);
         setProfile(result);
-    });
+    }, ["blocks", "profiles", "records"]);
 
     if (!account)
         return null;

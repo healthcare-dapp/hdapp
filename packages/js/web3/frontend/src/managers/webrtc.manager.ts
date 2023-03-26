@@ -128,6 +128,7 @@ export class Peer {
     private _isIgnoringOffer = false;
     private _isSrdAnswerPending = false;
     private _isSyncing = false;
+    private _chatSyncTimeout: number | null = null;
 
     constructor(
         device: DeviceEntry,
@@ -263,10 +264,29 @@ export class Peer {
                             value: this.#device.owned_by
                         },
                     ]
-                });
+                }).catch(() => null);
                 window.setTimeout(() => {
                     this._isSyncing = false;
                 }, 2000);
+
+                this._chatSyncTimeout && clearTimeout(this._chatSyncTimeout);
+                this._chatSyncTimeout = window.setTimeout(async () => {
+                    const chats = await chatService.searchChats({});
+                    const profiles = await profileService.searchProfiles({}, this._manager.encryption);
+                    for (const profile of profiles) {
+                        if (profile.address === this._manager.web3Address)
+                            return;
+
+                        const chat = chats.find(c => c.participant_ids.length === 2
+                            && c.participant_ids.includes(this._manager.web3Address)
+                            && c.participant_ids.includes(profile.address));
+                        if (!chat)
+                            await chatService.addChat({
+                                participant_ids: [this._manager.web3Address, profile.address],
+                                friendly_name: ""
+                            });
+                    }
+                }, 5000);
                 break;
         }
     }
@@ -394,20 +414,25 @@ export class Peer {
 
     private _initPeerConnection() {
         const pc = this._peerConnection = new RTCPeerConnection({
-            iceServers: [{
-                urls: ["stun:fr-turn1.xirsys.com"]
-            }, {
-                username: "BmMvwO5UEaaJ_QO5_HEnpVjJ-_0wjaKFatkI14PBirFHB0qvJUGrrpLTs-14oUsXAAAAAGQfN2NydXNsYW5nMDI=",
-                credential: "50b7e4e4-cb37-11ed-8a9e-0242ac120004",
-                urls: [
-                    "turn:fr-turn1.xirsys.com:80?transport=udp",
-                    "turn:fr-turn1.xirsys.com:3478?transport=udp",
-                    "turn:fr-turn1.xirsys.com:80?transport=tcp",
-                    "turn:fr-turn1.xirsys.com:3478?transport=tcp",
-                    "turns:fr-turn1.xirsys.com:443?transport=tcp",
-                    "turns:fr-turn1.xirsys.com:5349?transport=tcp"
-                ]
-            }]
+            iceServers: [
+                {
+                    urls: [
+                        "stun:stun.fitauto.ru:3478",
+                    ]
+                }, {
+                    urls: ["stun:fr-turn1.xirsys.com"]
+                }, {
+                    username: "BmMvwO5UEaaJ_QO5_HEnpVjJ-_0wjaKFatkI14PBirFHB0qvJUGrrpLTs-14oUsXAAAAAGQfN2NydXNsYW5nMDI=",
+                    credential: "50b7e4e4-cb37-11ed-8a9e-0242ac120004",
+                    urls: [
+                        //"turn:fr-turn1.xirsys.com:80?transport=udp",
+                        "turn:fr-turn1.xirsys.com:3478?transport=udp",
+                        //"turn:fr-turn1.xirsys.com:80?transport=tcp",
+                        "turn:fr-turn1.xirsys.com:3478?transport=tcp",
+                        //"turns:fr-turn1.xirsys.com:443?transport=tcp",
+                        "turns:fr-turn1.xirsys.com:5349?transport=tcp"
+                    ]
+                }]
         });
 
         pc.addEventListener("negotiationneeded", async () => {

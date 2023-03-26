@@ -99,6 +99,7 @@ const LeftPanel: FC = observer(() => {
                         chat_hash: chat.hash
                     },
                     sort_by: "created_at",
+                    sort_by_desc: true,
                     limit: 1
                 }, sessionManager.encryption);
                 const participants = await Promise.all(
@@ -128,26 +129,16 @@ const LeftPanel: FC = observer(() => {
                 };
             })
         );
-        setChats(mapped);
+        setChats(mapped.sort((a, b) => !a.last_message && !b.last_message ? 0
+            : a.last_message && !b.last_message ? -1
+                : !a.last_message && b.last_message ? 1
+                    : -a.last_message.created_at.compareTo(b.last_message.created_at)));
     }
 
     useDatabase(reload, ["chats", "chat-messages", "file_blobs", "profiles"]);
     useEffect(() => {
         void reload();
     }, [matches]);
-
-    useEffect(() => {
-        (async () => {
-            const profiles = await profileService.searchProfiles({}, sessionManager.encryption);
-            for (const profile of profiles) {
-                if (chats.every(a => a.participant_address !== profile.address) && profile.address !== sessionManager.wallet.address)
-                    await chatService.addChat({
-                        participant_ids: [sessionManager.wallet.address, profile.address],
-                        friendly_name: ""
-                    });
-            }
-        })();
-    }, [chats]);
 
     return (
         <Paper variant="outlined" sx={{ borderRadius: 0, maxWidth: canShowBothPanels ? 300 : "unset", width: "100%", position: "relative", border: 0 }}>

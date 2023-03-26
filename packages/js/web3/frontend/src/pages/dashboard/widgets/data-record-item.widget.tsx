@@ -33,7 +33,7 @@ export const DataRecordItemWidget: FC<{
             const blob = await getFileBlob.tryRun(x.imageHash, sessionManager.encryption);
             blob && setImageDataUri(URL.createObjectURL(blob));
         }
-    });
+    }, ["file_blobs"], [x.imageHash]);
 
     return (
         <Grid2 xs={12} sm={6} md={4}>

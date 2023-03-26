@@ -43,6 +43,7 @@ export interface ChatMessageSearchRequest {
         chat_hash?: string | null
     }
     sort_by?: "created_at" | null
+    sort_by_desc?: boolean | null
     limit?: number
 }
 
@@ -109,7 +110,7 @@ export class ChatMessageService extends DbConsumer {
                 },
                 request.limit,
                 request.sort_by ?? void 0,
-                "next"
+                request.sort_by_desc ? "prev" : "next"
             );
             return devices;
         } catch (e) {

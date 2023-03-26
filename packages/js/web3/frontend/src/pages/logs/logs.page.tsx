@@ -68,7 +68,7 @@ export const LogsPage = observer(() => {
     useDatabase(async () => {
         const logEntries = await eventLogService.getEventLogs();
         setLogs(logEntries);
-    });
+    }, ["event-logs"]);
 
     return (
         <>

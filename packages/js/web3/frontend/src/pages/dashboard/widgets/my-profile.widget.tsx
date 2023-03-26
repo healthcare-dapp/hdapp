@@ -32,7 +32,7 @@ export const MyProfileWidget: FC = x => {
             const url = URL.createObjectURL(avatarBlob);
             setAvatar(url);
         }
-    });
+    }, ["profiles", "file_blobs"]);
 
     async function handleAvatarInputChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target!.files![0];
