@@ -28,6 +28,7 @@ import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
 import { HeaderWidget } from "../../widgets/header";
+import { ShareQrWidget } from "../../widgets/share-qr/share-qr.widget";
 
 const columns: GridColDef<EventLogEntry>[] = [
     {
@@ -163,6 +164,7 @@ export const LogsPage = observer(() => {
                 </Grid2>
             </Container>
             <BottomBarWidget />
+            <ShareQrWidget />
         </>
     );
 });

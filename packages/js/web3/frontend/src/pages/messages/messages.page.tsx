@@ -8,7 +8,6 @@ import {
     MoreVert,
     Search,
     Send,
-    Slideshow,
     VideoCall,
 } from "@mui/icons-material";
 import {
@@ -82,14 +81,12 @@ const LeftPanel: FC = observer(() => {
     const matches = useMatches();
     const [match] = matches;
     const canShowBothPanels = useMediaQuery(theme.breakpoints.up("md"));
-    const [chats, setChats] = useState<(ChatEntry & {
+    const [chats, setChats] = useState<({
+        hash: string
         name: string
         pictureUrl?: string
         participant_address?: string
         last_message?: ChatMessageEntry
-        participants: (ProfileEntry & {
-            avatar_url?: string
-        })[]
     })[]>([]);
     const onlineAddresses = sessionManager.webrtc.onlinePeerAddresses;
 
@@ -127,11 +124,18 @@ const LeftPanel: FC = observer(() => {
                         .filter(p => p.address !== sessionManager.wallet.address)
                         .map(p => p.full_name)
                         .join(", "),
-                    participants: participantsWithAvatars,
                     last_message: lastMessage
                 };
             })
         );
+        const profiles = await profileService.searchProfiles({}, sessionManager.encryption);
+        for (const profile of profiles) {
+            if (mapped.every(a => a.participant_address !== profile.address) && profile.address !== sessionManager.wallet.address)
+                await chatService.addChat({
+                    participant_ids: [sessionManager.wallet.address, profile.address],
+                    friendly_name: ""
+                });
+        }
         setChats(mapped);
     }
 
@@ -221,7 +225,7 @@ const LeftPanel: FC = observer(() => {
                      variant="extended"
                      onClick={() => ModalProvider.show(CreateChatDialog, {})}>
                     <AddCommentOutlined sx={{ mr: 1 }} />
-                    New message
+                    New group chat
                 </Fab>
             ) }
         </Paper>

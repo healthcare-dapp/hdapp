@@ -1,6 +1,7 @@
 import { AsyncAction, formatTemporal, temporalFormats } from "@hdapp/shared/web2-common/utils";
 import { ArchiveOutlined, ArrowBack, Event, LocationOn, MoreVert, Share } from "@mui/icons-material";
 import {
+    Alert,
     AppBar,
     Avatar,
     Box,
@@ -26,6 +27,7 @@ import ReactMarkdown from "react-markdown";
 import Carousel from "react-material-ui-carousel";
 import { useNavigate, useParams } from "react-router-dom";
 import { ModalProvider } from "../../App2";
+import { RecordArchivalConfirmationDialog } from "../../dialogs/record-archival-confirmation.dialog";
 import { ShareRecordDialog } from "../../dialogs/share-record.dialog";
 import { sessionManager } from "../../managers/session.manager";
 import { BlockEntry, blockService } from "../../services/block.service";
@@ -170,9 +172,15 @@ export const RecordPage = () => {
                                         Back to Home
                                     </Button>
                                     <Box flexGrow={1} />
-                                    { !!record && (
+                                    { !!record && !record.is_archived && (
                                         <>
-                                            <Button variant="outlined" startIcon={<ArchiveOutlined />}>
+                                            <Button variant="outlined" startIcon={<ArchiveOutlined />}
+                                                    onClick={async () => {
+                                                        const isConfirmed = await ModalProvider.show(RecordArchivalConfirmationDialog, {});
+                                                        if (!isConfirmed)
+                                                            return;
+                                                        await recordService.archiveRecord(recordId!, sessionManager.encryption);
+                                                    }}>
                                                 Archive
                                             </Button>
                                             <Button variant="contained" disableElevation color="success" startIcon={<Share />}
@@ -213,6 +221,7 @@ export const RecordPage = () => {
                                 </Grid>
                                 <Grid xs={12} md={4}>
                                     <Stack spacing={2}>
+                                        { record.is_archived && <Alert icon={<ArchiveOutlined fontSize="inherit" />} severity="info">This record was archived.</Alert> }
                                         <Card variant="outlined">
                                             <Stack spacing={0.25} sx={{ px: 3, p: 2 }}>
                                                 <Typography fontWeight="500">Created by</Typography>

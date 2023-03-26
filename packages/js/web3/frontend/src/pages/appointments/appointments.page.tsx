@@ -7,6 +7,7 @@ import { useState } from "react";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
 import { HeaderWidget } from "../../widgets/header";
+import { ShareQrWidget } from "../../widgets/share-qr/share-qr.widget";
 
 export const AppointmentsPage = observer(() => {
     const [openCounter, setOpenCounter] = useState(0);
@@ -44,7 +45,7 @@ export const AppointmentsPage = observer(() => {
                 </>
             ) }
             <Container sx={{ pt: 3 }}>
-                <Stack spacing={2} direction="row">
+                <Stack spacing={2} direction={canShowSidebar ? "row" : "column"}>
                     <Stack spacing={2} flexGrow={1}>
                         <Typography variant="h4" mb={3} fontSize={32}>My appointments</Typography>
                         <Typography color="text.secondary">
@@ -59,6 +60,7 @@ export const AppointmentsPage = observer(() => {
                 </Stack>
             </Container>
             <BottomBarWidget />
+            <ShareQrWidget />
         </>
     );
 });

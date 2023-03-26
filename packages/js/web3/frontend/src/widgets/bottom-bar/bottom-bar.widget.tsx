@@ -1,8 +1,10 @@
 import { ViewDayOutlined, CalendarMonthOutlined, ForumOutlined, NotificationsOutlined, Notes } from "@mui/icons-material";
 import { BottomNavigationAction, Box, Badge, BottomNavigation, styled, useMediaQuery, useTheme } from "@mui/material";
 import { alpha } from "@mui/system";
+import { observer } from "mobx-react-lite";
 import { FC } from "react";
 import { useMatches, useNavigate } from "react-router-dom";
+import { sessionManager } from "../../managers/session.manager";
 
 const BottomBar = styled(BottomNavigation)(({ theme, showLabels }) => ({
     position: "fixed",
@@ -21,12 +23,13 @@ const BottomBar = styled(BottomNavigation)(({ theme, showLabels }) => ({
     }
 }));
 
-export const BottomBarWidget: FC = () => {
+export const BottomBarWidget: FC = observer(() => {
     const matches = useMatches();
     const navigate = useNavigate();
     const theme = useTheme();
     const canShowBottomBar = useMediaQuery(theme.breakpoints.down("md"));
     const canShowBottomBarText = useMediaQuery(theme.breakpoints.up("sm"));
+    const notifications = sessionManager.notifications.array;
 
     const [match] = matches;
 
@@ -42,10 +45,10 @@ export const BottomBarWidget: FC = () => {
                                         icon={<ViewDayOutlined />} />
                 <BottomNavigationAction value="/appointments"
                                         label={canShowBottomBarText ? "Appointments" : void 0}
-                                        icon={<Badge color="error" badgeContent={1}><CalendarMonthOutlined /></Badge>} />
+                                        icon={<Badge color="error"><CalendarMonthOutlined /></Badge>} />
                 <BottomNavigationAction value="/messages"
                                         label={canShowBottomBarText ? "Messages" : void 0}
-                                        icon={<Badge color="error" badgeContent={3}><ForumOutlined /></Badge>} />
+                                        icon={<Badge color="error"><ForumOutlined /></Badge>} />
                 { /* <BottomNavigationAction value="/maps"
                                         label={canShowBottomBarText ? "Maps" : void 0}
                                         icon={<MapOutlined />} /> */ }
@@ -54,8 +57,8 @@ export const BottomBarWidget: FC = () => {
                                         icon={<Notes />} />
                 <BottomNavigationAction value="/notifications"
                                         label={canShowBottomBarText ? "Notifications" : void 0}
-                                        icon={<Badge color="error" badgeContent={2}><NotificationsOutlined /></Badge>} />
+                                        icon={<Badge color="error" badgeContent={notifications.length}><NotificationsOutlined /></Badge>} />
             </BottomBar>
         </>
     );
-};
+});

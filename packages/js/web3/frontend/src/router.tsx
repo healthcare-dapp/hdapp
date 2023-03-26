@@ -3,6 +3,7 @@ import { AppointmentsPage } from "./pages/appointments";
 import { DashboardPage } from "./pages/dashboard";
 import { LogsPage } from "./pages/logs";
 import { MessagesPage } from "./pages/messages";
+import { NotificationsPage } from "./pages/notifications/notifications.page";
 import { RecordPage } from "./pages/record";
 
 export const router = createHashRouter([
@@ -29,5 +30,9 @@ export const router = createHashRouter([
     {
         path: "/logs",
         element: <LogsPage />,
+    },
+    {
+        path: "/notifications",
+        element: <NotificationsPage />,
     },
 ]);

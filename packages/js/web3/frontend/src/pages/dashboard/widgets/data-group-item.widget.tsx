@@ -5,6 +5,7 @@ import { Stack, Box, Accordion, AccordionSummary, Typography, AvatarGroup, Avata
 import Grid2 from "@mui/material/Unstable_Grid2";
 import { FC, useState } from "react";
 import { ModalProvider } from "../../../App2";
+import { CreateBlockDialog } from "../../../dialogs/create-block.dialog";
 import { ShareRecordDialog } from "../../../dialogs/share-record.dialog";
 import { RecordGroup, RecordGroupType } from "../dashboard.vm";
 import { DataRecordItemWidget } from "./data-record-item.widget";
@@ -69,11 +70,12 @@ export const DataGroupItemWidget: FC<{ group: RecordGroup }> = x => {
                         </Button>
                         <Box flexGrow={1} />
                         { canShowSharingInfo ? (
-                            <Button variant="outlined" color="primary" startIcon={<Edit />}>
-                                Edit section
+                            <Button variant="outlined" color="primary" startIcon={<Edit />}
+                                    onClick={() => ModalProvider.show(CreateBlockDialog, { blockHash: x.group.key })}>
+                                Edit block
                             </Button>
                         ) : (
-                            <IconButton>
+                            <IconButton onClick={() => ModalProvider.show(CreateBlockDialog, { blockHash: x.group.key })}>
                                 <Edit />
                             </IconButton>
                         ) }

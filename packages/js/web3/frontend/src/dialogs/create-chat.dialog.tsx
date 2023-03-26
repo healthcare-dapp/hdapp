@@ -1,5 +1,5 @@
 import { AsyncAction } from "@hdapp/shared/web2-common/utils";
-import { Add, ArrowBack, Search, Share, TimerOutlined } from "@mui/icons-material";
+import { Add, ArrowBack, Search } from "@mui/icons-material";
 import { LoadingButton } from "@mui/lab";
 import {
     Dialog,
@@ -12,11 +12,6 @@ import {
     useMediaQuery,
     useTheme,
     Typography,
-    FormControl,
-    InputLabel,
-    MenuItem,
-    OutlinedInput,
-    Select,
     ListItemButton,
     Avatar,
     styled,
@@ -32,8 +27,6 @@ import { sessionManager } from "../managers/session.manager";
 import { chatService } from "../services/chat.service";
 import { fileService } from "../services/file.service";
 import { ProfileEntry, profileService } from "../services/profile.service";
-import { recordNoteService } from "../services/record-note.service";
-import { EncryptionProvider } from "../utils/encryption.provider";
 import { trimWeb3Address } from "../utils/trim-web3-address";
 
 const getProfilesAction = new AsyncAction(profileService.searchProfiles);
@@ -73,7 +66,7 @@ export const CreateChatDialog = observer<{ onClose?(): void }>(x => {
     const [query, setQuery] = useState("");
     const [contacts, setContacts] = useState<ProfileEntry[]>([]);
     const [contactAvatars, setContactAvatars] = useState<Record<string, string>>({});
-    const [selectedContact, setSelectedContact] = useState<ProfileEntry>();
+    const [selectedContacts, setSelectedContacts] = useState<ProfileEntry[]>([]);
     const onlineAddresses = sessionManager.webrtc.onlinePeerAddresses;
 
     useEffect(() => {
@@ -100,9 +93,9 @@ export const CreateChatDialog = observer<{ onClose?(): void }>(x => {
                             onClick={() => x.onClose?.()}>
                     <ArrowBack />
                 </IconButton>
-                Create a new chat
+                Create a new group chat
                 <DialogContentText fontSize={14}>
-                    Select a user to create a chat with:
+                    Select users to create a chat with:
                 </DialogContentText>
             </DialogTitle>
             <DialogContent>
@@ -122,8 +115,8 @@ export const CreateChatDialog = observer<{ onClose?(): void }>(x => {
                             <Stack>
                                 { contacts.map(p => (
                                     <ListItemButton key={p.address} sx={{ px: 2, py: 1, width: "100%" }}
-                                                    onClick={() => setSelectedContact(p)}
-                                                    selected={selectedContact?.address === p.address}>
+                                                    onClick={() => setSelectedContacts(c => c.includes(p) ? c.filter(a => a !== p) : [...c, p])}
+                                                    selected={selectedContacts.some(c => c.address === p.address)}>
                                         <Stack direction="row" spacing={1}>
                                             <Avatar src={p.avatar_hash ? contactAvatars[p.avatar_hash] : void 0} />
                                             <Stack direction="column">
@@ -154,15 +147,15 @@ export const CreateChatDialog = observer<{ onClose?(): void }>(x => {
                                onChange={e => setFriendlyName(e.target.value)} />
                     <LoadingButton variant="contained" disableElevation
                                    onClick={async () => {
-                                       if (!selectedContact)
+                                       if (!selectedContacts)
                                            return;
                                        await createChatAction.run(
                                            friendlyName,
-                                           [selectedContact.address, sessionManager.wallet.address],
+                                           [...selectedContacts.map(c => c.address), sessionManager.wallet.address],
                                        );
                                        x.onClose?.();
                                    }}
-                                   disabled={!selectedContact}
+                                   disabled={!selectedContacts}
                                    startIcon={<Add />}
                                    loading={createChatAction.pending}
                                    color="success">

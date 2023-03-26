@@ -15,7 +15,10 @@ import {
 import makeBlockie from "ethereum-blockies-base64";
 import { observer } from "mobx-react-lite";
 import { FC, useEffect, useState } from "react";
+import { ModalProvider } from "../../App2";
+import { LogoutDialog } from "../../dialogs/logout.dialog";
 import { sessionManager } from "../../managers/session.manager";
+import { trimWeb3Address } from "../../utils/trim-web3-address";
 
 export const DrawerWidget: FC<{ openCounter?: number }> = observer(x => {
     const { wallet } = sessionManager;
@@ -39,12 +42,12 @@ export const DrawerWidget: FC<{ openCounter?: number }> = observer(x => {
                     <Stack direction="row" spacing={2} alignItems="center">
                         <Avatar sx={{ width: 48, height: 48 }} src={wallet ? makeBlockie(wallet.address) : void 0} />
                         <Stack>
-                            <Typography color="white" fontWeight="500">Ruslan Garifullin</Typography>
-                            <Typography color="white" fontSize={12}>0xa3ea...5b1a</Typography>
+                            <Typography color="white" fontWeight="500">{ wallet.user.full_name }</Typography>
+                            <Typography color="white" fontSize={12}>{ trimWeb3Address(wallet.address) }</Typography>
                         </Stack>
                     </Stack>
                 </Box>
-                <Box sx={{ px: 2, py: 1 }}>
+                { /* <Box sx={{ px: 2, py: 1 }}>
                     <Stack direction="row" spacing={2} alignItems="center">
                         <Avatar sx={{ width: 48, height: 48 }} src={wallet ? makeBlockie(wallet.address) : void 0} />
                         <Stack>
@@ -52,16 +55,7 @@ export const DrawerWidget: FC<{ openCounter?: number }> = observer(x => {
                             <Typography fontSize={12}>0xa3ea...5b1a</Typography>
                         </Stack>
                     </Stack>
-                </Box>
-                <Box sx={{ px: 2, py: 1 }}>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ width: 48, height: 48 }} src={wallet ? makeBlockie(wallet.address) : void 0} />
-                        <Stack>
-                            <Typography fontWeight="500">Camila Garifullina</Typography>
-                            <Typography fontSize={12}>0xa3ea...5b1a</Typography>
-                        </Stack>
-                    </Stack>
-                </Box>
+                </Box> */ }
                 <List>
                     <ListItem disablePadding>
                         <ListItemButton>
@@ -86,7 +80,9 @@ export const DrawerWidget: FC<{ openCounter?: number }> = observer(x => {
                         </ListItemButton>
                     </ListItem>
                     <ListItem disablePadding>
-                        <ListItemButton>
+                        <ListItemButton onClick={async () => {
+                            await ModalProvider.show(LogoutDialog, {});
+                        }}>
                             <Logout htmlColor={theme.palette.text.secondary} sx={{ mr: 2 }} />
                             <ListItemText primary="Sign out" />
                         </ListItemButton>

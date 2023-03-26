@@ -1,6 +1,6 @@
 import { autoBind } from "@hdapp/shared/web2-common/utils";
-import { LocalDateTime } from "@js-joda/core";
-import { MD5 } from "crypto-js";
+import { Instant, LocalDateTime } from "@js-joda/core";
+import { MD5, SHA256 } from "crypto-js";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
 import { dbService, DbService, IDbConsumer } from "./db.service";
@@ -17,6 +17,7 @@ interface FileMetadataDbEntry {
     type: string
     uploaded_at: string
     byte_length: number
+    hash_sum: string
 }
 
 export interface FileEntry {
@@ -26,6 +27,7 @@ export interface FileEntry {
     type: string
     uploaded_at: LocalDateTime
     byte_length: number
+    hash_sum: string
 }
 
 export class FileNotFoundError extends Error {}
@@ -37,6 +39,7 @@ const transformer = (dbEntry: FileMetadataDbEntry): FileEntry => {
         owner: dbEntry.owner,
         type: dbEntry.type,
         byte_length: dbEntry.byte_length,
+        hash_sum: dbEntry.hash_sum,
         uploaded_at: LocalDateTime.parse(dbEntry.uploaded_at)
     };
 };
@@ -56,6 +59,7 @@ const reverseTransformer = (entry: FileEntry): FileMetadataDbEntry => {
         owner: entry.owner,
         type: entry.type,
         byte_length: entry.byte_length,
+        hash_sum: entry.hash_sum,
         uploaded_at: entry.uploaded_at.toString()
     };
 };
@@ -93,9 +97,17 @@ class FileMetadataService extends DbConsumer {
         }
     }
 
-    async addFileMetadata(hash: string, name: string, owner_address: string, byte_length: number, type: string): Promise<void> {
+    async addFileMetadata(
+        hash: string,
+        hash_sum: string,
+        name: string,
+        owner_address: string,
+        byte_length: number,
+        type: string
+    ): Promise<void> {
         const metadata: FileEntry = {
             hash,
+            hash_sum,
             name,
             owner: owner_address,
             type,
@@ -229,15 +241,16 @@ export class FileService implements IDbConsumer {
 
     async uploadFile(blob: Blob, owner: string, provider: EncryptionProvider): Promise<string> {
         const text = await blob.text();
-        const hash = MD5(text).toString();
+        const hash = SHA256(owner + Instant.now().toString()).toString();
+        const hashSum = MD5(text).toString();
 
         const arrayBuffer = await blob.arrayBuffer();
         const encryptedBlob = provider.encryptArrayBuffer(new Uint8Array(arrayBuffer));
 
         await this._blob.addFileBlob(hash, encryptedBlob);
-        await this._metadata.addFileMetadata(hash, blob.name, owner, arrayBuffer.byteLength, blob.type);
+        await this._metadata.addFileMetadata(hash, hashSum, blob.name, owner, arrayBuffer.byteLength, blob.type);
 
-        return hash;
+        return hashSum;
     }
 
     async upsertFileBlob(hash: string, blob: Blob, provider: EncryptionProvider): Promise<string> {

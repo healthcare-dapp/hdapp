@@ -59,7 +59,7 @@ export class Web3AccountManagerService implements OnModuleInit {
         if (!this._signer)
             throw new Error("no signer");
 
-        const amount = ethers.parseEther("0.001");
+        const amount = ethers.parseEther("0.005");
 
         debug("Sending", amount, "MATIC to", address);
 

@@ -35,7 +35,7 @@ export const MyChatsWidget: React.FC = () => {
     })[]>([]);
 
     useDatabase(async () => {
-        const chatEntries = await chatService.searchChats({});
+        const chatEntries = await chatService.searchChats({ limit: 3 });
         const mapped = await Promise.all(
             chatEntries.map(async chat => {
                 const participants = await Promise.all(

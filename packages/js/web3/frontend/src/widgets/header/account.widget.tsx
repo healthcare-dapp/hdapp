@@ -1,11 +1,24 @@
 import { PersonAdd, Smartphone, Settings, Logout } from "@mui/icons-material";
-import { Chip, Avatar, Divider, ListItemIcon, Menu, MenuItem, MenuList, Stack, Typography, useTheme, useMediaQuery, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import {
+    Chip,
+    Avatar,
+    Divider,
+    ListItemIcon,
+    Menu,
+    MenuItem,
+    MenuList,
+    Stack,
+    Typography,
+    useTheme,
+    useMediaQuery,
+} from "@mui/material";
 import makeBlockie from "ethereum-blockies-base64";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
+import { ModalProvider } from "../../App2";
+import { LogoutDialog } from "../../dialogs/logout.dialog";
 import { sessionManager } from "../../managers/session.manager";
 import { walletManager } from "../../managers/wallet.manager";
-import { dbService } from "../../services/db.service";
 import { trimWeb3Address } from "../../utils/trim-web3-address";
 
 export const HeaderAccountWidget = observer(() => {
@@ -14,8 +27,6 @@ export const HeaderAccountWidget = observer(() => {
     const open = Boolean(accountMenu);
     const theme = useTheme();
     const isBigEnough = useMediaQuery(theme.breakpoints.up("sm"));
-
-    const [openModal, setOpenModal] = useState(false);
 
     if (!wallet)
         return null;
@@ -98,9 +109,9 @@ export const HeaderAccountWidget = observer(() => {
                         </ListItemIcon>
                         Settings
                     </MenuItem>
-                    <MenuItem onClick={() => {
-                        setOpenModal(true);
+                    <MenuItem onClick={async () => {
                         handleClose();
+                        await ModalProvider.show(LogoutDialog, {});
                     }}>
                         <ListItemIcon>
                             <Logout fontSize="small" />
@@ -109,30 +120,6 @@ export const HeaderAccountWidget = observer(() => {
                     </MenuItem>
                 </MenuList>
             </Menu>
-            <Dialog open={openModal}
-                    onClose={() => setOpenModal(false)}
-                    aria-labelledby="alert-dialog-title"
-                    aria-describedby="alert-dialog-description">
-                <DialogTitle id="alert-dialog-title">
-                    Are you sure you would like to sign out?
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        You will need to pair this device again next time you log in.
-                        <br />
-                        <b>Be careful!</b> If this is your only active device, you will <b>lose access to your medical data forever</b>!
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions disableSpacing sx={{ flexDirection: isBigEnough ? "row" : "column", gap: "8px" }}>
-                    <Button color="error" onClick={async () => {
-                        await dbService.reset();
-                        location.reload();
-                    }}>I'm aware, please sign out</Button>
-                    <Button onClick={() => setOpenModal(false)} variant="contained" disableElevation autoFocus>
-                        Cancel
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </>
     );
 });

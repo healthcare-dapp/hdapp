@@ -113,6 +113,17 @@ export class BlockService extends DbConsumer {
         }
     }
 
+    async patchBlock(hash: string, form: BlockForm): Promise<void> {
+        try {
+            await this._patchOne(hash, form, transformer, reverseTransformer);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new BlockNotFoundError("Block was not found.");
+
+            throw e;
+        }
+    }
+
     async upsertBlock(record: BlockEntry): Promise<void> {
         try {
             await this._upsertOne(record, reverseTransformer);

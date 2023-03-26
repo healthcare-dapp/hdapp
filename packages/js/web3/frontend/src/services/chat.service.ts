@@ -28,6 +28,7 @@ export interface ChatSearchRequest {
         query?: string | null
     }
     sort_by?: "created_by" | null
+    limit?: number
 }
 
 export class ChatNotFoundError extends Error { }
@@ -71,11 +72,12 @@ export class ChatService extends DbConsumer {
         }
     }
 
-    async searchChats(_searchRequest: ChatSearchRequest): Promise<ChatEntry[]> {
+    async searchChats(request: ChatSearchRequest): Promise<ChatEntry[]> {
         try {
             const devices = await this._findMany(
                 transformer,
-                () => true
+                () => true,
+                request.limit
             );
             return devices;
         } catch (e) {
@@ -127,5 +129,3 @@ export class ChatService extends DbConsumer {
 
 export const chatService = new ChatService(dbService);
 dbService.addConsumer(chatService);
-
-window.chatService = chatService;
