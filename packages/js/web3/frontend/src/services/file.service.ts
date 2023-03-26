@@ -250,7 +250,7 @@ export class FileService implements IDbConsumer {
         await this._blob.addFileBlob(hash, encryptedBlob);
         await this._metadata.addFileMetadata(hash, hashSum, blob.name, owner, arrayBuffer.byteLength, blob.type);
 
-        return hashSum;
+        return hash;
     }
 
     async upsertFileBlob(hash: string, blob: Blob, provider: EncryptionProvider): Promise<string> {

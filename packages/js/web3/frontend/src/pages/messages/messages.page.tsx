@@ -128,14 +128,6 @@ const LeftPanel: FC = observer(() => {
                 };
             })
         );
-        const profiles = await profileService.searchProfiles({}, sessionManager.encryption);
-        for (const profile of profiles) {
-            if (mapped.every(a => a.participant_address !== profile.address) && profile.address !== sessionManager.wallet.address)
-                await chatService.addChat({
-                    participant_ids: [sessionManager.wallet.address, profile.address],
-                    friendly_name: ""
-                });
-        }
         setChats(mapped);
     }
 
@@ -143,6 +135,19 @@ const LeftPanel: FC = observer(() => {
     useEffect(() => {
         void reload();
     }, [matches]);
+
+    useEffect(() => {
+        (async () => {
+            const profiles = await profileService.searchProfiles({}, sessionManager.encryption);
+            for (const profile of profiles) {
+                if (chats.every(a => a.participant_address !== profile.address) && profile.address !== sessionManager.wallet.address)
+                    await chatService.addChat({
+                        participant_ids: [sessionManager.wallet.address, profile.address],
+                        friendly_name: ""
+                    });
+            }
+        })();
+    }, [chats]);
 
     return (
         <Paper variant="outlined" sx={{ borderRadius: 0, maxWidth: canShowBothPanels ? 300 : "unset", width: "100%", position: "relative", border: 0 }}>
