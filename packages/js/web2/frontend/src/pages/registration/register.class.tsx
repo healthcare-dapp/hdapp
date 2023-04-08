@@ -39,6 +39,9 @@ export class Registration extends React.Component<{}, {
     mailValue: string
     mailError: boolean
     mailHelper: string
+    dateValue: string
+    dateError: boolean
+    dateHelper: string
     medicalNameValue: string
     medicalNameError: boolean
     medicalNameHelper: string
@@ -68,6 +71,9 @@ export class Registration extends React.Component<{}, {
             mailValue: " ",
             mailError: false,
             mailHelper: " ",
+            dateValue: " ",
+            dateError: false,
+            dateHelper: " ",
             medicalNameValue: " ",
             medicalNameError: false,
             medicalNameHelper: " ",
@@ -88,10 +94,12 @@ export class Registration extends React.Component<{}, {
         this.updateCheckbox = this.updateCheckbox.bind(this);
         this.validateName = this.validateName.bind(this);
         this.validateMail = this.validateMail.bind(this);
+        this.validateBirthday=this.validateBirthday.bind(this);
         this.validateMedicalName = this.validateMedicalName.bind(this);
         this.validateAdress = this.validateAdress.bind(this);
         this.validateSpecialty = this.validateSpecialty.bind(this);
         this.fieldCheck = this.fieldCheck.bind(this);
+
     }
 
     link1 = <a href="#">Privacy Policy</a>;
@@ -103,10 +111,11 @@ export class Registration extends React.Component<{}, {
         });
     }
 
-    updateCheckbox(event: ChangeEvent, check: boolean) {
+    async updateCheckbox(event: ChangeEvent, check: boolean) {
         this.setState({
             isAgreed: check
         });
+        await this.fieldCheck();
     }
 
     async validateName(event: ChangeEvent<HTMLInputElement>) {
@@ -145,6 +154,28 @@ export class Registration extends React.Component<{}, {
                 mailValue: event.target.value,
                 mailHelper: ""
             });
+        await this.fieldCheck();
+    }
+
+    async validateBirthday(birthday: Date | null) {
+        // console.log(birthday);
+        // console.log(new Date());
+        if (birthday === null || (new Date(new Date().getTime() - birthday.getTime()).getUTCFullYear() - 1971) < 17)
+            await this.setState({
+                dateError: true,
+                dateValue: "",
+                dateHelper: "Enter or select your birthdate, you must be 18+ years old"
+            });
+        else
+        {
+            await this.setState({
+                dateError: false,
+                dateValue: birthday.toDateString(),
+                dateHelper: ""
+            });
+            // console.log(new Date().getTime() - birthday.getTime());
+            // console.log(new Date(new Date().getTime() - birthday.getTime()).getUTCFullYear() - 1971);
+        }
         await this.fieldCheck();
     }
 
@@ -198,9 +229,11 @@ export class Registration extends React.Component<{}, {
 
     async fieldCheck() {
         if (this.state.isDoctor)
-            this.setState({ canSubmit: (this.state.date !== null && !this.state.nameError && !this.state.mailError && !this.state.medicalNameError && !this.state.adressError && !this.state.specialtyError) });
+            this.setState({ canSubmit: (this.state.isAgreed && this.state.date !== null && !this.state.nameError
+                 && !this.state.mailError && !this.state.medicalNameError && !this.state.adressError && !this.state.specialtyError && !this.state.dateError) });
         else
-            this.setState({ canSubmit: (this.state.date !== null && !this.state.nameError && !this.state.mailError) });
+            this.setState({ canSubmit: (this.state.isAgreed && this.state.date !== null && !this.state.nameError
+                 && !this.state.mailError && !this.state.dateError) });
         console.log(this.state.canSubmit);
     }
 
@@ -301,116 +334,6 @@ export class Registration extends React.Component<{}, {
         });
     }
 
-    // card = (<Box component="form" noValidate onSubmit={this.handleSubmit} sx={{ mt: 3, alignItems: "center", maxWidth: 350 }}>
-    //     <Stack spacing={1.5} sx={{ alignItems: "center", maxWidth: 300 }}>
-
-    //         <TextField autoComplete="given-name"
-    //                    name={this.state.nameValue}
-    //                    required
-    //                    fullWidth
-    //                    id="firstName"
-    //                    label="Full Name"
-    //                    onChange={this.validateName}
-    //                    helperText={this.state.nameHelper}
-    //                    error={this.state.nameError}
-    //                    autoFocus />
-
-    //         <TextField required
-    //                    fullWidth
-    //                    id="email"
-    //                    label="Email Address"
-    //                    name={this.state.mailValue}
-    //                    onChange={this.validateMail}
-    //                    helperText={this.state.mailHelper}
-    //                    error={this.state.mailError}
-    //                    autoComplete="email" />
-
-    //         <DatePicker value={this.state.date}
-    //                     onChange={date => {
-    //                         this.setState({ date });
-    //                         this.fieldCheck();
-    //                     }}
-    //                     label="Date of Birth:"
-    //                     renderInput={params => <TextField {...params} fullWidth />} />
-
-    //         <FormControl>
-    //             <FormLabel id="demo-row-radio-buttons-group-label">Are you a Doctor?</FormLabel>
-    //             <RadioGroup row
-    //                         aria-labelledby="demo-row-radio-buttons-group-label"
-    //                         value={this.state.isDoctor}
-    //                         onChange={this.switchToDoctor}
-    //                         name="row-radio-buttons-group">
-    //                 <FormControlLabel value={false} control={<Radio />} label="Patient" />
-    //                 <FormControlLabel value={true} control={<Radio />} label="Doctor" />
-    //             </RadioGroup>
-    //         </FormControl>
-
-    //         <TextField required
-    //                    fullWidth
-    //                    id="medicalOrganization"
-    //                    label="Medical Organization Name"
-    //                    name={this.state.medicalNameValue}
-    //                    onChange={this.validateMedicalName}
-    //                    helperText={this.state.medicalNameHelper}
-    //                    error={this.state.medicalNameError}
-    //                    autoComplete="none" />
-
-    //         <TextField required
-    //                    fullWidth
-    //                    id="adress"
-    //                    label="Legal Adress of Medical Organization"
-    //                    name={this.state.adressValue}
-    //                    onChange={this.validateAdress}
-    //                    helperText={this.state.adressHelper}
-    //                    error={this.state.adressError}
-    //                    autoComplete="Adress" />
-
-    //         <TextField required
-    //                    fullWidth
-    //                    id="specialty"
-    //                    label="Designate your medical specialty"
-    //                    name={this.state.specialtyValue}
-    //                    onChange={this.validateSpecialty}
-    //                    helperText={this.state.specialtyHelper}
-    //                    error={this.state.specialtyError}
-    //                    autoComplete="Surgeon" />
-
-    //         <FileUpload multiFile={true}
-    //                     onFilesChange={this.updateFiles}
-    //                     maxUploadFiles={10}
-    //                     allowedExtensions={["jpg", "jpeg", "pdf"]}
-    //                     onContextReady={context => {}}
-    //                     imageSrc="DriveFolderUploadIcon"
-    //                     showPlaceholderImage={false}
-    //                     title="Upload your medical documents here" />
-
-    //         { /* <Grid item xs={8}>
-    //     <Button onClick={this.switchToDoctor}
-    //             variant="outlined"
-    //             color="primary"
-    //             startIcon={<SendIcon />}
-    //             sx={{ mt: 3, mb: 2 }}>
-    //         I am a Patient
-    //     </Button>
-    // </Grid> */ }
-
-    //         <FormControlLabel control={<Checkbox value={this.state.isAgreed} onChange={this.updateCheckbox} color="primary" />}
-    //                           label="I have read and agree with Privacy Policy and Terms of Service." />
-
-    //         <Button type="submit"
-    //                 fullWidth
-    //                 variant="contained"
-    //                 disabled={!this.state.canSubmit}
-    //                 sx={{ mt: 3, mb: 2 }}>
-    //             Request Access
-    //         </Button>
-
-    //         <Link href="/app" variant="body2">
-    //             Already have an account? Sign in
-    //         </Link>
-
-    //     </Stack>
-    // </Box>);
     render() {
         if (this.state.isSubmitted) {
             return (
@@ -480,7 +403,7 @@ export class Registration extends React.Component<{}, {
                                     <DatePicker value={this.state.date}
                                                 onChange={date => {
                                                     this.setState({ date });
-                                                    this.fieldCheck();
+                                                    this.validateBirthday(date);
                                                 }}
                                                 minDate={new Date(1850, 1, 1)}
                                                 maxDate={new Date(new Date().getFullYear() - 18, 1, 1)}
@@ -599,7 +522,7 @@ export class Registration extends React.Component<{}, {
                                 <DatePicker value={this.state.date}
                                             onChange={date => {
                                                 this.setState({ date });
-                                                this.fieldCheck();
+                                                this.validateBirthday(date);
                                             }}
                                             minDate={new Date(1850, 1, 1)}
                                             maxDate={new Date(new Date().getFullYear() - 18, 1, 1)}
@@ -607,7 +530,7 @@ export class Registration extends React.Component<{}, {
                                             slotProps={{
                                                 textField: { helperText: "You must be at least 18 years of age" }
                                             }}
-                                            renderInput={params => <TextField {...params} fullWidth />} />
+                                            />
 
                                 <FormControl>
                                     <FormLabel id="demo-row-radio-buttons-group-label"
