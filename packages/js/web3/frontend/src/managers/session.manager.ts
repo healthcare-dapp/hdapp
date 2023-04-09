@@ -38,6 +38,12 @@ export class SessionManager {
         return this._accessControlManager;
     }
 
+    get device() {
+        if (!this._device)
+            throw new Error("No device is available.");
+        return this._device;
+    }
+
     get encryption() {
         if (!this._encryptionProvider)
             throw new Error("No encryption provider is available.");
@@ -98,6 +104,7 @@ export class SessionManager {
                 hash,
                 friendly_name: friendlyName,
                 added_at: LocalDateTime.now(),
+                last_active_at: LocalDateTime.MIN,
                 private_key: privateKey,
                 owned_by: walletShort.address,
                 type: uaDevice.device.type ?? "pc"

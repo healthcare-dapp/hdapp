@@ -38,7 +38,7 @@ interface NotificationBaseItem {
     urgency: Urgency
 }
 
-type NotificationItem = NotificationBaseItem
+export type NotificationItem = NotificationBaseItem
 & (
     ConnectionEstablishedNotificationItem
     | RecordPermissionsGrantedNotificationItem

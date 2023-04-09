@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { observer } from "mobx-react-lite";
-import { FC, forwardRef, useEffect, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { ModalProvider } from "../../App2";
 import { SuccessfulVerificationDialog } from "../../dialogs/successful-verification.dialog";
 import { walletManager } from "../../managers/wallet.manager";
@@ -85,17 +85,22 @@ const SignInCard: FC<{
 
 type Page = "mnemonic-phrase" | "private-key" | "qr" | "url";
 
-const SignInMainPage: FC<{ setPage(page: Page): void }> = x => {
+const SignInMainPage: FC<{ isAddingAccount?: boolean; title?: string; onClose?(): void; setPage(page: Page): void }> = x => {
     const theme = useTheme();
     const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
     return (
         <OverflowCard elevation={2} sx={{ maxWidth: 800 }}>
-            <Stack spacing={2} alignItems="center" sx={{ pt: 2, px: isSmall ? 1 : 2, pb: 4 }}>
+            { x.isAddingAccount && (
+                <IconButton onClick={x.onClose} sx={{ position: "absolute", top: 0, left: 0, m: 1 }}>
+                    <ArrowBack />
+                </IconButton>
+            ) }
+            <Stack spacing={2} alignItems="center" sx={{ pt: x.isAddingAccount && isSmall ? 7 : 2, px: isSmall ? 1 : 2, pb: 4 }}>
                 <Typography fontWeight="500"
                             align="center"
                             fontSize={20}
                             color={theme.palette.text.primary}>
-                    Sign in
+                    { x.title ?? "Sign in" }
                     <Typography align="center"
                                 fontSize={12}
                                 color={theme.palette.text.secondary}>
@@ -125,14 +130,18 @@ const SignInMainPage: FC<{ setPage(page: Page): void }> = x => {
                                     onClick={() => x.setPage("qr")} />
                     </Grid2>
                 </Grid2>
-                <Typography fontWeight="500"
-                            align="center"
-                            fontSize={20}
-                            color={theme.palette.text.primary}>
-                    First time here?
-                </Typography>
-                <Button disableElevation variant="contained"
-                        href="/#/register">Create an account</Button>
+                { !x.isAddingAccount && (
+                    <>
+                        <Typography fontWeight="500"
+                                    align="center"
+                                    fontSize={20}
+                                    color={theme.palette.text.primary}>
+                            First time here?
+                        </Typography>
+                        <Button disableElevation variant="contained"
+                                href="/#/register">Create an account</Button>
+                    </>
+                ) }
             </Stack>
         </OverflowCard>
     );
@@ -201,12 +210,9 @@ const SignInUrlPage: FC = x => {
             return;
 
         setPrivateKey(pk);
-        console.log(pk);
         url.search = "";
         history.replaceState("", "", url);
     }, []);
-
-    console.log(privateKey);
 
     return (
         <OverflowCard elevation={2} sx={{ maxWidth: 700 }}>
@@ -234,7 +240,12 @@ const SignInUrlPage: FC = x => {
     );
 };
 
-export const SignInPage = observer(forwardRef(function SignInPage(props, ref) {
+interface SignInProps {
+    isAddingAccount?: boolean
+    onClose?(): void
+}
+
+export const SignInPage = observer<SignInProps>(function SignInPage(x, ref) {
     const theme = useTheme();
     const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -255,26 +266,35 @@ export const SignInPage = observer(forwardRef(function SignInPage(props, ref) {
     }, []);
 
     return (
-        <Box sx={{ background: theme.palette.background.default, height: "100vh", zIndex: 1000, position: "fixed", top: 0, left: 0, width: "100vw" }}
-             ref={ref}
-             {...props}>
+        <Box sx={x.isAddingAccount ? void 0 : {
+            background: theme.palette.background.default,
+            height: "100vh",
+            zIndex: 1000,
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw"
+        }}>
             <Stack spacing={2} alignItems="center" justifyContent="center"
                    sx={{ height: "100%", py: 2, px: isSmall ? 0 : 2 }}>
-                <Logo />
-
+                { !x.isAddingAccount && <Logo /> }
                 { page
                     ? page === "private-key"
                         ? <SignInPrivateKeyPage onBackButton={() => setPage(undefined)} />
                         : page === "url"
                             ? <SignInUrlPage />
                             : <SignInPrivateKeyPage onBackButton={() => setPage(undefined)} />
-                    : <SignInMainPage setPage={setPage} /> }
-
-                <Typography fontSize={12} color="text.secondary">
-                    Cannot sign in? <Link>Contact us</Link>
-                </Typography>
+                    : (
+                        <SignInMainPage isAddingAccount={!!x.isAddingAccount}
+                                        title={x.isAddingAccount ? "Add another account to this device" : "Sign in"}
+                                        setPage={setPage} onClose={x.onClose} />
+                    ) }
+                { !x.isAddingAccount && (
+                    <Typography fontSize={12} color="text.secondary">
+                        Cannot sign in? <Link>Contact us</Link>
+                    </Typography>
+                ) }
             </Stack>
         </Box>
     );
-}));
-
+});

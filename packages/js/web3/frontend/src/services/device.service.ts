@@ -17,6 +17,7 @@ interface DeviceDbEntryEncryptedData {
     private_key: string
     type: string
     added_at: string
+    last_active_at: string
 }
 
 export interface DeviceEntry {
@@ -26,6 +27,7 @@ export interface DeviceEntry {
     private_key: string
     type: string
     added_at: LocalDateTime
+    last_active_at: LocalDateTime
     is_current: boolean
     is_pending: boolean
 }
@@ -45,13 +47,15 @@ const transformer = (provider: EncryptionProvider) => (dbEntry: DeviceDbEntry): 
         friendly_name: encrypted.friendly_name,
         private_key: encrypted.private_key,
         type: encrypted.type,
-        added_at: LocalDateTime.parse(encrypted.added_at)
+        added_at: LocalDateTime.parse(encrypted.added_at),
+        last_active_at: LocalDateTime.parse(encrypted.last_active_at)
     };
 };
 
 const reverseTransformer = (provider: EncryptionProvider) => (entry: DeviceEntry): DeviceDbEntry => {
     const encrypted: DeviceDbEntryEncryptedData = {
         added_at: entry.added_at.toString(),
+        last_active_at: entry.last_active_at.toString(),
         friendly_name: entry.friendly_name,
         private_key: entry.private_key,
         type: entry.type
@@ -161,6 +165,32 @@ export class DeviceService extends DbConsumer {
     async upsertDevice(record: DeviceEntry, provider: EncryptionProvider): Promise<void> {
         try {
             await this._upsertOne(record, reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new DeviceNotFoundError("Device was not found.");
+
+            throw e;
+        }
+    }
+
+    async patchDevice(hash: string, record: Partial<DeviceEntry>, provider: EncryptionProvider): Promise<void> {
+        try {
+            await this._patchOne(hash, record, transformer(provider), reverseTransformer(provider));
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new DeviceNotFoundError("Device was not found.");
+
+            throw e;
+        }
+    }
+
+    async searchDevices(_request: {}, provider: EncryptionProvider): Promise<DeviceEntry[]> {
+        try {
+            const devices = await this._findMany(
+                transformer(provider),
+                () => true
+            );
+            return devices;
         } catch (e) {
             if (e instanceof DbRecordNotFoundError)
                 throw new DeviceNotFoundError("Device was not found.");

@@ -110,7 +110,7 @@ export const ShareRecordDialog = observer<{ hash: string; onClose?(): void }>(x 
                 </IconButton>
                 Share medical record
                 <DialogContentText fontSize={14}>
-                    Select a user to share your medical record with:
+                    Select a contact to share your medical record with:
                 </DialogContentText>
             </DialogTitle>
             <DialogContent>

@@ -7,11 +7,6 @@ import { HDMAccessControlAddress, HDMAccountManagerAddress, HDMHandshakeAddress,
 import { WalletEntry, WalletType } from "../services/wallet.service";
 import { Web3ContractProvider } from "../utils/web3-contract.provider";
 
-export type Notification = {
-    title: string
-    description: string
-};
-
 export class Web3Manager {
     #signer: ethers.Signer;
 

@@ -1,6 +1,7 @@
 import { getRightOrFail } from "@hdapp/shared/web2-common/io-ts-utils/get-right";
 import { Logger } from "@hdapp/shared/web2-common/utils";
 import * as HDMHandshake from "@hdapp/solidity/webrtc-broker/HDMHandshake";
+import { LocalDateTime } from "@js-joda/core";
 import { AES, enc } from "crypto-js";
 import { ethers, toUtf8Bytes } from "ethers";
 import {
@@ -482,6 +483,12 @@ export class Peer {
         pc.addEventListener("connectionstatechange", event => {
             debug("connectionstatechange", pc.connectionState, event);
 
+            void deviceService.patchDevice(
+                this.#device.hash,
+                { last_active_at: LocalDateTime.now() },
+                this._manager.encryption
+            );
+
             if (pc.connectionState === "disconnected") {
                 this._manager.disposePeer(this.#device.hash);
             }
@@ -627,6 +634,11 @@ export class WebRTCManager {
 
     get onlinePeerAddresses() {
         return this.peers.map(p => p.deviceOwnedBy)
+            .filter((a, i, arr) => arr.indexOf(a) === i);
+    }
+
+    get onlinePeerDevices() {
+        return this.peers.map(p => p.deviceHash)
             .filter((a, i, arr) => arr.indexOf(a) === i);
     }
 

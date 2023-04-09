@@ -15,6 +15,7 @@ export class DbService {
     private readonly _consumers: IDbConsumer[] = [];
 
     private _db: IDBDatabase | null = null;
+    private _storage: StorageEstimate | null = null;
     private _channel = new BroadcastChannel("db_channel");
 
     constructor() {
@@ -56,8 +57,9 @@ export class DbService {
     }
 
     private async _calculateStorage() {
-        const storageSize = await navigator.storage.estimate();
-        debug("Using", formatBytes(storageSize.usage ?? -1), "out of", formatBytes(storageSize.quota ?? -1));
+        const storage = await navigator.storage.estimate();
+        this._storage = storage;
+        debug("Using", formatBytes(storage.usage ?? -1), "out of", formatBytes(storage.quota ?? -1));
     }
 
     private _requestDb() {
@@ -122,6 +124,7 @@ export class DbService {
         transaction.addEventListener("complete", () => {
             if (mode === "readwrite") {
                 debug("RW transaction completed.", { storeNames, mode, transaction, stack });
+                void this._calculateStorage();
                 this._channel.postMessage("txn_completed");
                 this._emit("txn_completed", storeNames);
             }
@@ -138,6 +141,10 @@ export class DbService {
 
     get isInitialized() {
         return !!this._db;
+    }
+
+    get storage() {
+        return this._storage;
     }
 
     on = this._events.addListener.bind(this._events);

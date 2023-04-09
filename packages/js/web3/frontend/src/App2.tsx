@@ -36,7 +36,7 @@ export const ModalProvider = new (class {
         this._theme = theme;
     }
 
-    show<P extends ModalProps>(Component2: FC<P>, props: Omit<P, "onClose">): Promise<Parameters<NonNullable<P["onClose"]>>[0]> {
+    show<P extends ModalProps>(Component2: FC<P>, props?: Omit<P, "onClose">): Promise<Parameters<NonNullable<P["onClose"]>>[0]> {
         const id = Date.now().toString();
         return new Promise(resolve => {
             this._modals.set(
@@ -106,7 +106,6 @@ export const AppRoot = observer(function App() {
             await sessionManager.accessControl.requestUserConnection
                 .run(address, key);
 
-            console.log("confirmed");
             await ModalProvider.show(WaitingForConnectionDialog, {});
         })();
     }, [sessionManager.isSignedIn]);

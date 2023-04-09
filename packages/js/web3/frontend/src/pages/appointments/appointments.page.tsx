@@ -1,5 +1,5 @@
-import { CalendarMonthOutlined, Menu as MenuIcon } from "@mui/icons-material";
-import { Box, Container, useMediaQuery, AppBar, IconButton, Typography, useTheme, Toolbar, Paper } from "@mui/material";
+import { Add, CalendarMonthOutlined, Menu as MenuIcon } from "@mui/icons-material";
+import { Box, Container, useMediaQuery, AppBar, IconButton, Typography, useTheme, Toolbar, Paper, Button } from "@mui/material";
 import { Stack } from "@mui/system";
 import { DateCalendar } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
@@ -47,7 +47,13 @@ export const AppointmentsPage = observer(() => {
             <Container sx={{ pt: 3 }}>
                 <Stack spacing={2} direction={canShowSidebar ? "row" : "column"}>
                     <Stack spacing={2} flexGrow={1}>
-                        <Typography variant="h4" mb={3} fontSize={32}>My appointments</Typography>
+                        <Stack alignItems="center" direction="row" spacing={1} mb={2}>
+                            <Typography variant="h4" fontSize={32}>My appointments</Typography>
+                            <Box flex={1} />
+                            <Button variant="contained" disableElevation startIcon={<Add />}>
+                                Create a new appointment
+                            </Button>
+                        </Stack>
                         <Typography color="text.secondary">
                             You have no appointments planned.
                         </Typography>

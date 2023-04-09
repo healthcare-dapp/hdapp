@@ -17,7 +17,7 @@ interface AutoBindOptions {
     exclude: (string | RegExp)[]
 }
 
-export function autoBind<K extends string | symbol>(self: Record<K, Function>, options?: AutoBindOptions) {
+export function autoBind<K extends string | symbol>(self: Record<K, unknown>, options?: AutoBindOptions) {
     const filter = (key: string) => {
         const match = (pattern: string | RegExp) => typeof pattern === "string"
             ? key === pattern
@@ -41,7 +41,7 @@ export function autoBind<K extends string | symbol>(self: Record<K, Function>, o
 
         const descriptor = Reflect.getOwnPropertyDescriptor(object, key);
         if (descriptor && typeof descriptor.value === "function") {
-            self[key as K] = self[key as K].bind(self);
+            self[key as K] = (self[key as K] as Function).bind(self);
         }
     }
 

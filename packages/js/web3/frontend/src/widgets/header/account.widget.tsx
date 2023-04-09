@@ -15,7 +15,10 @@ import {
 import makeBlockie from "ethereum-blockies-base64";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { ModalProvider } from "../../App2";
+import { AddAccountDialog } from "../../dialogs/add-account.dialog";
+import { AddDeviceDialog } from "../../dialogs/add-device.dialog";
 import { LogoutDialog } from "../../dialogs/logout.dialog";
 import { sessionManager } from "../../managers/session.manager";
 import { walletManager } from "../../managers/wallet.manager";
@@ -23,6 +26,7 @@ import { trimWeb3Address } from "../../utils/trim-web3-address";
 
 export const HeaderAccountWidget = observer(() => {
     const { wallet } = sessionManager;
+    const navigate = useNavigate();
     const [accountMenu, setAccountMenu] = useState<null | HTMLElement>(null);
     const open = Boolean(accountMenu);
     const theme = useTheme();
@@ -90,20 +94,26 @@ export const HeaderAccountWidget = observer(() => {
                         </MenuItem>
                     )) }
 
-                    <MenuItem onClick={handleClose}>
+                    <MenuItem onClick={async () => {
+                        handleClose();
+                        await ModalProvider.show(AddAccountDialog);
+                    }}>
                         <ListItemIcon>
                             <PersonAdd fontSize="small" />
                         </ListItemIcon>
                         Add another account
                     </MenuItem>
                     <Divider />
-                    <MenuItem onClick={handleClose}>
+                    <MenuItem onClick={async () => {
+                        handleClose();
+                        await ModalProvider.show(AddDeviceDialog);
+                    }}>
                         <ListItemIcon>
                             <Smartphone fontSize="small" />
                         </ListItemIcon>
                         Pair another device
                     </MenuItem>
-                    <MenuItem onClick={handleClose}>
+                    <MenuItem onClick={() => navigate("/settings")}>
                         <ListItemIcon>
                             <Settings fontSize="small" />
                         </ListItemIcon>

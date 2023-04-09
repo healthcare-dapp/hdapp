@@ -90,6 +90,7 @@ export class AccessControlManager {
         await deviceService.addDevice(
             {
                 added_at: LocalDateTime.now(),
+                last_active_at: LocalDateTime.MIN,
                 friendly_name: "",
                 hash: hashLocalStr,
                 is_current: false,
@@ -195,6 +196,7 @@ export class AccessControlManager {
             await deviceService.addDevice(
                 {
                     added_at: LocalDateTime.now(),
+                    last_active_at: LocalDateTime.MIN,
                     friendly_name: "",
                     hash: "0x" + hashStr,
                     is_current: false,
