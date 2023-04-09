@@ -63,7 +63,7 @@ export const RequestsPage = observer(forwardRef((props, ref) => {
     const [requests, setRequests] = useState<UserDto[]>([]);
     useEffect(() => {
         (async () => {
-            const response = await UsersService.findPaged({ has_web3_address: false, has_doctor_capabilities: true, is_banned: false });
+            const response = await UsersService.findPaged({ has_doctor_capabilities: true, is_banned: false });
             setRequests(response.items);
         })();
     }, []);

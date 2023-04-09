@@ -84,6 +84,7 @@ const columns: GridColDef[] = [
                 <Stack direction="row" justifyContent="space-around" style={{ width: "100%" }}
                        onClick={e => e.stopPropagation()}>
                     <Button variant="outlined" size="small" color="error">Ban</Button>
+                    <Button variant="outlined" size="small" color="primary">Ban</Button>
                 </Stack>
             );
         }

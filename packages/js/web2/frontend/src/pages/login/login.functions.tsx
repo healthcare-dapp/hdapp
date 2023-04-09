@@ -1,3 +1,5 @@
+import { AuthService } from "@hdapp/shared/web2-common/api/services";
+import { LoginUserDto, LoginUserSuccessDto } from "../../dto/login-user.dto";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -10,6 +12,7 @@ import Stack from "@mui/system/Stack";
 import axios, { isAxiosError } from "axios";
 import { FormEvent, useState } from "react";
 import { router } from "../../router";
+import { setJwtToken } from "@hdapp/shared/web2-common/api/http";
 
 export function AdminLogin() {
     const [email, changeEmail] = useState(" ");
@@ -35,19 +38,18 @@ export function AdminLogin() {
     const login = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const form = {
+        const form: LoginUserDto = {
             email: email,
             password: formData.get("password")
         };
         console.log(form);
         try {
-            const response = await axios.post("https://hdapp.ruslang.xyz/api/auth/login", form);
-            console.log(response.data);
+            const response = await AuthService.login(form);
+            console.log(response);
+            setJwtToken(response.access_token);
             alert("Sign Up succesfull. Welcome back administrator");
             void router.navigate("/admin");
         } catch (e) {
-            if (!isAxiosError(e))
-                return alert(e);
             if (e.response?.status === 401)
                 alert("Unauthorized access. You are not an administrator");
             else
