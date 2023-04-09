@@ -173,12 +173,6 @@ export class UsersService {
                 { has_doctor_capabilities: filters.has_doctor_capabilities },
             );
 
-        if (filters.is_banned !== undefined)
-            builder = builder.andWhere(
-                "user.isBanned = :is_banned",
-                { is_banned: filters.is_banned },
-            );
-
         if (filters.is_verified_doctor !== undefined)
             builder = builder.andWhere(
                 "user.isVerifiedDoctor = :is_verified_doctor",
