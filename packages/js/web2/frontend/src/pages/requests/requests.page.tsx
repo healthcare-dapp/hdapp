@@ -2,10 +2,17 @@ import { UsersService } from "@hdapp/shared/web2-common/api/services";
 import { UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { Check, Refresh, Search, Tune } from "@mui/icons-material";
 import { AppBar, Box, Button, Chip, IconButton, InputAdornment, Stack, TextField, Toolbar, Typography } from "@mui/material";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
+import { Console } from "console";
+
+const handleClick = (cellValues: GridRenderCellParams) => {
+    console.log("CLICK");
+    console.log(cellValues);
+    console.log(cellValues.row);
+};
 
 const columns: GridColDef[] = [
     {
@@ -52,7 +59,11 @@ const columns: GridColDef[] = [
                        onClick={e => e.stopPropagation()}>
                     <Button variant="outlined" size="small" color="error">Reject</Button>
                     <Button variant="contained" disableElevation size="small" color="success"
-                            startIcon={<Check />}>Approve</Button>
+                            startIcon={<Check />}
+                            onClick={() => {
+                                console.log("LCLIC");
+                                handleClick(params);
+                            }}>Approve</Button>
                 </Stack>
             );
         }
@@ -63,7 +74,7 @@ export const RequestsPage = observer(forwardRef((props, ref) => {
     const [requests, setRequests] = useState<UserDto[]>([]);
     useEffect(() => {
         (async () => {
-            const response = await UsersService.findPaged({ has_doctor_capabilities: true, is_banned: false });
+            const response = await UsersService.findPaged({ has_doctor_capabilities: true });
             setRequests(response.items);
         })();
     }, []);
