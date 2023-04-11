@@ -41,6 +41,7 @@ import { ChatMessageEntry, chatMessageService } from "../../services/chat-messag
 import { ChatEntry, chatService } from "../../services/chat.service";
 import { fileService } from "../../services/file.service";
 import { ProfileEntry, profileService } from "../../services/profile.service";
+import { superIncludes } from "../../utils/super-includes";
 import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
@@ -88,12 +89,13 @@ const LeftPanel: FC = observer(() => {
         participant_address?: string
         last_message?: ChatMessageEntry
     })[]>([]);
+    const [query, setQuery] = useState("");
     const onlineAddresses = sessionManager.webrtc.onlinePeerAddresses;
 
     async function reload() {
         const chatEntities = await chatService.searchChats({});
         const mapped = await Promise.all(
-            chatEntities.map(async chat => {
+            chatEntities.filter(chat => superIncludes(query, chat.friendly_name)).map(async chat => {
                 const [lastMessage] = await chatMessageService.searchChatMessages({
                     filters: {
                         chat_hash: chat.hash
@@ -138,7 +140,7 @@ const LeftPanel: FC = observer(() => {
     useDatabase(reload, ["chats", "chat-messages", "file_blobs", "profiles"]);
     useEffect(() => {
         void reload();
-    }, [matches]);
+    }, [matches, query]);
 
     return (
         <Paper variant="outlined" sx={{ borderRadius: 0, maxWidth: canShowBothPanels ? 300 : "unset", width: "100%", position: "relative", border: 0 }}>
@@ -147,6 +149,8 @@ const LeftPanel: FC = observer(() => {
                     <AppBar position="static" elevation={1} sx={{ px: 2, py: 1, background: "none" }}>
                         <TextField variant="outlined" size="small"
                                    label="Search"
+                                   value={query}
+                                   onChange={e => setQuery(e.target.value)}
                                    placeholder="Search messages..."
                                    fullWidth />
                     </AppBar>
