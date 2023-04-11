@@ -8,7 +8,9 @@ import { RecordEntry, RecordSearchRequest, recordService } from "../../services/
 export enum RecordGroupType {
     None,
     ByCreator,
-    ByBlock
+    ByBlock,
+    ByMonthCreated,
+    ByYearCreated,
 }
 
 export interface RecordGroup {
@@ -42,6 +44,20 @@ export class DashboardViewModel {
 
     get recordSearchRequest() {
         return this._recordSearchRequest;
+    }
+
+    set recordSearchRequest(v: RecordSearchRequest) {
+        this._recordSearchRequest = v;
+        this.loadRecords.tryRun();
+    }
+
+    get groupBy() {
+        return this._groupBy;
+    }
+
+    set groupBy(v: RecordGroupType) {
+        this._groupBy = v;
+        this.loadRecords.tryRun();
     }
 
     private async _groupByBlock(records: RecordEntry[]): Promise<RecordGroup[]> {

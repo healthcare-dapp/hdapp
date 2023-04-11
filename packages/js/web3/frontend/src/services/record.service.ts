@@ -1,7 +1,8 @@
 import { autoBind } from "@hdapp/shared/web2-common/utils/auto-bind";
-import { Instant, LocalDateTime } from "@js-joda/core";
+import { Instant, LocalDate, LocalDateTime } from "@js-joda/core";
 import { SHA256 } from "crypto-js";
 import { EncryptionProvider } from "../utils/encryption.provider";
+import { superIncludes } from "../utils/super-includes";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
 import { dbService, DbService } from "./db.service";
 
@@ -47,11 +48,15 @@ export interface RecordForm {
 
 export interface RecordSearchRequest {
     filters?: {
-        query?: string | null
-        created_by?: string | null
-        block_id?: string | null
+        query?: string
+        created_before?: LocalDate
+        created_after?: LocalDate
+        created_by?: string
+        block_id?: string
+        has_attachments?: boolean
+        is_archived?: boolean
     }
-    sort_by?: "created_by" | null
+    sort_by?: "created_at" | "created_by" | "title"
 }
 
 export class RecordNotFoundError extends Error { }
@@ -115,11 +120,28 @@ export class RecordService extends DbConsumer {
         }
     }
 
-    async searchRecords(_searchRequest: RecordSearchRequest, provider: EncryptionProvider): Promise<RecordEntry[]> {
+    async searchRecords(request: RecordSearchRequest, provider: EncryptionProvider): Promise<RecordEntry[]> {
         try {
             const devices = await this._findMany(
                 transformer(provider),
-                () => true
+                entry => {
+                    if (request.filters?.query !== undefined && !superIncludes(request.filters.query, [entry.description, entry.title]))
+                        return false;
+                    if (request.filters?.block_id !== undefined && !entry.block_ids.includes(request.filters.block_id))
+                        return false;
+                    if (request.filters?.created_after !== undefined && !entry.created_at.toLocalDate().isBefore(request.filters.created_after))
+                        return false;
+                    if (request.filters?.created_before !== undefined && !entry.created_at.toLocalDate().isAfter(request.filters.created_before))
+                        return false;
+                    if (request.filters?.has_attachments && !!entry.attachment_ids.length)
+                        return false;
+                    if (request.filters?.is_archived && !!entry.is_archived)
+                        return false;
+                    if (request.filters?.created_by && entry.created_by !== request.filters.created_by)
+                        return false;
+
+                    return true;
+                }
             );
             return devices;
         } catch (e) {

@@ -4,6 +4,8 @@ import { Stack } from "@mui/system";
 import { DateCalendar } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
+import { ModalProvider } from "../../App2";
+import { CreateAppointmentDialog } from "../../dialogs/create-appointment.dialog";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
 import { HeaderWidget } from "../../widgets/header";
@@ -50,7 +52,8 @@ export const AppointmentsPage = observer(() => {
                         <Stack alignItems="center" direction="row" spacing={1} mb={2}>
                             <Typography variant="h4" fontSize={32}>My appointments</Typography>
                             <Box flex={1} />
-                            <Button variant="contained" disableElevation startIcon={<Add />}>
+                            <Button variant="contained" disableElevation startIcon={<Add />}
+                                    onClick={() => ModalProvider.show(CreateAppointmentDialog)}>
                                 Create a new appointment
                             </Button>
                         </Stack>
