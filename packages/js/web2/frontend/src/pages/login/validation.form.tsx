@@ -26,7 +26,7 @@ export function AdminLogin() {
         try {
             const response = await axios.post("https://hdapp.ruslang.xyz/api/auth/login", form);
             console.log(response.data);
-            alert("Sign Up succesfull. Welcome back administrator");
+            alert("Sign Up succesfull. Welcome administrator");
             void router.navigate("/admin");
         } catch (e) {
             if (!isAxiosError(e))

@@ -404,6 +404,7 @@ export class Registration extends React.Component<{}, {
                                                 onChange={date => {
                                                     this.setState({ date });
                                                     this.validateBirthday(date);
+                                                    this.fieldCheck();
                                                 }}
                                                 minDate={new Date(1850, 1, 1)}
                                                 maxDate={new Date(new Date().getFullYear() - 18, 1, 1)}
@@ -523,6 +524,7 @@ export class Registration extends React.Component<{}, {
                                             onChange={date => {
                                                 this.setState({ date });
                                                 this.validateBirthday(date);
+                                                this.fieldCheck();
                                             }}
                                             minDate={new Date(1850, 1, 1)}
                                             maxDate={new Date(new Date().getFullYear() - 18, 1, 1)}
@@ -530,7 +532,7 @@ export class Registration extends React.Component<{}, {
                                             slotProps={{
                                                 textField: { helperText: "You must be at least 18 years of age" }
                                             }}
-                                            />
+                                            renderInput={params => <TextField {...params} fullWidth />} />
 
                                 <FormControl>
                                     <FormLabel id="demo-row-radio-buttons-group-label"
