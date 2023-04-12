@@ -15,6 +15,7 @@ import {
     CardActionArea,
     IconButton,
     Link,
+    OutlinedInput,
     Stack,
     styled,
     TextField,
@@ -24,7 +25,8 @@ import {
 } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { observer } from "mobx-react-lite";
-import { FC, useEffect, useState } from "react";
+import QrScanner from "qr-scanner";
+import { FC, useEffect, useRef, useState } from "react";
 import { ModalProvider } from "../../App2";
 import { SuccessfulVerificationDialog } from "../../dialogs/successful-verification.dialog";
 import { walletManager } from "../../managers/wallet.manager";
@@ -198,6 +200,151 @@ const SignInPrivateKeyPage: FC<{ onBackButton(): void }> = x => {
     );
 };
 
+const SignInMnemonicPhrasePage: FC<{ onBackButton(): void }> = x => {
+    const theme = useTheme();
+    const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
+    const [phrases, setPhrases] = useState<string[]>(new Array(12).fill(""));
+
+    return (
+        <OverflowCard elevation={2} sx={{ maxWidth: 700 }}>
+            <IconButton onClick={x.onBackButton} sx={{ position: "absolute", top: 0, left: 0, m: 1 }}>
+                <ArrowBack />
+            </IconButton>
+            <Stack spacing={2} alignItems="center" sx={{ pt: 2, px: isSmall ? 1 : 2, pb: 3 }}>
+                <Typography fontWeight="500"
+                            align="center"
+                            fontSize={20}
+                            color={theme.palette.text.primary}>
+                    Sign in using a mnemonic phrase
+                    <Typography align="center"
+                                fontSize={12}
+                                color={theme.palette.text.secondary}>
+                        Please input the list of 12 words that were provided to you after creating an account:
+                    </Typography>
+                </Typography>
+                <div style={{ display: "grid", alignItems: "center", justifyContent: "center", gap: "8px", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr" }}>
+                    {
+                        phrases.map((phrase, index) => (
+                            <OutlinedInput placeholder={`#${index + 1}`}
+                                           fullWidth
+                                           margin="dense"
+                                           key={index}
+                                           sx={{ ".MuiOutlinedInput-input": { textAlign: "center" } }}
+                                           value={phrase}
+                                           onChange={e => setPhrases(arr => arr.map((item, i) => i === index ? e.target.value : item))} />
+                        ))
+                    }
+                </div>
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <InfoOutlined sx={{ color: theme.palette.text.secondary }} fontSize="small" />
+                    <Typography fontSize={12}
+                                color={theme.palette.text.secondary}>
+                        Please check your e-mail inbox for an e-mail with title "HDApp Wallet info"
+                    </Typography>
+                </Stack>
+                <LoadingButton disableElevation variant="contained"
+                               disabled={phrases.every(p => !!p.length)}
+                               loading={walletManager.addUsingMnemonic.pending}
+                               onClick={() => {
+                                   void walletManager.addUsingMnemonic.run(phrases);
+                               }}>
+                    Add an account
+                </LoadingButton>
+            </Stack>
+        </OverflowCard>
+    );
+};
+
+const SignInQrPage: FC<{ onBackButton(): void }> = x => {
+    const theme = useTheme();
+    const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
+    const [isInfoOpened, setIsInfoOpened] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    useEffect(() => {
+        // let mediaStream: MediaStream;
+        let qr: QrScanner | undefined;
+        let isLocked = false;
+        let timeout: number;
+
+        async function confirmConnection(result: QrScanner.ScanResult) {
+            if (isLocked)
+                return;
+            isLocked = true;
+            const url = new URL(result.data);
+            const search = url.searchParams;
+            if (url.host === "hdapp.ruslang.xyz") {
+                console.log(result);
+            }
+            isLocked = false;
+        }
+
+        (async () => {
+            timeout = window.setTimeout(async () => {
+                if (!videoRef.current)
+                    return;
+
+                qr = new QrScanner(
+                    videoRef.current,
+                    confirmConnection,
+                    {
+                        preferredCamera: "environment",
+                    }
+                );
+                await qr.start();
+            }, 500);
+        })();
+
+        return () => {
+            try {
+                window.clearTimeout(timeout);
+                qr?.stop();
+            } catch (e) {
+                //
+            }
+        };
+    }, []);
+
+    return (
+        <OverflowCard elevation={2} sx={{ maxWidth: 700 }}>
+            <IconButton onClick={x.onBackButton} sx={{ position: "absolute", top: 0, left: 0, m: 1 }}>
+                <ArrowBack />
+            </IconButton>
+            <Stack spacing={2} alignItems="center" sx={{ pt: 2, px: isSmall ? 1 : 2, pb: 3 }}>
+                <Typography fontWeight="500"
+                            align="center"
+                            fontSize={20}
+                            color={theme.palette.text.primary}>
+                    Sign in using a QR code
+                    <Typography align="center"
+                                fontSize={12}
+                                color={theme.palette.info.main}
+                                sx={{ textDecoration: "underline", cursor: "pointer" }}
+                                onClick={() => setIsInfoOpened(p => !p)}>
+                        How to use?
+                    </Typography>
+                </Typography>
+                { isInfoOpened ? (
+                    <Typography>
+                        To add a new device to this account, please perform the following:
+                        <br />
+                        <ol>
+                            <li>Open Healthcare DApp on your another device</li>
+                            <li>When offered to sign in, choose the option "QR code" and give permission to use your device's camera</li>
+                            <li>Scan the QR code provided below</li>
+                            <li>Compare confirmation symbols on both devices</li>
+                        </ol>
+                        <br />
+                        Scanning the QR code is not an option? <a onClick={() => x.onBackButton()} href="#">Add device using a private key</a> instead
+                    </Typography>
+                ) : (
+                    <video id="video" style={{ background: "black", flexGrow: 1, minHeight: "500px", width: "100%" }} autoPlay ref={videoRef} />
+                ) }
+            </Stack>
+        </OverflowCard>
+    );
+};
+
 const SignInUrlPage: FC = x => {
     const theme = useTheme();
     const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
@@ -281,9 +428,13 @@ export const SignInPage = observer<SignInProps>(function SignInPage(x, ref) {
                 { page
                     ? page === "private-key"
                         ? <SignInPrivateKeyPage onBackButton={() => setPage(undefined)} />
-                        : page === "url"
-                            ? <SignInUrlPage />
-                            : <SignInPrivateKeyPage onBackButton={() => setPage(undefined)} />
+                        : page === "mnemonic-phrase"
+                            ? <SignInMnemonicPhrasePage onBackButton={() => setPage(undefined)} />
+                            : page === "qr"
+                                ? <SignInQrPage onBackButton={() => setPage(undefined)} />
+                                : page === "url"
+                                    ? <SignInUrlPage />
+                                    : <SignInPrivateKeyPage onBackButton={() => setPage(undefined)} />
                     : (
                         <SignInMainPage isAddingAccount={!!x.isAddingAccount}
                                         title={x.isAddingAccount ? "Add another account to this device" : "Sign in"}

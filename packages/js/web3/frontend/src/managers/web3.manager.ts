@@ -75,4 +75,14 @@ export class Web3Manager {
             throw new Error("Provided private key is not valid.");
         }
     }
+
+    static async testMnemonic(phrases: string[]): Promise<[string, string]> {
+        try {
+            const provider = new ethers.JsonRpcProvider(WEB3_JSON_RPC_URL);
+            const signer = ethers.Wallet.fromPhrase(phrases.join(" "), provider);
+            return [await signer.getAddress(), signer.privateKey];
+        } catch (e) {
+            throw new Error("Provided private key is not valid.");
+        }
+    }
 }

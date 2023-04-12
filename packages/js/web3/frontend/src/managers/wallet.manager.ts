@@ -2,7 +2,7 @@ import { AsyncAction } from "@hdapp/shared/web2-common/utils";
 import { makeAutoObservable, runInAction } from "mobx";
 import { ModalProvider } from "../App2";
 import { SetPasswordDialog } from "../dialogs/set-password.dialog";
-import { SetUserDataDialog, SetUserDataDialogResult } from "../dialogs/set-user-data.dialog";
+import { SetUserDataDialog } from "../dialogs/set-user-data.dialog";
 import { dbService } from "../services/db.service";
 import { fileService } from "../services/file.service";
 import { profileService } from "../services/profile.service";
@@ -38,6 +38,60 @@ export class WalletManager {
     addUsingPrivateKey = new AsyncAction(async (privateKey: string) => {
         try {
             const address = await Web3Manager.testPrivateKey(privateKey);
+
+            const password = await ModalProvider.show(SetPasswordDialog, {});
+
+            if (!password)
+                throw new Error("Setting a password is required to use the app.");
+
+            const { fullName, avatar, birthDate } = await ModalProvider.show(SetUserDataDialog, { address });
+
+            const provider = new EncryptionProvider(password);
+            const wallet: WalletEntry = {
+                address,
+                private_key: privateKey,
+                type: WalletType.PrivateKey,
+                mnemonic: null,
+                user: {
+                    full_name: fullName,
+                    avatar_file_id: null
+                }
+            };
+
+            await walletService.addWallet(wallet, provider);
+            await sessionManager.unlockImmediately(wallet, password);
+
+            const avatarHash = avatar
+                ? await fileService.uploadFile(
+                    avatar,
+                    wallet.address,
+                    sessionManager.encryption
+                ) : null;
+
+            await profileService.addProfile(
+                address,
+                {
+                    full_name: fullName,
+                    avatar_hash: avatarHash,
+                    birth_date: birthDate,
+                    blood_type: null,
+                    gender: null,
+                    height: null,
+                    medical_organization_name: null,
+                    weight: null,
+                },
+                sessionManager.encryption
+            );
+
+            void this.load.run();
+        } catch (e) {
+            console.error(e);
+        }
+    });
+
+    addUsingMnemonic = new AsyncAction(async (phrases: string[]) => {
+        try {
+            const [address, privateKey] = await Web3Manager.testMnemonic(phrases);
 
             const password = await ModalProvider.show(SetPasswordDialog, {});
 

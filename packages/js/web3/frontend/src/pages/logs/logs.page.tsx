@@ -1,4 +1,5 @@
 import { formatTemporal } from "@hdapp/shared/web2-common/utils/temporal";
+import { LocalDate } from "@js-joda/core";
 import { Menu as MenuIcon, Search, Tune } from "@mui/icons-material";
 import {
     Box,
@@ -22,7 +23,10 @@ import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { DatePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
+import { sessionManager } from "../../managers/session.manager";
 import { EventLogEntry, eventLogService } from "../../services/event-log.service";
+import { ProfileEntry, profileService } from "../../services/profile.service";
+import { superIncludes } from "../../utils/super-includes";
 import { trimWeb3Address } from "../../utils/trim-web3-address";
 import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
@@ -64,11 +68,25 @@ export const LogsPage = observer(() => {
     const theme = useTheme();
     const canShowSidebar = useMediaQuery(theme.breakpoints.up("md"));
     const [logs, setLogs] = useState<EventLogEntry[]>([]);
+    const [query, setQuery] = useState("");
+    const [createdBefore, setCreatedBefore] = useState<LocalDate>();
+    const [createdAfter, setCreatedAfter] = useState<LocalDate>();
+    const [createdByFilter, setCreatedByFilter] = useState<string>();
+    const [profiles, setProfiles] = useState<ProfileEntry[]>([]);
 
     useDatabase(async () => {
         const logEntries = await eventLogService.getEventLogs();
         setLogs(logEntries);
-    }, ["event-logs"]);
+        setProfiles(await profileService.searchProfiles({}, sessionManager.encryption));
+    }, ["event-logs", "profiles"]);
+
+    const filteredLogs = logs.filter(log => {
+        if (createdByFilter && log.created_by !== createdByFilter)
+            return false;
+        if (query && !superIncludes(query, [log.description, log.title]))
+            return false;
+        return true;
+    });
 
     return (
         <>
@@ -127,10 +145,24 @@ export const LogsPage = observer(() => {
                                 </Typography>
                                 <Stack alignItems="center" spacing={1} direction="row">
                                     <DatePicker label="From"
+                                                value={createdAfter
+                                                    ? new Date(createdAfter.toString())
+                                                    : null}
+                                                onChange={e => {
+                                                    if (e)
+                                                        setCreatedAfter(LocalDate.parse(e.toISOString().slice(0, e.toISOString().indexOf("T"))));
+                                                }}
                                                 slotProps={{ textField: { size: "small", margin: "dense", variant: "outlined" } }}
                                                 renderInput={params => <TextField {...params} InputProps={{ ...(params.InputProps ?? {}), readOnly: true }} />} />
                                     <span>—</span>
                                     <DatePicker label="To"
+                                                value={createdBefore
+                                                    ? new Date(createdBefore.toString())
+                                                    : null}
+                                                onChange={e => {
+                                                    if (e)
+                                                        setCreatedBefore(LocalDate.parse(e.toISOString().slice(0, e.toISOString().indexOf("T"))));
+                                                }}
                                                 slotProps={{ textField: { size: "small", margin: "dense", variant: "outlined" } }}
                                                 renderInput={params => <TextField {...params} InputProps={{ ...(params.InputProps ?? {}), readOnly: true }} />} />
                                 </Stack>
@@ -143,10 +175,16 @@ export const LogsPage = observer(() => {
                                     <InputLabel id="demo-simple-select-label">User</InputLabel>
                                     <Select labelId="demo-simple-select-label"
                                             id="demo-simple-select"
+                                            value={createdByFilter ?? null}
+                                            onChange={e => {
+                                                if (e)
+                                                    setCreatedByFilter(e.target.value ?? void 0);
+                                            }}
                                             label="User">
-                                        <MenuItem value={10}>Prescription</MenuItem>
-                                        <MenuItem value={20}>Legal paper</MenuItem>
-                                        <MenuItem value={30}>Other</MenuItem>
+                                        <MenuItem value={undefined}><i>Unspecified</i></MenuItem>
+                                        { profiles.map(profile => (
+                                            <MenuItem key={profile.address} value={profile.address}>{ profile.full_name }</MenuItem>
+                                        )) }
                                     </Select>
                                 </FormControl>
                             </Stack>
