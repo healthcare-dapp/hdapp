@@ -6,12 +6,20 @@ import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
-import { Console } from "console";
 
-const handleClick = (cellValues: GridRenderCellParams) => {
+const handleClick = async (cellValues: GridRenderCellParams) => {
     console.log("CLICK");
     console.log(cellValues);
     console.log(cellValues.row);
+   const data : UserDto = cellValues.row;
+    data.is_banned = true;
+    data.full_name = "Neco arc";
+    console.log("updating");
+    const b = await UsersService.updateUser(data);
+    console.log(b);
+    const a = await UsersService.findByWeb3Address(data.web3_address);
+    console.log("result:");
+    console.log(a);
 };
 
 const columns: GridColDef[] = [
