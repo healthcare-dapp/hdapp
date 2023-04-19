@@ -113,7 +113,7 @@ export class UsersController {
     @ApiOperation({ description: "Update information on a user by ID." })
     @ApiBearerAuth()
     async updateUserById(@Param("id") id: string,
-        @Body("data", new IoTsValidationPipe(UpdateUserDto)) data: UpdateUserDto,
+        @Body(new IoTsValidationPipe(UpdateUserDto)) data: UpdateUserDto,
     ): Promise<UserDto> {
         try {
             const updateData = UserAdapter.transformUpdateDtoToEntity(data);
