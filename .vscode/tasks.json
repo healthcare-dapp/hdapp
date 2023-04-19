@@ -45,7 +45,7 @@
             "options": {
                 "shell": {
                     "args": [
-                        "${workspaceFolder}/misc/env/dev-local.env"
+                        "${workspaceFolder}/prod.env"
                     ]
                 }
             }
