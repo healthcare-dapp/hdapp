@@ -8,13 +8,14 @@ import { FC, useState } from "react";
 import { ModalProvider } from "../../../App2";
 import { CreateBlockDialog } from "../../../dialogs/create-block.dialog";
 import { sessionManager } from "../../../managers/session.manager";
-import { BlockEntry, blockService } from "../../../services/block.service";
-import { ProfileEntry, profileService } from "../../../services/profile.service";
+import { BlockEntry } from "../../../services/block.service";
+import { ProfileEntry } from "../../../services/profile.service";
 import { useDatabase } from "../../../utils/use-database";
 import { DashboardViewModel, RecordGroupType } from "../dashboard.vm";
 import { DataGroupsListWidget } from "./data-groups-list.widget";
 
 export const MyMedicalDataWidget: FC<{ vm: DashboardViewModel }> = observer(x => {
+    const { db, encryption } = sessionManager;
     const theme = useTheme();
     const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
     const [isSearchOpened, setIsSearchOpened] = useState(false);
@@ -23,8 +24,8 @@ export const MyMedicalDataWidget: FC<{ vm: DashboardViewModel }> = observer(x =>
     const [blocks, setBlocks] = useState<BlockEntry[]>([]);
 
     useDatabase(async () => {
-        setBlocks(await blockService.getBlocks());
-        setProfiles(await profileService.searchProfiles({}, sessionManager.encryption));
+        setBlocks(await db.blocks.getBlocks());
+        setProfiles(await db.profiles.searchProfiles({}, encryption));
     });
 
     return (

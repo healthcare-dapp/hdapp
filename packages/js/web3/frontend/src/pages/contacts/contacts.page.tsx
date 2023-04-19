@@ -23,9 +23,7 @@ import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { sessionManager } from "../../managers/session.manager";
-import { deviceService } from "../../services/device.service";
-import { fileService } from "../../services/file.service";
-import { ProfileEntry, profileService } from "../../services/profile.service";
+import { ProfileEntry } from "../../services/profile.service";
 import { superIncludes } from "../../utils/super-includes";
 import { trimWeb3Address } from "../../utils/trim-web3-address";
 import { useDatabase } from "../../utils/use-database";
@@ -36,6 +34,7 @@ import { HeaderWidget } from "../../widgets/header";
 import { ShareQrWidget } from "../../widgets/share-qr/share-qr.widget";
 
 export const ContactsPage = observer(() => {
+    const { db, encryption } = sessionManager;
     const [openCounter, setOpenCounter] = useState(0);
     const theme = useTheme();
     const canShowSidebar = useMediaQuery(theme.breakpoints.up("md"));
@@ -45,17 +44,17 @@ export const ContactsPage = observer(() => {
     const [activeProfile, setActiveProfile] = useState<string>();
 
     useDatabase(async () => {
-        const entries = await profileService.searchProfiles({ filters: { query } }, sessionManager.encryption);
+        const entries = await db.profiles.searchProfiles({ filters: { query } }, encryption);
         setProfiles(
             await Promise.all(
                 entries.map(async entry => {
                     return {
                         ...entry,
-                        last_active_at: (await deviceService.getDevicesOwnedBy(entry.address, sessionManager.encryption))
+                        last_active_at: (await db.devices.getDevicesOwnedBy(entry.address, encryption))
                             .sort((a, b) => a.last_active_at.compareTo(b.last_active_at))
                             .shift()?.last_active_at,
                         avatar_url: entry.avatar_hash
-                            ? await fileService.getFileBlob(entry.avatar_hash, sessionManager.encryption)
+                            ? await db.files.getFileBlob(entry.avatar_hash, encryption)
                                 .then(blob => URL.createObjectURL(blob))
                                 .catch(() => void 0)
                             : void 0

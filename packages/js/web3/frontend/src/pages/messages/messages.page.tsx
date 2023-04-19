@@ -37,10 +37,9 @@ import { useMatches, useNavigate, useParams } from "react-router-dom";
 import { ModalProvider } from "../../App2";
 import { CreateChatDialog } from "../../dialogs/create-chat.dialog";
 import { sessionManager } from "../../managers/session.manager";
-import { ChatMessageEntry, chatMessageService } from "../../services/chat-message.service";
-import { ChatEntry, chatService } from "../../services/chat.service";
-import { fileService } from "../../services/file.service";
-import { ProfileEntry, profileService } from "../../services/profile.service";
+import { ChatMessageEntry } from "../../services/chat-message.service";
+import { ChatEntry } from "../../services/chat.service";
+import { ProfileEntry } from "../../services/profile.service";
 import { superIncludes } from "../../utils/super-includes";
 import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
@@ -77,6 +76,7 @@ const OverflowCard = styled(Box)`
 `;
 
 const LeftPanel: FC = observer(() => {
+    const { db, encryption } = sessionManager;
     const theme = useTheme();
     const navigate = useNavigate();
     const matches = useMatches();
@@ -93,24 +93,24 @@ const LeftPanel: FC = observer(() => {
     const onlineAddresses = sessionManager.webrtc.onlinePeerAddresses;
 
     async function reload() {
-        const chatEntities = await chatService.searchChats({});
+        const chatEntities = await db.chats.searchChats({});
         const mapped = await Promise.all(
             chatEntities.filter(chat => superIncludes(query, chat.friendly_name)).map(async chat => {
-                const [lastMessage] = await chatMessageService.searchChatMessages({
+                const [lastMessage] = await db.chatMessages.searchChatMessages({
                     filters: {
                         chat_hash: chat.hash
                     },
                     sort_by: "created_at",
                     sort_by_desc: true,
                     limit: 1
-                }, sessionManager.encryption);
+                }, encryption);
                 const participants = await Promise.all(
-                    chat.participant_ids.map(id => profileService.getProfile(id, sessionManager.encryption))
+                    chat.participant_ids.map(id => db.profiles.getProfile(id, encryption))
                 );
                 const participantsWithAvatars = await Promise.all(
                     participants.map(async profile => {
                         const avatarUrl = profile.avatar_hash
-                            ? URL.createObjectURL(await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption))
+                            ? URL.createObjectURL(await db.files.getFileBlob(profile.avatar_hash, encryption))
                             : void 0;
                         return { ...profile, avatar_url: avatarUrl };
                     })
@@ -233,6 +233,7 @@ const LeftPanel: FC = observer(() => {
 });
 
 const RightPanel: FC = observer(() => {
+    const { db, encryption } = sessionManager;
     const theme = useTheme();
     const navigate = useNavigate();
     const matches = useMatches();
@@ -262,34 +263,34 @@ const RightPanel: FC = observer(() => {
         if (!hash)
             return;
 
-        const chatEntry = await chatService.getChat(hash);
+        const chatEntry = await db.chats.getChat(hash);
         setChat(chatEntry);
 
         const profiles = await Promise.all(
             chatEntry.participant_ids.map(async id => {
-                const profile = await profileService.getProfile(id, sessionManager.encryption);
+                const profile = await db.profiles.getProfile(id, encryption);
 
                 const avatarUrl = profile.avatar_hash
-                    ? URL.createObjectURL(await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption))
+                    ? URL.createObjectURL(await db.files.getFileBlob(profile.avatar_hash, encryption))
                     : void 0;
                 return { ...profile, avatar_url: avatarUrl };
             })
         );
         setParticipants(profiles);
 
-        const chatMessages = await chatMessageService.searchChatMessages({
+        const chatMessages = await db.chatMessages.searchChatMessages({
             filters: {
                 chat_hash: hash,
             },
             sort_by: "created_at",
             limit: 50
-        }, sessionManager.encryption);
+        }, encryption);
 
         const mapped = await Promise.all(
             chatMessages.map(async msg => {
                 const attachments = await Promise.all(
                     msg.attachment_ids.map(
-                        id => fileService.getFileBlob(id, sessionManager.encryption)
+                        id => db.files.getFileBlob(id, encryption)
                             .then(blob => URL.createObjectURL(blob))
                     )
                 );
@@ -317,12 +318,12 @@ const RightPanel: FC = observer(() => {
     }
 
     async function send() {
-        await chatMessageService.addChatMessage({
+        await db.chatMessages.addChatMessage({
             attachment_ids: [],
             chat_hash: chatHash!,
             content: messageText,
             created_by: sessionManager.wallet.address
-        }, sessionManager.encryption);
+        }, encryption);
 
         setMessageText("");
     }

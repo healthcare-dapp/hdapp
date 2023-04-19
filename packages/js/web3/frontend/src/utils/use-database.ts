@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { dbService } from "../services/db.service";
+import { sessionManager } from "../managers/session.manager";
+import { sharedDbService } from "../services/db.service";
 
 export function useDatabase(effect: () => void, dependentStores?: string[], dependantVars?: unknown[]) {
     const [, forceUpdate] = useState(0);
@@ -16,9 +17,11 @@ export function useDatabase(effect: () => void, dependentStores?: string[], depe
     }, []);
 
     useEffect(() => {
-        dbService.on("txn_completed", callback);
+        sharedDbService.on("txn_completed", callback);
+        sessionManager.db.service.on("txn_completed", callback);
         return () => {
-            dbService.off("txn_completed", callback);
+            sharedDbService.off("txn_completed", callback);
+            sessionManager.db.service.off("txn_completed", callback);
         };
-    }, dependantVars ?? []);
+    }, [...(dependantVars ?? []), sessionManager.db]);
 }

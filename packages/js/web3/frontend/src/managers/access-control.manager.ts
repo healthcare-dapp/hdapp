@@ -4,8 +4,7 @@ import { SHA256 } from "crypto-js";
 import { ethers, toBigInt } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable } from "mobx";
-import { deviceService } from "../services/device.service";
-import { eventLogService } from "../services/event-log.service";
+import { DbManager } from "./db.manager";
 import { NotificationsManager, Urgency } from "./notifications.manager";
 import { sessionManager } from "./session.manager";
 import { Web3Manager } from "./web3.manager";
@@ -52,6 +51,7 @@ export class AccessControlManager {
     }
 
     constructor(
+        private _db: DbManager,
         private _web3: Web3Manager,
         private _notifications: NotificationsManager
     ) {
@@ -82,12 +82,12 @@ export class AccessControlManager {
         if (hashLocal !== hash)
             return warn("incoming hash doesn't match the expected hash");
 
-        const device = await deviceService.getDevice(hashLocalStr, sessionManager.encryption)
+        const device = await this._db.devices.getDevice(hashLocalStr, sessionManager.encryption)
             .catch(() => null);
         if (device)
             return;
 
-        await deviceService.addDevice(
+        await this._db.devices.addDevice(
             {
                 added_at: LocalDateTime.now(),
                 last_active_at: LocalDateTime.MIN,
@@ -115,13 +115,13 @@ export class AccessControlManager {
             ? user2
             : user1;
 
-        const devices = await deviceService.getDevicesOwnedBy(user, sessionManager.encryption);
+        const devices = await this._db.devices.getDevicesOwnedBy(user, sessionManager.encryption);
         if (!devices.length)
             return;
 
         for (const device of devices) {
             if (device.is_pending)
-                await deviceService.upsertDevice(
+                await this._db.devices.upsertDevice(
                     { ...device, is_pending: false },
                     sessionManager.encryption
                 );
@@ -134,12 +134,12 @@ export class AccessControlManager {
             userAddress: user
         });
 
-        const eventLogs = await eventLogService.getEventLogsWithRelatedEntity({
+        const eventLogs = await this._db.eventLogs.getEventLogsWithRelatedEntity({
             type: "profile",
             value: user,
         });
         if (!eventLogs.some(el => el.title === "Connection request accepted" && el.created_at.isBefore(Instant.now().minusSeconds(60 * 60 * 1))))
-            await eventLogService.addEventLog({
+            await this._db.eventLogs.addEventLog({
                 created_by: user,
                 related_entities: [
                     {
@@ -193,7 +193,7 @@ export class AccessControlManager {
                 user,
                 hash
             );
-            await deviceService.addDevice(
+            await this._db.devices.addDevice(
                 {
                     added_at: LocalDateTime.now(),
                     last_active_at: LocalDateTime.MIN,
@@ -208,7 +208,7 @@ export class AccessControlManager {
                 sessionManager.encryption
             );
 
-            await eventLogService.addEventLog({
+            await this._db.eventLogs.addEventLog({
                 title: "Connection request pending",
                 description: `Waiting for user ${user} to confirm your connection request`,
                 created_by: user,
@@ -228,12 +228,12 @@ export class AccessControlManager {
         try {
             await this._web3.accessControlManager.addUserConnection(user);
 
-            await deviceService.activateAllDevicesOwnedBy(
+            await this._db.devices.activateAllDevicesOwnedBy(
                 user,
                 sessionManager.encryption
             );
 
-            await eventLogService.addEventLog({
+            await this._db.eventLogs.addEventLog({
                 title: "Connection request accepted",
                 description: `You have accepted the connection request of ${user}.`,
                 created_by: this._web3.address,

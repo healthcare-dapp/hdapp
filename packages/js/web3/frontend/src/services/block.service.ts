@@ -2,7 +2,7 @@ import { autoBind } from "@hdapp/shared/web2-common/utils";
 import { Instant, LocalDateTime } from "@js-joda/core";
 import { SHA256 } from "crypto-js";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService } from "./db.service";
+import { DbService } from "./db.service";
 
 interface BlockDbEntry {
     hash: string
@@ -149,6 +149,3 @@ export class BlockService extends DbConsumer {
         metadataStore.createIndex("created_at", "created_at", { unique: false });
     }
 }
-
-export const blockService = new BlockService(dbService);
-dbService.addConsumer(blockService);

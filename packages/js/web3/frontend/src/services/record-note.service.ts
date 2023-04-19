@@ -1,7 +1,7 @@
 import { autoBind } from "@hdapp/shared/web2-common/utils/auto-bind";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService } from "./db.service";
+import { DbService } from "./db.service";
 
 interface RecordNoteDbEntry {
     hash: string
@@ -99,6 +99,3 @@ export class RecordNoteService extends DbConsumer {
         metadataStore.createIndex("encryptedText", "encryptedText", { unique: false });
     }
 }
-
-export const recordNoteService = new RecordNoteService(dbService);
-dbService.addConsumer(recordNoteService);

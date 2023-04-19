@@ -3,7 +3,7 @@ import { Instant, LocalDateTime } from "@js-joda/core";
 import { MD5, SHA256 } from "crypto-js";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService, IDbConsumer } from "./db.service";
+import { DbService, IDbConsumer } from "./db.service";
 
 interface FileBlobDbEntry {
     hash: string
@@ -277,6 +277,3 @@ export class FileService implements IDbConsumer {
         this._blob.onDbUpgrade(db);
     }
 }
-
-export const fileService = new FileService(dbService);
-dbService.addConsumer(fileService);

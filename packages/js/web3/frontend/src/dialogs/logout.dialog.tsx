@@ -11,7 +11,8 @@ import {
 import { observer } from "mobx-react-lite";
 import { FC } from "react";
 import { ModalProvider } from "../App2";
-import { dbService } from "../services/db.service";
+import { sessionManager } from "../managers/session.manager";
+import { walletService } from "../services/wallet.service";
 
 export const LogoutDialog: FC<{ onClose?(): void }> = observer(x => {
     const theme = useTheme();
@@ -34,7 +35,8 @@ export const LogoutDialog: FC<{ onClose?(): void }> = observer(x => {
             </DialogContent>
             <DialogActions disableSpacing sx={{ flexDirection: isBigEnough ? "row" : "column", gap: "8px" }}>
                 <Button color="error" onClick={async () => {
-                    await dbService.reset();
+                    await walletService.removeWallet(sessionManager.wallet.address);
+                    await sessionManager.db.service.reset();
                     x.onClose?.();
                     location.reload();
                 }}>I'm aware, please sign out</Button>

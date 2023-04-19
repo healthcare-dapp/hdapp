@@ -22,21 +22,21 @@ import {
 import { observer } from "mobx-react-lite";
 import { FC, useState } from "react";
 import { ModalProvider } from "../App2";
-import { sessionManager } from "../managers/session.manager";
-import { BlockEntry, BlockForm, blockService } from "../services/block.service";
+import { SessionManager, sessionManager } from "../managers/session.manager";
+import { BlockEntry, BlockForm } from "../services/block.service";
 import { useDatabase } from "../utils/use-database";
 
-const upsertBlockAction = new AsyncAction(async (form: BlockForm, blockHash?: string) => {
+const upsertBlockAction = new AsyncAction(async (sm: SessionManager, form: BlockForm, blockHash?: string) => {
     if (blockHash) {
-        await blockService.patchBlock(blockHash, form);
-        return await blockService.getBlock(blockHash);
+        await sm.db.blocks.patchBlock(blockHash, form);
+        return await sm.db.blocks.getBlock(blockHash);
     }
 
-    return await blockService.addBlock(form);
+    return await sm.db.blocks.addBlock(form);
 });
 
 export const CreateBlockDialog: FC<{ blockHash?: string; isDoctor?: boolean; onClose?(block?: BlockEntry): void }> = observer(x => {
-    const { wallet } = sessionManager;
+    const { db, wallet } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [name, setName] = useState("");
@@ -45,18 +45,22 @@ export const CreateBlockDialog: FC<{ blockHash?: string; isDoctor?: boolean; onC
     useDatabase(async () => {
         if (!x.blockHash)
             return;
-        const blockEntity = await blockService.getBlock(x.blockHash);
+        const blockEntity = await db.blocks.getBlock(x.blockHash);
         setName(blockEntity.friendly_name);
         setMetaTagIds(blockEntity.meta_tag_ids);
     }, ["blocks"], [x.blockHash]);
 
     async function handleCreateBlock() {
-        const block = await upsertBlockAction.run({
-            friendly_name: name,
-            meta_tag_ids: metaTagIds,
-            created_by: wallet.address,
-            owned_by: wallet.address
-        }, x.blockHash);
+        const block = await upsertBlockAction.run(
+            sessionManager,
+            {
+                friendly_name: name,
+                meta_tag_ids: metaTagIds,
+                created_by: wallet.address,
+                owned_by: wallet.address
+            },
+            x.blockHash
+        );
         x.onClose?.(block);
     }
 

@@ -29,30 +29,31 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ModalProvider } from "../../App2";
 import { RecordArchivalConfirmationDialog } from "../../dialogs/record-archival-confirmation.dialog";
 import { ShareRecordDialog } from "../../dialogs/share-record.dialog";
-import { sessionManager } from "../../managers/session.manager";
-import { BlockEntry, blockService } from "../../services/block.service";
-import { EventLogEntry, eventLogService } from "../../services/event-log.service";
-import { FileEntry, fileService } from "../../services/file.service";
-import { ProfileEntry, profileService } from "../../services/profile.service";
-import { RecordEntry, recordService } from "../../services/record.service";
+import { SessionManager, sessionManager } from "../../managers/session.manager";
+import { BlockEntry } from "../../services/block.service";
+import { EventLogEntry } from "../../services/event-log.service";
+import { FileEntry } from "../../services/file.service";
+import { ProfileEntry } from "../../services/profile.service";
+import { RecordEntry } from "../../services/record.service";
 import { trimWeb3Address } from "../../utils/trim-web3-address";
 import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
 import { HeaderWidget } from "../../widgets/header";
 
-const getRecordAction = new AsyncAction(recordService.getRecord);
-const getRecordCreatorProfileAction = new AsyncAction(profileService.getProfile);
-const getRecordCreatorAvatarAction = new AsyncAction(fileService.getFileBlob);
-const getRecordOwnerAvatarAction = new AsyncAction(fileService.getFileBlob);
-const getRecordOwnerProfileAction = new AsyncAction(profileService.getProfile);
+const getRecordAction = new AsyncAction((sm: SessionManager, hash: string) => sm.db.records.getRecord(hash, sm.encryption));
+const getRecordCreatorProfileAction = new AsyncAction((sm: SessionManager, hash: string) => sm.db.profiles.getProfile(hash, sm.encryption));
+const getRecordCreatorAvatarAction = new AsyncAction((sm: SessionManager, hash: string) => sm.db.files.getFileBlob(hash, sm.encryption));
+const getRecordOwnerAvatarAction = new AsyncAction((sm: SessionManager, hash: string) => sm.db.files.getFileBlob(hash, sm.encryption));
+const getRecordOwnerProfileAction = new AsyncAction((sm: SessionManager, hash: string) => sm.db.profiles.getProfile(hash, sm.encryption));
 const getRecordEventLogsAction = new AsyncAction(
-    (recordId: string) => eventLogService.getEventLogsWithRelatedEntity(
+    (sm: SessionManager, recordId: string) => sm.db.eventLogs.getEventLogsWithRelatedEntity(
         { type: "record", value: recordId }
     )
 );
 
 export const RecordPage = () => {
+    const { db, encryption } = sessionManager;
     const { recordId } = useParams();
     const [record, setRecord] = useState<RecordEntry>();
     const [creatorProfile, setCreatorProfile] = useState<ProfileEntry>();
@@ -67,36 +68,36 @@ export const RecordPage = () => {
         if (!recordId)
             return;
 
-        const result = await getRecordAction.run(recordId, sessionManager.encryption);
+        const result = await getRecordAction.run(sessionManager, recordId);
         setRecord(result);
 
         await Promise.all([
-            await getRecordCreatorProfileAction.run(result.created_by, sessionManager.encryption)
+            await getRecordCreatorProfileAction.run(sessionManager, result.created_by)
                 .then(async profile => {
                     if (profile.avatar_hash)
-                        await getRecordCreatorAvatarAction.run(profile.avatar_hash, sessionManager.encryption)
+                        await getRecordCreatorAvatarAction.run(sessionManager, profile.avatar_hash)
                             .then(blob => setCreatorAvatarUrl(URL.createObjectURL(blob)));
                     return profile;
                 })
                 .then(setCreatorProfile),
-            await getRecordOwnerProfileAction.run(result.owned_by, sessionManager.encryption)
+            await getRecordOwnerProfileAction.run(sessionManager, result.owned_by)
                 .then(setOwnerProfile),
-            Promise.all(result.block_ids.map(id => blockService.getBlock(id)))
+            Promise.all(result.block_ids.map(id => db.blocks.getBlock(id)))
                 .then(setBlocks),
-            Promise.all(result.attachment_ids.map(id => fileService.getFileMetadata(id)))
+            Promise.all(result.attachment_ids.map(id => db.files.getFileMetadata(id)))
                 .then(setAttachments),
-            Promise.all(result.attachment_ids.map(id => fileService.getFileBlob(id, sessionManager.encryption)))
+            Promise.all(result.attachment_ids.map(id => db.files.getFileBlob(id, encryption)))
                 .then(atts => {
                     setAttachmentUrls(atts.map(blob => URL.createObjectURL(blob)));
                 }),
-            await getRecordEventLogsAction.run(recordId)
+            await getRecordEventLogsAction.run(sessionManager, recordId)
                 .then(logEntries => {
                     return Promise.all(
                         logEntries.map(async entry => {
-                            const profile = await profileService.getProfile(entry.created_by, sessionManager.encryption)
+                            const profile = await db.profiles.getProfile(entry.created_by, encryption)
                                 .catch(() => null);
                             const profileAvatarBlob = profile?.avatar_hash
-                                ? await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption)
+                                ? await db.files.getFileBlob(profile.avatar_hash, encryption)
                                 : null;
                             return {
                                 ...entry,
@@ -179,7 +180,7 @@ export const RecordPage = () => {
                                                         const isConfirmed = await ModalProvider.show(RecordArchivalConfirmationDialog, {});
                                                         if (!isConfirmed)
                                                             return;
-                                                        await recordService.archiveRecord(recordId!, sessionManager.encryption);
+                                                        await db.records.archiveRecord(recordId!, encryption);
                                                     }}>
                                                 Archive
                                             </Button>

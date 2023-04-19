@@ -1,7 +1,7 @@
 import { Instant } from "@js-joda/core";
 import { MD5 } from "crypto-js";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService } from "./db.service";
+import { DbService } from "./db.service";
 
 interface EventLogDbEntry {
     hash: string
@@ -133,6 +133,3 @@ export class EventLogService extends DbConsumer {
         store.createIndex("created_at", "created_at", { unique: false });
     }
 }
-
-export const eventLogService = new EventLogService(dbService);
-dbService.addConsumer(eventLogService);

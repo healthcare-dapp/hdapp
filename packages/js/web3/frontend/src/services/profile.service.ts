@@ -2,7 +2,7 @@ import { autoBind } from "@hdapp/shared/web2-common/utils";
 import { LocalDate, LocalDateTime } from "@js-joda/core";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService } from "./db.service";
+import { DbService } from "./db.service";
 
 interface ProfileDbEntry {
     address: string
@@ -190,6 +190,3 @@ export class ProfileService extends DbConsumer {
         metadataStore.createIndex("encrypted", "encrypted", { unique: false });
     }
 }
-
-export const profileService = new ProfileService(dbService);
-dbService.addConsumer(profileService);

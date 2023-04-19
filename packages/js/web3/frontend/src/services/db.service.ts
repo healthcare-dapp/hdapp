@@ -1,7 +1,7 @@
 import { Logger, autoBind, formatBytes } from "@hdapp/shared/web2-common/utils";
 import EventEmitter from "events";
 
-const dbName = "hdapp-pwa-frontend";
+const dbName = "hdapp";
 
 export interface IDbConsumer {
     onDbReady?(db: IDBDatabase): void
@@ -16,10 +16,13 @@ export class DbService {
 
     private _db: IDBDatabase | null = null;
     private _storage: StorageEstimate | null = null;
-    private _channel = new BroadcastChannel("db_channel");
+    private _channel: BroadcastChannel;
 
-    constructor() {
-        this._requestDb();
+    constructor(private _web3Address?: string) {
+        this._channel = new BroadcastChannel(_web3Address
+            ? "db_channel_" + _web3Address
+            : "shared_db_channel"
+        );
         this._channel.addEventListener("message", event => {
             this._emit(event.data);
             debug("Received message from channel:", event.data);
@@ -31,29 +34,36 @@ export class DbService {
         autoBind(this);
     }
 
-    reset() {
-        return new Promise<void>((resolve, reject) => {
-            this._db?.close();
-            const request = indexedDB.deleteDatabase(dbName);
-            request.addEventListener(
-                "success",
-                () => {
-                    debug("Database has been successfully deleted.");
-                    resolve();
-                }
-            );
-            request.addEventListener(
-                "error",
-                err => {
-                    error("Error clearing the database.", err);
-                    reject();
-                }
-            );
+    reset(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (!this._db)
+                return reject("no db");
+
+            this._db.addEventListener("close", () => {
+                const request = indexedDB.deleteDatabase(dbName);
+                request.addEventListener(
+                    "success",
+                    () => {
+                        debug("Database has been successfully deleted.");
+                        resolve();
+                    }
+                );
+                request.addEventListener(
+                    "error",
+                    err => {
+                        error("Error clearing the database.", err);
+                        reject();
+                    }
+                );
+            });
+
+            this._db.close();
         });
     }
 
-    addConsumer(consumer: IDbConsumer) {
+    addConsumer<C extends IDbConsumer>(consumer: C): C {
         this._consumers.push(consumer);
+        return consumer;
     }
 
     private async _calculateStorage() {
@@ -62,36 +72,45 @@ export class DbService {
         debug("Using", formatBytes(storage.usage ?? -1), "out of", formatBytes(storage.quota ?? -1));
     }
 
-    private _requestDb() {
+    load(): Promise<void> {
         void this._calculateStorage();
         debug("Opening IndexedDB");
-        const request = indexedDB.open(dbName, 3);
-        request.addEventListener(
-            "success",
-            () => {
-                debug("Database has been successfully opened.");
-                this._initDb(request.result);
-                this._emit("ready");
-            }
-        );
-        request.addEventListener(
-            "error",
-            err => {
-                error("IndexedDB initialization failed.", err);
-            }
-        );
-        request.addEventListener(
-            "upgradeneeded",
-            event => {
-                debug("Database upgrade to version", event.newVersion, "has started.");
-                const db = (event.target as IDBOpenDBRequest).result;
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(
+                this._web3Address
+                    ? dbName + "-" + this._web3Address
+                    : dbName,
+                3
+            );
+            request.addEventListener(
+                "success",
+                () => {
+                    debug("Database has been successfully opened.");
+                    this._initDb(request.result);
+                    this._emit("ready");
+                    resolve();
+                }
+            );
+            request.addEventListener(
+                "error",
+                err => {
+                    error("IndexedDB initialization failed.", err);
+                    reject(err);
+                }
+            );
+            request.addEventListener(
+                "upgradeneeded",
+                event => {
+                    debug("Database upgrade to version", event.newVersion, "has started.");
+                    const db = (event.target as IDBOpenDBRequest).result;
 
-                for (const consumer of this._consumers)
-                    consumer.onDbUpgrade?.(db);
+                    for (const consumer of this._consumers)
+                        consumer.onDbUpgrade?.(db);
 
-                debug("Database upgrade to version", event.newVersion, "has ended.");
-            }
-        );
+                    debug("Database upgrade to version", event.newVersion, "has ended.");
+                }
+            );
+        });
     }
 
     private _initDb(db: IDBDatabase) {
@@ -152,4 +171,5 @@ export class DbService {
     private _emit = this._events.emit.bind(this._events);
 }
 
-export const dbService = new DbService();
+export const sharedDbService = new DbService();
+sharedDbService.load();

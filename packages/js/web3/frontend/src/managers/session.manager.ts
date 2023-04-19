@@ -3,11 +3,12 @@ import { Instant, LocalDateTime } from "@js-joda/core";
 import { ethers, keccak256 } from "ethers";
 import { makeAutoObservable, runInAction } from "mobx";
 import UAParser from "ua-parser-js";
-import { DeviceEntry, deviceService } from "../services/device.service";
+import { DeviceEntry } from "../services/device.service";
 import { WalletEntry, WalletEntryShort, WalletNotFoundError, walletService } from "../services/wallet.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { AccessControlManager } from "./access-control.manager";
 import { AccountManager } from "./account.manager";
+import { DbManager } from "./db.manager";
 import { NotificationsManager } from "./notifications.manager";
 import { Web3Manager } from "./web3.manager";
 import { WebRTCManager } from "./webrtc.manager";
@@ -19,6 +20,7 @@ export class SessionManager {
     private _notificationsManager: NotificationsManager | null = null;
     private _web3Manager: Web3Manager | null = null;
     private _webrtcManager: WebRTCManager | null = null;
+    private _dbManager: DbManager | null = null;
     private _walletShort: WalletEntryShort | null = null;
     private _device: DeviceEntry | null = null;
 
@@ -42,6 +44,12 @@ export class SessionManager {
         if (!this._device)
             throw new Error("No device is available.");
         return this._device;
+    }
+
+    get db() {
+        if (!this._dbManager)
+            throw new Error("No db is available.");
+        return this._dbManager;
     }
 
     get encryption() {
@@ -81,8 +89,29 @@ export class SessionManager {
     }
 
     private async _initVars(walletShort: WalletEntryShort, wallet: WalletEntry, provider: EncryptionProvider) {
+        const web3 = new Web3Manager(wallet);
+        const db = new DbManager(web3);
+
+        await db.service.load();
+
+        runInAction(() => {
+            this._encryptionProvider = provider;
+            this._walletShort = walletShort;
+            this._web3Manager = web3;
+            this._dbManager = db;
+            this._notificationsManager = new NotificationsManager(provider);
+            this._webrtcManager = new WebRTCManager(db, web3, provider);
+            this._accountManager = new AccountManager(web3);
+            this._accessControlManager = new AccessControlManager(
+                db,
+                web3,
+                this._notificationsManager
+            );
+            void this._webrtcManager.start();
+        });
+
         const device = await (async () => {
-            const currentDevice = await deviceService.getCurrentDevice(provider);
+            const currentDevice = await db.devices.getCurrentDevice(provider);
             if (currentDevice)
                 return currentDevice;
 
@@ -98,7 +127,7 @@ export class SessionManager {
             const privateKey = "";
             const friendlyName = [uaDevice.browser.name, uaDevice.browser.version].join(" ");
 
-            await deviceService.addDevice({
+            await db.devices.addDevice({
                 is_current: true,
                 is_pending: false,
                 hash,
@@ -110,29 +139,11 @@ export class SessionManager {
                 type: uaDevice.device.type ?? "pc"
             }, provider);
 
-            return await deviceService.getCurrentDevice(provider);
+            return await db.devices.getCurrentDevice(provider);
         })();
 
         runInAction(() => {
             this._device = device;
-            this._encryptionProvider = provider;
-            this._walletShort = walletShort;
-            this._web3Manager = new Web3Manager(wallet);
-            this._notificationsManager = new NotificationsManager(
-                this._encryptionProvider
-            );
-            this._webrtcManager = new WebRTCManager(
-                this._web3Manager,
-                this._encryptionProvider
-            );
-            this._accountManager = new AccountManager(
-                this._web3Manager
-            );
-            this._accessControlManager = new AccessControlManager(
-                this._web3Manager,
-                this._notificationsManager
-            );
-            void this._webrtcManager.start();
         });
     }
 

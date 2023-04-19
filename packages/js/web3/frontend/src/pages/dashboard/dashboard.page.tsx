@@ -21,8 +21,8 @@ import { useState } from "react";
 import { ModalProvider } from "../../App2";
 import { QrCodeDialog } from "../../dialogs/qr-code.dialog";
 import { ScanQrCodeDialog } from "../../dialogs/scan-qr-code.dialog";
-import { sessionManager } from "../../managers/session.manager";
-import { ProfileEntry, profileService } from "../../services/profile.service";
+import { SessionManager, sessionManager } from "../../managers/session.manager";
+import { ProfileEntry } from "../../services/profile.service";
 import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
@@ -44,7 +44,8 @@ const JumboText = styled(Typography)(({ theme }) => ({
 }));
 
 const vm = new DashboardViewModel();
-const getProfileAction = new AsyncAction(profileService.getProfile);
+const getMyProfileAction = new AsyncAction((sm: SessionManager) =>
+    sm.db.profiles.getProfile(sm.web3.address, sm.encryption));
 
 export const DashboardPage = observer(() => {
     const { account } = sessionManager;
@@ -57,7 +58,7 @@ export const DashboardPage = observer(() => {
     useDatabase(async () => {
         void vm.loadRecords.tryRun();
 
-        const result = await getProfileAction.forceRun(sessionManager.wallet.address, sessionManager.encryption);
+        const result = await getMyProfileAction.forceRun(sessionManager);
         setProfile(result);
     }, ["blocks", "profiles", "records"]);
 

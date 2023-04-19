@@ -2,8 +2,8 @@ import { AsyncAction, Logger } from "@hdapp/shared/web2-common/utils";
 import { LocalDateTime } from "@js-joda/core";
 import { makeAutoObservable, runInAction } from "mobx";
 import { sessionManager } from "../../managers/session.manager";
-import { BlockEntry, blockService } from "../../services/block.service";
-import { RecordEntry, RecordSearchRequest, recordService } from "../../services/record.service";
+import { BlockEntry } from "../../services/block.service";
+import { RecordEntry, RecordSearchRequest } from "../../services/record.service";
 
 export enum RecordGroupType {
     None,
@@ -61,7 +61,7 @@ export class DashboardViewModel {
     }
 
     private async _groupByBlock(records: RecordEntry[]): Promise<RecordGroup[]> {
-        const blocks: BlockEntry[] = await blockService.getBlocks();
+        const blocks: BlockEntry[] = await sessionManager.db.blocks.getBlocks();
         const groups: RecordGroup[] = blocks.map(block => (
             {
                 key: block.hash,
@@ -112,7 +112,7 @@ export class DashboardViewModel {
         if (!sessionManager.encryption)
             throw new Error("Can't load records without encryption provider.");
 
-        const records = await recordService.searchRecords(
+        const records = await sessionManager.db.records.searchRecords(
             this._recordSearchRequest,
             sessionManager.encryption
         );

@@ -2,7 +2,7 @@ import { autoBind } from "@hdapp/shared/web2-common/utils/auto-bind";
 import { LocalDateTime } from "@js-joda/core";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService } from "./db.service";
+import { DbService } from "./db.service";
 
 interface DeviceDbEntry {
     hash: string
@@ -199,7 +199,7 @@ export class DeviceService extends DbConsumer {
         }
     }
 
-    onDbUpgrade(db: IDBDatabase): void {
+    onDbUpgrade(db: IDBDatabase): IDBObjectStore {
         const store = db.createObjectStore(
             this._storeName,
             { keyPath: "hash" }
@@ -210,8 +210,7 @@ export class DeviceService extends DbConsumer {
         store.createIndex("is_current", "is_current", { unique: false });
         store.createIndex("is_pending", "is_pending", { unique: false });
         store.createIndex("owned_by", "owned_by", { unique: false });
+
+        return store;
     }
 }
-
-export const deviceService = new DeviceService(dbService);
-dbService.addConsumer(deviceService);

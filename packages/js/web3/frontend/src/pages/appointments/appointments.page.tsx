@@ -23,10 +23,9 @@ import { observer } from "mobx-react-lite";
 import { FC, useState } from "react";
 import { ModalProvider } from "../../App2";
 import { CreateAppointmentDialog } from "../../dialogs/create-appointment.dialog";
-import { sessionManager } from "../../managers/session.manager";
-import { AppointmentEntry, appointmentService } from "../../services/appointment.service";
-import { fileService } from "../../services/file.service";
-import { ProfileEntry, profileService } from "../../services/profile.service";
+import { SessionManager, sessionManager } from "../../managers/session.manager";
+import { AppointmentEntry, AppointmentSearchRequest } from "../../services/appointment.service";
+import { ProfileEntry } from "../../services/profile.service";
 import { trimWeb3Address } from "../../utils/trim-web3-address";
 import { useDatabase } from "../../utils/use-database";
 import { BottomBarWidget } from "../../widgets/bottom-bar";
@@ -40,7 +39,9 @@ type AppointmentFull = AppointmentEntry & {
     }
 };
 
-const getAppointmentsAction = new AsyncAction(appointmentService.searchAppointments);
+const getAppointmentsAction = new AsyncAction((sm: SessionManager, form: AppointmentSearchRequest) =>
+    sm.db.appointments.searchAppointments(form, sm.encryption)
+);
 
 const AppointmentItem: FC<{ appointment: AppointmentFull }> = x => {
     const theme = useTheme();
@@ -106,6 +107,8 @@ const AppointmentItem: FC<{ appointment: AppointmentFull }> = x => {
 };
 
 export const AppointmentsPage = observer(() => {
+    const { db, encryption } = sessionManager;
+
     const [openCounter, setOpenCounter] = useState(0);
     const theme = useTheme();
     const canShowSidebar = useMediaQuery(theme.breakpoints.up("md"));
@@ -113,17 +116,17 @@ export const AppointmentsPage = observer(() => {
     const [appointments, setAppointments] = useState<AppointmentFull[]>([]);
 
     useDatabase(async () => {
-        const entries = await getAppointmentsAction.run({ sort_by: "created_at" }, sessionManager.encryption);
+        const entries = await getAppointmentsAction.run(sessionManager, { sort_by: "created_at" });
         const fullEntries = await Promise.all(
             entries.map(async entry => {
                 return {
                     ...entry,
-                    created_by_full: await profileService.getProfile(entry.created_by, sessionManager.encryption)
+                    created_by_full: await db.profiles.getProfile(entry.created_by, encryption)
                         .then(async profile => {
                             return {
                                 ...profile,
                                 avatar_url: profile.avatar_hash
-                                    ? await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption)
+                                    ? await db.files.getFileBlob(profile.avatar_hash, encryption)
                                         .then(blob => URL.createObjectURL(blob))
                                         .catch(() => void 0)
                                     : void 0

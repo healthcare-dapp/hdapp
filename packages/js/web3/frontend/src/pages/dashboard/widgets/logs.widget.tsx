@@ -14,19 +14,19 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { sessionManager } from "../../../managers/session.manager";
-import { EventLogEntry, eventLogService } from "../../../services/event-log.service";
-import { fileService } from "../../../services/file.service";
-import { ProfileEntry, profileService } from "../../../services/profile.service";
+import { EventLogEntry } from "../../../services/event-log.service";
+import { ProfileEntry } from "../../../services/profile.service";
 import { trimWeb3Address } from "../../../utils/trim-web3-address";
 import { useDatabase } from "../../../utils/use-database";
 
 export const LogsWidget: React.FC = () => {
+    const { db, encryption } = sessionManager;
     const theme = useTheme();
     const navigate = useNavigate();
     const [logs, setLogs] = useState<(EventLogEntry & { created_by_full: (ProfileEntry & { avatar_url: string | null }) | null })[]>([]);
 
     useDatabase(async () => {
-        const eventLogs = await eventLogService.getEventLogs();
+        const eventLogs = await db.eventLogs.getEventLogs();
         const mapped = await Promise.all(
             eventLogs
                 .sort((a, b) => a.created_at.compareTo(b.created_at))
@@ -34,9 +34,9 @@ export const LogsWidget: React.FC = () => {
                 .slice(0, 3)
                 .map(async log => {
                     try {
-                        const profile = await profileService.getProfile(log.created_by, sessionManager.encryption);
+                        const profile = await db.profiles.getProfile(log.created_by, encryption);
                         const avatarBlob = profile.avatar_hash
-                            ? await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption)
+                            ? await db.files.getFileBlob(profile.avatar_hash, encryption)
                                 .catch(() => null)
                             : null;
                         return { ...log, created_by_full: { ...profile, avatar_url: avatarBlob ? URL.createObjectURL(avatarBlob) : null } };

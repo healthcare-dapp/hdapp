@@ -5,18 +5,18 @@ import { Avatar, Box, Button, Card, Stack, Typography, useTheme } from "@mui/mat
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { sessionManager } from "../../managers/session.manager";
-import { DeviceEntry, deviceService } from "../../services/device.service";
+import { DeviceEntry } from "../../services/device.service";
 import { useDatabase } from "../../utils/use-database";
 import { SettingsPageBase } from "./settings.page";
 
 export const DevicesSettingsPage = observer(() => {
-    const { wallet, device, webrtc } = sessionManager;
+    const { db, encryption, wallet, device, webrtc } = sessionManager;
     const theme = useTheme();
 
     const [devices, setDevices] = useState<DeviceEntry[]>([]);
 
     useDatabase(async () => {
-        const deviceEntries = await deviceService.searchDevices({}, sessionManager.encryption);
+        const deviceEntries = await db.devices.searchDevices({}, encryption);
         setDevices(deviceEntries);
     }, ["devices"]);
 

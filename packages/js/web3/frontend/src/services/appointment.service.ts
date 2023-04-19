@@ -4,7 +4,7 @@ import { SHA256 } from "crypto-js";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { superIncludes } from "../utils/super-includes";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService } from "./db.service";
+import { DbService } from "./db.service";
 
 interface AppointmentDbEntry {
     hash: string
@@ -168,6 +168,3 @@ export class AppointmentService extends DbConsumer {
         metadataStore.createIndex("encrypted", "encrypted", { unique: false });
     }
 }
-
-export const appointmentService = new AppointmentService(dbService);
-dbService.addConsumer(appointmentService);
