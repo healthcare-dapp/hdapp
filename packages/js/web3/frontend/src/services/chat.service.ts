@@ -2,7 +2,7 @@ import { autoBind } from "@hdapp/shared/web2-common/utils/auto-bind";
 import { Instant, LocalDateTime } from "@js-joda/core";
 import { SHA256 } from "crypto-js";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService } from "./db.service";
+import { DbService } from "./db.service";
 
 interface ChatDbEntry {
     hash: string
@@ -114,18 +114,17 @@ export class ChatService extends DbConsumer {
         }
     }
 
-    onDbUpgrade(db: IDBDatabase): void {
-        const metadataStore = db.createObjectStore(
+    onDbUpgrade(db: IDBDatabase): IDBObjectStore {
+        const store = db.createObjectStore(
             this._storeName,
             { keyPath: "hash" }
         );
 
-        metadataStore.createIndex("hash", "hash", { unique: true });
-        metadataStore.createIndex("friendly_name", "friendly_name", { unique: false });
-        metadataStore.createIndex("created_at", "created_at", { unique: false });
-        metadataStore.createIndex("participant_ids", "participant_ids", { unique: false });
+        store.createIndex("hash", "hash", { unique: true });
+        store.createIndex("friendly_name", "friendly_name", { unique: false });
+        store.createIndex("created_at", "created_at", { unique: false });
+        store.createIndex("participant_ids", "participant_ids", { unique: false });
+
+        return store;
     }
 }
-
-export const chatService = new ChatService(dbService);
-dbService.addConsumer(chatService);

@@ -3,9 +3,7 @@ import { makeAutoObservable, runInAction } from "mobx";
 import { ModalProvider } from "../App2";
 import { SetPasswordDialog } from "../dialogs/set-password.dialog";
 import { SetUserDataDialog } from "../dialogs/set-user-data.dialog";
-import { dbService } from "../services/db.service";
-import { fileService } from "../services/file.service";
-import { profileService } from "../services/profile.service";
+import { sharedDbService } from "../services/db.service";
 import { WalletEntry, WalletEntryShort, walletService, WalletType } from "../services/wallet.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { sessionManager } from "./session.manager";
@@ -17,7 +15,7 @@ export class WalletManager {
     constructor() {
         makeAutoObservable(this);
 
-        dbService.on("ready", () => {
+        sharedDbService.on("ready", () => {
             void this.load.run();
         });
     }
@@ -62,13 +60,13 @@ export class WalletManager {
             await sessionManager.unlockImmediately(wallet, password);
 
             const avatarHash = avatar
-                ? await fileService.uploadFile(
+                ? await sessionManager.db.files.uploadFile(
                     avatar,
                     wallet.address,
                     sessionManager.encryption
                 ) : null;
 
-            await profileService.addProfile(
+            await sessionManager.db.profiles.addProfile(
                 address,
                 {
                     full_name: fullName,
@@ -116,13 +114,13 @@ export class WalletManager {
             await sessionManager.unlockImmediately(wallet, password);
 
             const avatarHash = avatar
-                ? await fileService.uploadFile(
+                ? await sessionManager.db.files.uploadFile(
                     avatar,
                     wallet.address,
                     sessionManager.encryption
                 ) : null;
 
-            await profileService.addProfile(
+            await sessionManager.db.profiles.addProfile(
                 address,
                 {
                     full_name: fullName,

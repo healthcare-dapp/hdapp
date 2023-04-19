@@ -14,7 +14,7 @@ export const AddDeviceDialog: FC<{ onClose(): void }> = observer(x => {
     const { wallet } = sessionManager;
     useEffect(() => {
         (async () => {
-            const walletFull = await walletService.getWallet(wallet.address, sessionManager.encryption);
+            const walletFull = await walletService.getWallet(wallet.address, encryption);
             const connUrl = new URL("https://hdapp.ruslang.xyz/app");
             connUrl.searchParams.set("privateKey", walletFull.private_key!);
             QrCode.toDataURL(connUrl.toString(), { width: 300, margin: 5 })

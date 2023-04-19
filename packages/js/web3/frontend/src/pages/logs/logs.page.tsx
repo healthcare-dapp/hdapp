@@ -24,8 +24,8 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { sessionManager } from "../../managers/session.manager";
-import { EventLogEntry, eventLogService } from "../../services/event-log.service";
-import { ProfileEntry, profileService } from "../../services/profile.service";
+import { EventLogEntry } from "../../services/event-log.service";
+import { ProfileEntry } from "../../services/profile.service";
 import { superIncludes } from "../../utils/super-includes";
 import { trimWeb3Address } from "../../utils/trim-web3-address";
 import { useDatabase } from "../../utils/use-database";
@@ -64,6 +64,7 @@ const columns: GridColDef<EventLogEntry>[] = [
 ];
 
 export const LogsPage = observer(() => {
+    const { db, encryption } = sessionManager;
     const [openCounter, setOpenCounter] = useState(0);
     const theme = useTheme();
     const canShowSidebar = useMediaQuery(theme.breakpoints.up("md"));
@@ -75,9 +76,9 @@ export const LogsPage = observer(() => {
     const [profiles, setProfiles] = useState<ProfileEntry[]>([]);
 
     useDatabase(async () => {
-        const logEntries = await eventLogService.getEventLogs();
+        const logEntries = await db.eventLogs.getEventLogs();
         setLogs(logEntries);
-        setProfiles(await profileService.searchProfiles({}, sessionManager.encryption));
+        setProfiles(await db.profiles.searchProfiles({}, encryption));
     }, ["event-logs", "profiles"]);
 
     const filteredLogs = logs.filter(log => {

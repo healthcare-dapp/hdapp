@@ -22,14 +22,17 @@ import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { FC, useState } from "react";
 import { ModalProvider } from "../App2";
-import { sessionManager } from "../managers/session.manager";
-import { appointmentService } from "../services/appointment.service";
-import { ProfileEntry, profileService } from "../services/profile.service";
+import { SessionManager, sessionManager } from "../managers/session.manager";
+import { AppointmentForm } from "../services/appointment.service";
+import { ProfileEntry } from "../services/profile.service";
 import { useDatabase } from "../utils/use-database";
 
-const createAppointmentAction = new AsyncAction(appointmentService.addAppointment);
+const createAppointmentAction = new AsyncAction((sm: SessionManager, form: AppointmentForm) =>
+    sm.db.appointments.addAppointment(form, sm.encryption)
+);
 
 export const CreateAppointmentDialog: FC<{ onClose?(): void }> = observer(x => {
+    const { db, encryption } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [name, setName] = useState("");
@@ -41,11 +44,12 @@ export const CreateAppointmentDialog: FC<{ onClose?(): void }> = observer(x => {
     const [time, setTime] = useState<LocalTime>();
 
     useDatabase(async () => {
-        setProfiles(await profileService.searchProfiles({}, sessionManager.encryption));
+        setProfiles(await db.profiles.searchProfiles({}, encryption));
     });
 
     async function handleCreateAppointment() {
         await createAppointmentAction.run(
+            sessionManager,
             {
                 created_by: sessionManager.wallet.address,
                 dateTime: date!.atTime(time!),
@@ -53,8 +57,7 @@ export const CreateAppointmentDialog: FC<{ onClose?(): void }> = observer(x => {
                 location,
                 participant_ids: invitees,
                 title: name
-            },
-            sessionManager.encryption
+            }
         );
         x.onClose?.();
     }

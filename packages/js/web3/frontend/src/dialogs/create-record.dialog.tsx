@@ -28,17 +28,14 @@ import { observer } from "mobx-react-lite";
 import MUIRichTextEditor from "mui-rte";
 import { FC, useState } from "react";
 import { ModalProvider } from "../App2";
-import { sessionManager } from "../managers/session.manager";
-import { blockService } from "../services/block.service";
-import { fileService } from "../services/file.service";
-import { RecordForm, recordService } from "../services/record.service";
-import { EncryptionProvider } from "../utils/encryption.provider";
+import { SessionManager, sessionManager } from "../managers/session.manager";
+import { RecordForm } from "../services/record.service";
 import { useDatabase } from "../utils/use-database";
 import { CreateBlockDialog } from "./create-block.dialog";
 import type { EditorState } from "draft-js";
 
 const addRecordAction = new AsyncAction(
-    (form: RecordForm, enc: EncryptionProvider) => recordService.addRecord(form, enc)
+    (sm: SessionManager, form: RecordForm) => sm.db.records.addRecord(form, sm.encryption)
 );
 
 const addRecordStr = "__ADD_RECORD__";
@@ -77,7 +74,7 @@ Object.assign(defaultTheme, {
 });
 
 export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onClose(): void }> = observer(x => {
-    const { wallet, encryption } = sessionManager;
+    const { db, wallet, encryption } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [title, setTitle] = useState("");
@@ -89,7 +86,7 @@ export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onCl
     const [attachments, setAttachments] = useState<File[]>([]);
 
     useDatabase(async () => {
-        const blks = await blockService.getBlocks();
+        const blks = await db.blocks.getBlocks();
 
         setBlockEntries(
             blks.map(b => ({ key: b.hash, title: b.friendly_name }))
@@ -99,7 +96,7 @@ export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onCl
     async function handleRecordCreate() {
         const attachmentIds: string[] = [];
         for (const attachment of attachments) {
-            const id = await fileService.uploadFile(
+            const id = await db.files.uploadFile(
                 attachment,
                 sessionManager.wallet.address,
                 sessionManager.encryption
@@ -107,15 +104,18 @@ export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onCl
             attachmentIds.push(id);
         }
 
-        await addRecordAction.run({
-            title,
-            description,
-            type,
-            block_ids: blockIds,
-            created_by: wallet.address,
-            owned_by: wallet.address,
-            attachment_ids: attachmentIds
-        }, encryption);
+        await addRecordAction.run(
+            sessionManager,
+            {
+                title,
+                description,
+                type,
+                block_ids: blockIds,
+                created_by: wallet.address,
+                owned_by: wallet.address,
+                attachment_ids: attachmentIds
+            }
+        );
         x.onClose();
     }
 

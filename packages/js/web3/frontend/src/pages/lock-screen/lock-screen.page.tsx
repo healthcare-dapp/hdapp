@@ -6,7 +6,9 @@ import {
     Chip,
     CircularProgress,
     Container,
+    Fade,
     Stack,
+    styled,
     TextField,
     Typography,
     useTheme,
@@ -20,11 +22,26 @@ import { WalletEntryShort, WalletNotFoundError } from "../../services/wallet.ser
 import { trimWeb3Address } from "../../utils/trim-web3-address";
 import { Logo } from "../../widgets/header";
 
-const Account: FC<{ selected?: boolean; wallet: WalletEntryShort }> = observer(x => {
+const AccountStack = styled(Stack)<{ selected?: boolean }>`
+    opacity: ${p => p.selected ? 1 : 0.6};
+    transition: opacity ease .25s;
+    width: 230px;
+    height: 230px;
+    user-select: none;
+    margin-bottom: -108px !important;
+    cursor: ${p => p.selected ? "default" : "pointer"};
+
+    &:hover {
+        opacity: 1;
+    }
+`;
+
+const Account: FC<{ onClick?(): void; selected?: boolean; wallet: WalletEntryShort }> = observer(x => {
     const theme = useTheme();
     const [password, setPassword] = useState("");
     return (
-        <Stack spacing={2} alignItems="center" justifyContent="center">
+        <AccountStack spacing={2} alignItems="center" justifyContent="flex-start" selected={x.selected}
+                      onClick={x.onClick}>
             <Avatar src={makeBlockie(x.wallet.address)} sx={{ width: 64, height: 64 }} />
             <Typography fontWeight="500"
                         align="center"
@@ -36,7 +53,7 @@ const Account: FC<{ selected?: boolean; wallet: WalletEntryShort }> = observer(x
                     ({ trimWeb3Address(x.wallet.address) })
                 </Typography>
             </Typography>
-            { x.selected && (
+            <Fade in={x.selected}>
                 <form onSubmit={e => {
                     e.preventDefault();
                     void sessionManager.unlock.run(x.wallet, password);
@@ -60,20 +77,21 @@ const Account: FC<{ selected?: boolean; wallet: WalletEntryShort }> = observer(x
                         </LoadingButton>
                     </Stack>
                 </form>
-            ) }
-        </Stack>
+            </Fade>
+        </AccountStack>
     );
 });
 
 export const LockScreenPage = observer(forwardRef(function LockScreenPage(props, ref) {
     const theme = useTheme();
-    const [wallet] = walletManager.list;
+    const wallets = walletManager.list;
+    const [selected, setSelected] = useState(wallets[0]?.address);
 
     useEffect(() => {
         void walletManager.load.tryRun();
     }, []);
 
-    if (!wallet || walletManager.load.pending)
+    if (!wallets.length || walletManager.load.pending)
         return (
             <Stack alignItems="center" justifyContent="center" style={{ height: "100vh" }}>
                 <CircularProgress />
@@ -93,10 +111,14 @@ export const LockScreenPage = observer(forwardRef(function LockScreenPage(props,
                           variant="outlined"
                           sx={{ fontWeight: 500, marginLeft: "auto" }} />
                 </Stack>
-                <Stack spacing={2} alignItems="center" justifyContent="center"
+                <Stack spacing={2} direction="row" alignItems="center" justifyContent="center"
                        sx={{ height: "100%" }}>
-                    <Account selected
-                             wallet={wallet!} />
+                    { wallets.map(wallet => (
+                        <Account key={wallet.address}
+                                 selected={selected === wallet.address}
+                                 onClick={() => setSelected(wallet.address)}
+                                 wallet={wallet} />
+                    )) }
                 </Stack>
             </Container>
         </Box>

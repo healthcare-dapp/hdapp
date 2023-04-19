@@ -47,6 +47,32 @@ export abstract class DbConsumer implements IDbConsumer {
         });
     }
 
+    protected _removeOne<K extends IDBValidKey>(
+        key: K
+    ): Promise<void> {
+        const tsn = this._db.transaction([this._storeName], "readwrite");
+        const dataStore = tsn.objectStore(this._storeName);
+        const request = dataStore.delete(key);
+
+        const stack = [new Error().stack];
+        this._logger.debug("Remove one transaction", { key, storeName: this._storeName, stack });
+
+        return new Promise((resolve, reject) => {
+            request.addEventListener("success", () => {
+                if (request.result !== undefined) {
+                    this._logger.debug("Could not find the record.", { tsn, key, request });
+                    reject(new DbRecordNotFoundError("Record not found."));
+                }
+
+                resolve();
+            });
+            request.addEventListener("error", () => {
+                this._logger.debug("Could not retrieve file data.", { tsn, key, request });
+                reject(new Error("Could not retrieve file data."));
+            });
+        });
+    }
+
     protected _findMany<DbT, T>(
         processor: (dbEntity: DbT) => T,
         predicate: (entity: T) => boolean,

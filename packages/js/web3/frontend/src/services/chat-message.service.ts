@@ -2,7 +2,7 @@ import { Instant, LocalDate, LocalDateTime } from "@js-joda/core";
 import { SHA256 } from "crypto-js";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService } from "./db.service";
+import { DbService } from "./db.service";
 
 interface ChatMessageDbEntry {
     hash: string
@@ -158,6 +158,3 @@ export class ChatMessageService extends DbConsumer {
         metadataStore.createIndex("created_at", "created_at", { unique: false });
     }
 }
-
-export const chatMessageService = new ChatMessageService(dbService);
-dbService.addConsumer(chatMessageService);

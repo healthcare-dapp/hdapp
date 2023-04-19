@@ -1,7 +1,7 @@
 import { autoBind } from "@hdapp/shared/web2-common/utils";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbConsumer, DbRecordNotFoundError } from "./db.consumer";
-import { dbService, DbService } from "./db.service";
+import { DbService, sharedDbService } from "./db.service";
 
 interface WalletDbEntry {
     address: string
@@ -126,6 +126,17 @@ export class WalletService extends DbConsumer {
         }
     }
 
+    async removeWallet(address: string): Promise<void> {
+        try {
+            await this._removeOne(address);
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new WalletNotFoundError("Wallet was not found.");
+
+            throw e;
+        }
+    }
+
     onDbUpgrade(db: IDBDatabase): void {
         const store = db.createObjectStore(
             this._storeName,
@@ -139,5 +150,5 @@ export class WalletService extends DbConsumer {
     }
 }
 
-export const walletService = new WalletService(dbService);
-dbService.addConsumer(walletService);
+export const walletService = new WalletService(sharedDbService);
+sharedDbService.addConsumer(walletService);

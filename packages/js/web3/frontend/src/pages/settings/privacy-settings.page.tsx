@@ -4,27 +4,28 @@ import { ComputerOutlined, PersonRemove } from "@mui/icons-material";
 import { Avatar, Box, Button, Card, Checkbox, FormControlLabel, Stack, Typography } from "@mui/material";
 import { observer } from "mobx-react-lite";
 import { useState, useEffect } from "react";
-import { sessionManager } from "../../managers/session.manager";
-import { fileService } from "../../services/file.service";
-import { ProfileEntry, profileService } from "../../services/profile.service";
+import { SessionManager, sessionManager } from "../../managers/session.manager";
+import { ProfileEntry, ProfileSearchRequest } from "../../services/profile.service";
 import { SettingsPageBase } from "./settings.page";
 
-const getProfilesAction = new AsyncAction(profileService.searchProfiles);
+const getProfilesAction = new AsyncAction((sm: SessionManager, request: ProfileSearchRequest) =>
+    sm.db.profiles.searchProfiles(request, sm.encryption));
 
 export const PrivacySettingsPage = observer(() => {
+    const { db, encryption, wallet } = sessionManager;
     const [contacts, setContacts] = useState<ProfileEntry[]>([]);
     const [contactAvatars, setContactAvatars] = useState<Record<string, string>>({});
 
     useEffect(() => {
         (async () => {
-            const profiles = (await getProfilesAction.run({}, sessionManager.encryption))
-                .filter(p => p.address !== sessionManager.wallet.address);
+            const profiles = (await getProfilesAction.run(sessionManager, {}))
+                .filter(p => p.address !== wallet.address);
             setContacts(profiles);
 
             const avatars = await Promise.all(
                 profiles
                     .filter(p => p.avatar_hash && !contactAvatars[p.avatar_hash])
-                    .map(p => fileService.getFileBlob(p.avatar_hash!, sessionManager.encryption)
+                    .map(p => db.files.getFileBlob(p.avatar_hash!, encryption)
                         .then(f => ({ [p.avatar_hash!]: URL.createObjectURL(f) })))
             );
             setContactAvatars(Object.assign({}, ...avatars));

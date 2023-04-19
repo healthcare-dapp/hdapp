@@ -15,13 +15,14 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { sessionManager } from "../../../managers/session.manager";
-import { ChatMessageEntry, chatMessageService } from "../../../services/chat-message.service";
-import { ChatEntry, chatService } from "../../../services/chat.service";
-import { fileService } from "../../../services/file.service";
-import { ProfileEntry, profileService } from "../../../services/profile.service";
+import { ChatMessageEntry } from "../../../services/chat-message.service";
+import { ChatEntry } from "../../../services/chat.service";
+import { ProfileEntry } from "../../../services/profile.service";
 import { useDatabase } from "../../../utils/use-database";
 
 export const MyChatsWidget: React.FC = () => {
+    const { db, encryption } = sessionManager;
+
     const theme = useTheme();
     const navigate = useNavigate();
     const [chats, setChats] = useState<(ChatEntry & {
@@ -35,30 +36,30 @@ export const MyChatsWidget: React.FC = () => {
     })[]>([]);
 
     useDatabase(async () => {
-        const chatEntries = await chatService.searchChats({ limit: 3 });
+        const chatEntries = await db.chats.searchChats({ limit: 3 });
         const mapped = await Promise.all(
             chatEntries.map(async chat => {
                 const participants = await Promise.all(
                     chat.participant_ids
                         .filter(id => sessionManager.wallet.address !== id)
                         .map(async id => {
-                            const profile = await profileService.getProfile(id, sessionManager.encryption);
+                            const profile = await db.profiles.getProfile(id, encryption);
                             const avatarUrl = profile.avatar_hash
                                 ? URL.createObjectURL(
-                                    await fileService.getFileBlob(profile.avatar_hash, sessionManager.encryption)
+                                    await db.files.getFileBlob(profile.avatar_hash, encryption)
                                 ) : undefined;
 
                             return { ...profile, avatar_url: avatarUrl };
                         })
                 );
 
-                const [lastMessage] = await chatMessageService.searchChatMessages({
+                const [lastMessage] = await db.chatMessages.searchChatMessages({
                     filters: {
                         chat_hash: chat.hash
                     },
                     sort_by: "created_at",
                     limit: 1
-                }, sessionManager.encryption);
+                }, encryption);
 
                 return { ...chat,
                     pictureUrl: participants

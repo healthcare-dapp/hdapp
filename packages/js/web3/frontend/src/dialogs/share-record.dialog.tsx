@@ -28,32 +28,30 @@ import {
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { ModalProvider } from "../App2";
-import { sessionManager } from "../managers/session.manager";
-import { fileService } from "../services/file.service";
-import { ProfileEntry, profileService } from "../services/profile.service";
-import { recordNoteService } from "../services/record-note.service";
-import { EncryptionProvider } from "../utils/encryption.provider";
+import { SessionManager, sessionManager } from "../managers/session.manager";
+import { ProfileEntry, ProfileSearchRequest } from "../services/profile.service";
 import { trimWeb3Address } from "../utils/trim-web3-address";
 
-const getProfilesAction = new AsyncAction(profileService.searchProfiles);
+const getProfilesAction = new AsyncAction((sm: SessionManager, request: ProfileSearchRequest) =>
+    sm.db.profiles.searchProfiles(request, sm.encryption));
 const performShareAction = new AsyncAction(async (
+    sm: SessionManager,
     hash: string,
     address: string,
     expiryDuration: number,
-    noteText: string,
-    encryption: EncryptionProvider
+    noteText: string
 ) => {
-    await sessionManager.web3.accessControlManager.grantPermissions(
+    await sm.web3.accessControlManager.grantPermissions(
         address,
         hash,
         expiryDuration
     );
 
-    await recordNoteService.addRecordNote({
+    await sm.db.recordNotes.addRecordNote({
         address,
         hash,
         text: noteText
-    }, encryption);
+    }, sm.encryption);
 });
 
 const ContactsListWrapper = styled(Box)`
@@ -76,6 +74,7 @@ const ContactsListWrapper = styled(Box)`
 `;
 
 export const ShareRecordDialog = observer<{ hash: string; onClose?(): void }>(x => {
+    const { db, encryption } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [note, setNote] = useState("");
@@ -86,14 +85,14 @@ export const ShareRecordDialog = observer<{ hash: string; onClose?(): void }>(x 
     const [selectedContact, setSelectedContact] = useState<ProfileEntry>();
     useEffect(() => {
         (async () => {
-            const profiles = (await getProfilesAction.run({ filters: { query } }, sessionManager.encryption))
+            const profiles = (await getProfilesAction.run(sessionManager, { filters: { query } }))
                 .filter(p => p.address !== sessionManager.wallet.address);
             setContacts(profiles);
 
             const avatars = await Promise.all(
                 profiles
                     .filter(p => p.avatar_hash && !contactAvatars[p.avatar_hash])
-                    .map(p => fileService.getFileBlob(p.avatar_hash!, sessionManager.encryption)
+                    .map(p => db.files.getFileBlob(p.avatar_hash!, encryption)
                         .then(f => ({ [p.avatar_hash!]: URL.createObjectURL(f) })))
             );
             setContactAvatars(Object.assign({}, ...avatars));
@@ -190,11 +189,11 @@ export const ShareRecordDialog = observer<{ hash: string; onClose?(): void }>(x 
                     <LoadingButton variant="contained" disableElevation
                                    onClick={async () => {
                                        await performShareAction.run(
+                                           sessionManager,
                                            x.hash,
                                            selectedContact!.address,
                                            expiryDuration,
                                            note,
-                                           sessionManager.encryption
                                        );
                                        x.onClose?.();
                                    }}

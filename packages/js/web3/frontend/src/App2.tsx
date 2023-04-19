@@ -12,7 +12,7 @@ import { walletManager } from "./managers/wallet.manager";
 import { LockScreenPage } from "./pages/lock-screen";
 import { SignInPage } from "./pages/sign-in";
 import { router } from "./router";
-import { dbService } from "./services/db.service";
+import { sharedDbService } from "./services/db.service";
 
 type ModalPropsInternal = {
     __modalId: string
@@ -69,7 +69,7 @@ export const ModalProvider = new (class {
 })();
 
 export const AppRoot = observer(function App() {
-    const [isDbLoading, setIsDbLoading] = useState(!dbService.isInitialized);
+    const [isDbLoading, setIsDbLoading] = useState(!sharedDbService.isInitialized);
     const hasWalletsListEverLoaded = !!walletManager.load.result || !!walletManager.load.error;
     const isWalletsListLoading = walletManager.load.pending;
     const hasWallets = walletManager.list.length;
@@ -78,8 +78,8 @@ export const AppRoot = observer(function App() {
     ModalProvider.setTheme(theme);
 
     useEffect(() => {
-        setIsDbLoading(!dbService.isInitialized);
-        dbService.on("ready", () => setIsDbLoading(false));
+        setIsDbLoading(!sharedDbService.isInitialized);
+        sharedDbService.on("ready", () => setIsDbLoading(false));
     }, []);
 
     useEffect(() => {

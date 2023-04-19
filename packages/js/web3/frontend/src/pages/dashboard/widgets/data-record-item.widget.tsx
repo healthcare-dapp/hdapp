@@ -6,11 +6,11 @@ import { observer } from "mobx-react-lite";
 import { FC, CSSProperties, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
-import { sessionManager } from "../../../managers/session.manager";
-import { fileService } from "../../../services/file.service";
+import { SessionManager, sessionManager } from "../../../managers/session.manager";
 import { useDatabase } from "../../../utils/use-database";
 
-const generateGetFileBlobAA = () => new AsyncAction(fileService.getFileBlob);
+const generateGetFileBlobAA = () => new AsyncAction((sm: SessionManager, hash: string) =>
+    sm.db.files.getFileBlob(hash, sm.encryption));
 
 export const DataRecordItemWidget: FC<{
     avatar?: string
@@ -30,7 +30,7 @@ export const DataRecordItemWidget: FC<{
 
     useDatabase(async () => {
         if (x.imageHash) {
-            const blob = await getFileBlob.tryRun(x.imageHash, sessionManager.encryption);
+            const blob = await getFileBlob.tryRun(sessionManager, x.imageHash);
             blob && setImageDataUri(URL.createObjectURL(blob));
         }
     }, ["file_blobs"], [x.imageHash]);

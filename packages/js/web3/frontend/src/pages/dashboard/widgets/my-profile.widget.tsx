@@ -4,15 +4,17 @@ import { ExpandMore, AddPhotoAlternate, Edit, Check, LockOutlined } from "@mui/i
 import { Stack, Box, useTheme, Accordion, AccordionSummary, Typography, AccordionDetails, Avatar, Button, useMediaQuery, CircularProgress, TextField, MenuItem, Select, InputLabel, FormControl } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { ChangeEvent, FC, useState } from "react";
-import { sessionManager } from "../../../managers/session.manager";
-import { fileService } from "../../../services/file.service";
-import { ProfileEntry, ProfileForm, profileService } from "../../../services/profile.service";
+import { SessionManager, sessionManager } from "../../../managers/session.manager";
+import { ProfileEntry, ProfileForm } from "../../../services/profile.service";
 import { useDatabase } from "../../../utils/use-database";
 
-const getProfileAction = new AsyncAction(profileService.getProfile);
-const getFileBlobAction = new AsyncAction(fileService.getFileBlob);
+const getProfileAction = new AsyncAction((sm: SessionManager, address: string) =>
+    sm.db.profiles.getProfile(address, sm.encryption));
+const getFileBlobAction = new AsyncAction((sm: SessionManager, hash: string) =>
+    sm.db.files.getFileBlob(hash, sm.encryption));
 
 export const MyProfileWidget: FC = x => {
+    const { db, encryption, wallet } = sessionManager;
     const theme = useTheme();
     const isAlwaysExpanded = useMediaQuery(theme.breakpoints.up("md"));
     const hasCondensedDetails = useMediaQuery(theme.breakpoints.up("sm"));
@@ -24,11 +26,11 @@ export const MyProfileWidget: FC = x => {
     const [profileForm, setProfileForm] = useState<ProfileForm>();
 
     useDatabase(async () => {
-        const result = await getProfileAction.forceRun(sessionManager.wallet.address, sessionManager.encryption);
+        const result = await getProfileAction.forceRun(sessionManager, wallet.address);
         setProfile(result);
 
         if (result.avatar_hash) {
-            const avatarBlob = await getFileBlobAction.forceRun(result.avatar_hash, sessionManager.encryption);
+            const avatarBlob = await getFileBlobAction.forceRun(sessionManager, result.avatar_hash);
             const url = URL.createObjectURL(avatarBlob);
             setAvatar(url);
         }
@@ -38,18 +40,18 @@ export const MyProfileWidget: FC = x => {
         const file = e.target!.files![0];
         if (!file) return;
 
-        const fileHash = await fileService.uploadFile(
+        const fileHash = await db.files.uploadFile(
             file,
-            sessionManager.wallet.address,
-            sessionManager.encryption
+            wallet.address,
+            encryption
         );
-        await profileService.updateProfile(
-            sessionManager.wallet.address,
+        await db.profiles.updateProfile(
+            wallet.address,
             {
                 ...profile!,
                 avatar_hash: fileHash
             },
-            sessionManager.encryption
+            encryption
         );
     }
 
@@ -259,10 +261,10 @@ export const MyProfileWidget: FC = x => {
                                         if (!profileForm) return;
 
                                         setIsEditMode(false);
-                                        void profileService.updateProfile(
-                                            sessionManager.wallet.address,
+                                        void db.profiles.updateProfile(
+                                            wallet.address,
                                             profileForm,
-                                            sessionManager.encryption
+                                            encryption
                                         );
                                     }}>Save changes</Button>
                         </>
