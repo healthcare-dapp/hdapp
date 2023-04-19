@@ -1,4 +1,4 @@
-import { CalendarMonthOutlined, ForumOutlined, Notes, Sync, ViewDayOutlined } from "@mui/icons-material";
+import { CalendarMonthOutlined, ContactsOutlined, ForumOutlined, Notes, Sync, ViewDayOutlined } from "@mui/icons-material";
 import {
     alpha,
     Box,
@@ -71,9 +71,7 @@ const NavLinkStyled = styled(NavLink)(({ theme }) => ({
         backgroundColor: alpha(theme.palette.primary.main, 0.16)
     },
     "&:not(.active) > div > span:not(.MuiBadge-root)": {
-        [theme.breakpoints.down("lg")]: {
-            display: "none"
-        }
+        display: "none"
     }
 }));
 
@@ -115,6 +113,13 @@ export const HeaderWidget = observer(() => {
                                         <Stack direction="row" alignItems="center" spacing={1}>
                                             <ViewDayOutlined fontSize="medium" />
                                             <span>My data</span>
+                                        </Stack>
+                                    </NavLinkStyled>
+                                    <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}
+                                                   to="/contacts">
+                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                            <ContactsOutlined fontSize="medium" />
+                                            <span>Contacts</span>
                                         </Stack>
                                     </NavLinkStyled>
                                     <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}

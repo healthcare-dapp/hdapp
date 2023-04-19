@@ -8,45 +8,14 @@ import {
     Typography,
     useTheme,
     Toolbar,
-    List,
-    styled,
     ListItemButton,
 } from "@mui/material";
-import { alpha, Stack } from "@mui/system";
+import { Stack } from "@mui/system";
 import { observer } from "mobx-react-lite";
 import { PropsWithChildren } from "react";
 import { Navigate, useNavigate } from "react-router";
+import { FancyList } from "../../widgets/fancy-list/fancy-list.widget";
 import { HeaderWidget } from "../../widgets/header/index";
-
-const FancyList = styled(List)(({ theme }) => ({
-    padding: 8,
-    gap: 8,
-    display: "flex",
-    flexDirection: "column",
-    "& .MuiListItemButton-root": {
-        cursor: "pointer",
-        borderRadius: 4,
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "6px 12px",
-        flex: 0,
-        "&:hover": {
-            backgroundColor: theme.palette.grey[200]
-        },
-        "&.Mui-selected": {
-            backgroundColor: alpha(theme.palette.primary.main, 0.15),
-            "& .MuiTypography-root": {
-                color: theme.palette.primary.main,
-                fontWeight: 500
-            }
-        }
-    },
-    "& .MuiSvgIcon-root": {
-        color: theme.palette.primary.main,
-        fontSize: 24
-    }
-}));
 
 export const SettingsPageBase = observer<PropsWithChildren>(x => {
     const theme = useTheme();

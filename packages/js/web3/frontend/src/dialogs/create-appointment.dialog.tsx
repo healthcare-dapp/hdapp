@@ -1,5 +1,5 @@
 import { AsyncAction } from "@hdapp/shared/web2-common/utils";
-import { LocalDate, LocalTime } from "@js-joda/core";
+import { LocalDate, LocalDateTime, LocalTime } from "@js-joda/core";
 import { Add, ArrowBack } from "@mui/icons-material";
 import {
     Dialog,
@@ -13,28 +13,49 @@ import {
     TextField,
     Backdrop,
     CircularProgress,
+    FormControl,
+    InputLabel,
+    MenuItem,
+    Select,
 } from "@mui/material";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { FC, useState } from "react";
 import { ModalProvider } from "../App2";
 import { sessionManager } from "../managers/session.manager";
+import { appointmentService } from "../services/appointment.service";
+import { ProfileEntry, profileService } from "../services/profile.service";
+import { useDatabase } from "../utils/use-database";
 
-const createAppointmentAction = new AsyncAction(async () => {
-});
+const createAppointmentAction = new AsyncAction(appointmentService.addAppointment);
 
 export const CreateAppointmentDialog: FC<{ onClose?(): void }> = observer(x => {
-    const { wallet } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [location, setLocation] = useState("");
     const [date, setDate] = useState<LocalDate>();
+    const [invitees, setInvitees] = useState<string[]>([]);
+    const [profiles, setProfiles] = useState<ProfileEntry[]>([]);
     const [time, setTime] = useState<LocalTime>();
 
+    useDatabase(async () => {
+        setProfiles(await profileService.searchProfiles({}, sessionManager.encryption));
+    });
+
     async function handleCreateAppointment() {
-        const block = await createAppointmentAction.run();
+        await createAppointmentAction.run(
+            {
+                created_by: sessionManager.wallet.address,
+                dateTime: date!.atTime(time!),
+                description,
+                location,
+                participant_ids: invitees,
+                title: name
+            },
+            sessionManager.encryption
+        );
         x.onClose?.();
     }
 
@@ -55,17 +76,34 @@ export const CreateAppointmentDialog: FC<{ onClose?(): void }> = observer(x => {
                            value={description} onChange={e => setDescription(e.target.value)} />
                 <TextField required variant="outlined" label="Location"
                            value={location} onChange={e => setLocation(e.target.value)} />
-                <DatePicker value={date ? new Date(date.toString()) : void 0}
-                            onChange={e => e && setDate(LocalDate.parse(e.toISOString()))}
+                <DatePicker value={date ? new Date(date.toString()) : null}
+                            onChange={e => e && setDate(LocalDateTime.parse(e.toISOString().replace("Z", "")).toLocalDate())}
                             label="Date of meeting"
                             renderInput={params => <TextField required margin="none" fullWidth {...params} InputProps={{ readOnly: true, ...(params.InputProps ?? {}) }} />} />
                 <TimePicker slotProps={{ textField: { label: "Time of meeting", required: true } }}
-                            onChange={e => e && setTime(LocalTime.parse(e.toISOString()))}
-                            value={time ? new Date(time.toString()) : void 0} />
+                            onChange={e => e && setTime(LocalDateTime.parse(e.toISOString().replace("Z", "")).toLocalTime())}
+                            value={time ? new Date(time.toString()) : null} />
+                <FormControl size="small">
+                    <InputLabel id="demo-simple-select-label">Invitee</InputLabel>
+                    <Select labelId="demo-simple-select-label"
+                            id="demo-simple-select"
+                            value={invitees[0] ?? null}
+                            onChange={e => {
+                                if (e)
+                                    setInvitees([e.target.value]);
+                            }}
+                            label="Invitee">
+                        <MenuItem value={undefined}><i>Unspecified</i></MenuItem>
+                        { profiles.map(profile => (
+                            <MenuItem key={profile.address} value={profile.address}>{ profile.full_name }</MenuItem>
+                        )) }
+                    </Select>
+                </FormControl>
                 <Stack spacing={1} direction="row">
                     <Box flexGrow={1} />
                     <Button color="error" onClick={() => x.onClose?.()}>Discard changes</Button>
                     <Button variant="contained" disableElevation startIcon={<Add />}
+                            disabled={!date || !time || !name || !description || !location || !invitees.length}
                             onClick={handleCreateAppointment}>Create appointment</Button>
                 </Stack>
             </Stack>
