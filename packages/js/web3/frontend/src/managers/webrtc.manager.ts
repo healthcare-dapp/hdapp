@@ -22,6 +22,7 @@ import { makeAutoObservable } from "mobx";
 import { DeviceEntry } from "../services/device.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { trimWeb3Address } from "../utils/trim-web3-address";
+import { AccessControlManager } from "./access-control.manager";
 import { DbManager } from "./db.manager";
 import { Web3Manager } from "./web3.manager";
 
@@ -293,7 +294,6 @@ export class Peer {
         }
 
         const arr = this._filesInProgress.get(msg.data.hash)!;
-        console.log(arr, msg.data);
         arr.set(msg.data.data as number[], msg.data.start);
         this._filesInProgress.set(msg.data.hash, arr);
         if (msg.data.hasEnded) {
@@ -338,55 +338,29 @@ export class Peer {
     }
 
     private async _handleShowCurrentState(msg: PeerMessageShowCurrentState) {
-        const devices = await this._manager.db.devices.getDevicesOwnedBy(this._manager.web3Address, this._manager.encryption);
-        const records = await this._manager.db.records.searchRecords({}, this._manager.encryption);
-        const profiles = await this._manager.db.profiles.searchProfiles({}, this._manager.encryption);
-        const blocks = await this._manager.db.blocks.getBlocks();
-        const chats = await this._manager.db.chats.searchChats({});
-        const chatMessages = await this._manager.db.chatMessages.searchChatMessages({}, this._manager.encryption);
-        const recordNotes = await this._manager.db.recordNotes.getRecordNotes(this._manager.encryption);
-        const files = await this._manager.db.files.getFiles();
-        const eventLogs = await this._manager.db.eventLogs.getEventLogs();
-
-        const dbRecordsToSend = [
-            ...devices.map(d => ({ ...d, __type: "device" })),
-            ...records.map(d => ({ ...d, __type: "record" }))
-                .filter(d => !msg.data.dbRecords.includes(d.hash)),
-            ...profiles.map(d => ({ ...d, __type: "profile" })),
-            ...chats.map(d => ({ ...d, __type: "chat" }))
-                .filter(d => !msg.data.dbRecords.includes(d.hash)),
-            ...files.map(d => ({ ...d, __type: "file" }))
-                .filter(d => !msg.data.dbRecords.includes(d.hash)),
-            ...blocks.map(d => ({ ...d, __type: "block" }))
-                .filter(d => !msg.data.dbRecords.includes(d.hash)),
-            ...chatMessages.map(d => ({ ...d, __type: "chatMessage" }))
-                .filter(d => !msg.data.dbRecords.includes(d.hash)),
-            ...recordNotes.map(d => ({ ...d, __type: "recordNote" }))
-                .filter(d => !msg.data.dbRecords.includes(d.hash)),
-            ...eventLogs.map(d => ({ ...d, __type: "eventLog" }))
-                .filter(d => !msg.data.dbRecords.includes(d.hash)),
-        ];
+        const syncable = await this.getSyncableData();
+        const fileHashes = await this._manager.db.files.getFileBlobHashes();
 
         await this._sendMessage("SYNC_SUMMARY", {
-            dbRecordsCount: dbRecordsToSend.length,
-            fileRecordsCount: files.length,
+            dbRecordsCount: syncable.length,
+            fileRecordsCount: fileHashes.length,
         });
 
         const maxChunkSize = 8; // 8 elements
-        for (let i = 0; i < Math.ceil(dbRecordsToSend.length / maxChunkSize); i++) {
-            const chunk = dbRecordsToSend.slice(maxChunkSize * i, maxChunkSize * (i + 1));
+        for (let i = 0; i < Math.ceil(syncable.length / maxChunkSize); i++) {
+            const chunk = syncable.slice(maxChunkSize * i, maxChunkSize * (i + 1));
 
             await this._sendMessage("SYNC_DB_RECORDS_CHUNK", {
-                recordsRemainingCount: dbRecordsToSend.length - maxChunkSize * (i + 1),
+                recordsRemainingCount: syncable.length - maxChunkSize * (i + 1),
                 records: chunk
             });
         }
 
-        const fileBlobs = files
-            .filter(d => !msg.data.files.includes(d.hash));
+        const fileBlobs = fileHashes
+            .filter(hash => !msg.data.files.includes(hash));
 
-        for (const file of fileBlobs) {
-            const blob = await this._manager.db.files.getFileBlob(file.hash, this._manager.encryption);
+        for (const hash of fileBlobs) {
+            const blob = await this._manager.db.files.getFileBlob(hash, this._manager.encryption);
             const ab = await blob.arrayBuffer();
             const maxChunkSize = 8 * 1024; // 8KB
             const chunksCount = Math.ceil(blob.size / maxChunkSize);
@@ -396,7 +370,7 @@ export class Peer {
                 await this._sendMessage("SYNC_FILE_CHUNK", {
                     data: Array.from(new Uint8Array(chunk)),
                     hasEnded: chunkIndex === chunksCount - 1,
-                    hash: file.hash,
+                    hash,
                     start: chunkIndex * maxChunkSize
                 });
             }
@@ -538,6 +512,60 @@ export class Peer {
         await this._sendMessage("SYNC_REQUESTED", {});
     }
 
+    async getSyncableData() {
+        const permissions = await this._manager.accessControl
+            .getDataPermissionsForUser(this.#device.owned_by);
+
+        const records = (await this._manager.db.records.searchRecords({}, this._manager.encryption))
+            .filter(r => permissions.find(p => p.hash.toString() === r.hash))
+            .map(d => ({ ...d, __type: "record" }));
+        const blocks = (await this._manager.db.blocks.getBlocks())
+            .filter(r => permissions.find(p => p.hash.toString() === r.hash))
+            .map(d => ({ ...d, __type: "block" }));
+        const profiles = [
+            await this._manager.db.profiles.getProfile(this._manager.web3Address, this._manager.encryption)
+        ].map(d => ({ ...d, hash: d.address, __type: "profile" }));
+        // const devices = await this._manager.db.devices.getDevicesOwnedBy(this._manager.web3Address, this._manager.encryption);
+        const chats = (await this._manager.db.chats.searchChats({}))
+            .filter(c => c.participant_ids.includes(this.#device.owned_by))
+            .map(d => ({ ...d, __type: "chat" }));
+        const chatMessages = (await this._manager.db.chatMessages.searchChatMessages({}, this._manager.encryption))
+            .filter(c => chats.some(ch => ch.hash === c.chat_hash))
+            .map(d => ({ ...d, __type: "chatMessage" }));
+        const recordNotes = (await this._manager.db.recordNotes.getRecordNotes(this._manager.encryption))
+            .filter(rn => rn.hash)
+            .map(d => ({ ...d, __type: "recordNote" }));
+        const files = (await this._manager.db.files.getFiles())
+            .filter(f => chatMessages.some(cm => cm.attachment_ids.includes(f.hash))
+                || records.some(r => r.attachment_ids.includes(f.hash)))
+            .map(d => ({ ...d, __type: "file" }));
+        const eventLogs = (await this._manager.db.eventLogs.getEventLogs())
+            .filter(el => el.related_entities.some(re => {
+                switch (re.type) {
+                    case "record":
+                        return records.some(r => r.hash === re.value);
+                    case "profile":
+                        return this.#device.owned_by === re.value;
+                    case "device":
+                        return this.#device.hash === re.value;
+                    default:
+                        return false;
+                }
+            }))
+            .map(d => ({ ...d, __type: "eventLog" }));
+        return [
+            ...records,
+            ...blocks,
+            ...chats,
+            ...chatMessages,
+            ...recordNotes,
+            ...eventLogs,
+            ...files,
+            ...profiles,
+            // ...devices,
+        ];
+    }
+
     async sync() {
         if (this._isSyncing)
             return;
@@ -545,25 +573,13 @@ export class Peer {
         this._isSyncing = true;
         debug("sending showcurrentstate", this.#device);
 
-        const records = await this._manager.db.records.searchRecords({}, this._manager.encryption);
-        const blocks = await this._manager.db.blocks.getBlocks();
-        const chats = await this._manager.db.chats.searchChats({});
-        const chatMessages = await this._manager.db.chatMessages.searchChatMessages({}, this._manager.encryption);
-        const recordNotes = await this._manager.db.recordNotes.getRecordNotes(this._manager.encryption);
-        const files = await this._manager.db.files.getFiles();
-        const eventLogs = await this._manager.db.eventLogs.getEventLogs();
+        const records = await this.getSyncableData();
+
+        const fileHashes = await this._manager.db.files.getFileBlobHashes();
 
         await this._sendMessage("SHOW_CURRENT_STATE", {
-            files: files.map(d => d.hash),
-            dbRecords: [
-                ...records.map(d => d.hash),
-                ...blocks.map(d => d.hash),
-                ...chats.map(d => d.hash),
-                ...chatMessages.map(d => d.hash),
-                ...recordNotes.map(d => d.hash),
-                ...eventLogs.map(d => d.hash),
-                ...files.map(d => d.hash),
-            ],
+            files: fileHashes,
+            dbRecords: records.map(d => d.hash),
         });
     }
 
@@ -594,6 +610,7 @@ export class WebRTCManager {
 
     constructor(
         private _db: DbManager,
+        private _accessControl: AccessControlManager,
         private _web3: Web3Manager,
         private _encryption: EncryptionProvider
     ) {
@@ -615,6 +632,10 @@ export class WebRTCManager {
                 });
             }, 500);
         });
+    }
+
+    get accessControl() {
+        return this._accessControl;
     }
 
     get db() {

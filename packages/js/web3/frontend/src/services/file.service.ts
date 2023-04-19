@@ -172,6 +172,18 @@ class FileBlobService extends DbConsumer {
         }
     }
 
+    async getFileBlobHashes(): Promise<string[]> {
+        try {
+            const entityHashes = await this._findMany((dbEntity: FileBlobDbEntry) => dbEntity.hash, () => true);
+            return entityHashes;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new FileNotFoundError("File was not found.");
+
+            throw e;
+        }
+    }
+
     async addFileBlob(hash: string, encryptedBlob: string): Promise<void> {
         const metadata: FileBlobDbEntry = {
             hash,
@@ -237,6 +249,10 @@ export class FileService implements IDbConsumer {
 
     getFiles(): Promise<FileEntry[]> {
         return this._metadata.getFiles();
+    }
+
+    getFileBlobHashes(): Promise<string[]> {
+        return this._blob.getFileBlobHashes();
     }
 
     async uploadFile(blob: Blob, owner: string, provider: EncryptionProvider): Promise<string> {
