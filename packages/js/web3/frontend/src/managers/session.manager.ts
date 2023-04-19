@@ -100,12 +100,18 @@ export class SessionManager {
             this._web3Manager = web3;
             this._dbManager = db;
             this._notificationsManager = new NotificationsManager(provider);
-            this._webrtcManager = new WebRTCManager(db, web3, provider);
             this._accountManager = new AccountManager(web3);
             this._accessControlManager = new AccessControlManager(
                 db,
                 web3,
-                this._notificationsManager
+                this._notificationsManager,
+                provider,
+            );
+            this._webrtcManager = new WebRTCManager(
+                db,
+                this._accessControlManager,
+                web3,
+                provider
             );
             void this._webrtcManager.start();
         });

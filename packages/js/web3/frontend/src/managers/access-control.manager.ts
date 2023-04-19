@@ -1,9 +1,11 @@
 import { AsyncAction, Logger } from "@hdapp/shared/web2-common/utils";
+import { HDMAccessControl } from "@hdapp/solidity/access-control-manager";
 import { Instant, LocalDateTime } from "@js-joda/core";
 import { SHA256 } from "crypto-js";
 import { ethers, toBigInt } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable } from "mobx";
+import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbManager } from "./db.manager";
 import { NotificationsManager, Urgency } from "./notifications.manager";
 import { sessionManager } from "./session.manager";
@@ -53,7 +55,8 @@ export class AccessControlManager {
     constructor(
         private _db: DbManager,
         private _web3: Web3Manager,
-        private _notifications: NotificationsManager
+        private _notifications: NotificationsManager,
+        private _encryption: EncryptionProvider,
     ) {
         makeAutoObservable(this, {}, { autoBind: true });
 
@@ -183,6 +186,26 @@ export class AccessControlManager {
                 e.args.user2
             )
         ));
+    }
+
+    async getDataPermissionsForUser(address: string): Promise<HDMAccessControl.DataPermissionsStructOutput[]> {
+        const hashes = await this._web3.accessControlManager
+            .getDataPermissionsByUser(address);
+        const records = await this._db.records.searchRecords({}, this._encryption);
+        const blocks = await this._db.blocks.getBlocks();
+        const relevantHashes = hashes.filter(h => {
+            const hash = h.toString();
+            return records.some(r => r.hash === hash) || blocks.some(b => b.hash === hash);
+        });
+
+        const permissions = await Promise.all(
+            relevantHashes.map(async hash => {
+                return await this._web3.accessControlManager
+                    .getDataPermissionsInfo(hash);
+            })
+        );
+
+        return permissions.filter(info => !info.isRevoked/*  && info.expiresAt */);
     }
 
     readonly requestUserConnection = new AsyncAction(async (user: string, privateKey: string) => {
