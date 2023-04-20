@@ -3,12 +3,54 @@ import { UsersService } from "@hdapp/shared/web2-common/api/services";
 import { UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { Add, AdminPanelSettings, LocalPolice, MedicalInformation, Person, Refresh, Search, Tune } from "@mui/icons-material";
 import { AppBar, Box, Button, Checkbox, IconButton, InputAdornment, Stack, TextField, Toolbar, Typography } from "@mui/material";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridRenderCellParams, useGridApiContext, useGridApiRef } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
 
+// const editClick = async (cellValues: GridRenderCellParams) => {
+//     console.log("CLICK");
+//     setting.editable = true;
+//     cellValues.api.getRow(cellValues.row.id).editable=true;
+//     cellValues.api.startRowEditMode({ id: cellValues.row.id });
+//     //apiRef.current.startRowEditMode({ id: cellValues.row.id });
+// };
+
+const saveClick = async (cellValues: GridRenderCellParams) => {
+    const data: UserDto = cellValues.row;
+    const b = await UsersService.updateUser(data);
+    console.log(cellValues);
+    console.log(b);
+    console.log("Save complete");
+    cellValues.api.stopRowEditMode({ id: cellValues.id });
+    cellValues.api.getRow(cellValues.id).editable = false;
+};
+const discardClick = async (cellValues: GridRenderCellParams) => {
+    const data: UserDto = cellValues.row;
+    data.is_banned = !data.is_banned;
+    const b = await UsersService.updateUser(data);
+    console.log(b);
+    console.log("Ban status switched to " + data.is_banned.valueOf());
+    cellValues.api.stopRowEditMode;
+};
+
+const setting = {
+    editable: true
+};
+
 const columns: GridColDef[] = [
+    // {
+    //     field: "editButton",
+    //     headerName: "",
+    //     width: 90,
+    //     renderCell(params) {
+    //         return (
+    //             <Button variant="contained" size="small" color="primary" onClick={() => {
+    //                 editClick(params);
+    //             }}>Edit</Button>
+    //         );
+    //     }
+    // },
     {
         field: "web3_address",
         flex: 1,
@@ -16,7 +58,7 @@ const columns: GridColDef[] = [
         renderCell(params) {
             return (
                 <Typography color="info.main" fontSize="14px">
-                    <a style={{ color: "inherit" }} target="_blank" href={`https://mumbai.polygonscan.com/address/${params.value}`} rel="noreferrer">
+                    <a style={{ color: "inherit" }} target="_blank" href={`https://mumbai.polygonscan.com/address/${params.value}`} rel="noreferrer" contentEditable={false}>
                         { params.value }
                     </a>
                 </Typography>
@@ -26,17 +68,19 @@ const columns: GridColDef[] = [
     {
         field: "email",
         width: 200,
-        headerName: "E-mail"
+        headerName: "E-mail",
     },
     {
         field: "full_name",
         width: 200,
-        headerName: "Full name"
+        headerName: "Full name",
+        editable: setting.editable
     },
     {
         field: "birth_date",
         width: 120,
-        headerName: "Date of birth"
+        headerName: "Date of birth",
+        editable: setting.editable
     },
     {
         field: "role",
@@ -69,22 +113,23 @@ const columns: GridColDef[] = [
         field: "is_banned",
         width: 100,
         headerName: "Banned?",
+        editable: setting.editable,
         renderCell(params) {
             return (
-                <Checkbox readOnly checked={!!params.value} color="error" />
+                <Checkbox checked={!!params.value} color="error" />
             );
         }
     },
     {
         field: "actions",
         headerName: "",
-        width: 110,
+        width: 200,
         renderCell(params) {
             return (
                 <Stack direction="row" justifyContent="space-around" style={{ width: "100%" }}
                        onClick={e => e.stopPropagation()}>
-                    <Button variant="outlined" size="small" color="error">Ban</Button>
-                    <Button variant="outlined" size="small" color="primary">UnBan</Button>
+                    <Button variant="contained" size="small" color="primary" onClick={() =>saveClick(params)}>save</Button>
+                    <Button variant="contained" size="small" color="error" onClick={() =>discardClick(params)}>ban</Button>
                 </Stack>
             );
         }
@@ -93,7 +138,6 @@ const columns: GridColDef[] = [
 
 // for now
 setJwtToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjc3NzUwNDI0LCJleHAiOjE2Nzc4MzY4MjR9.O0oYsEwDQmPU8fHlE6MyGOdrLGSZIYzDExuDZruEYqI");
-
 export const UsersPage = observer(forwardRef((props, ref) => {
     const [users, setUsers] = useState<UserDto[]>([]);
     useEffect(() => {
@@ -137,6 +181,7 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                 <DataGrid checkboxSelection
                           columns={columns}
                           rows={users}
+                          editMode="row"
                           style={{ border: 0, flexGrow: 1 }} />
             </Stack>
         </PageWidget>

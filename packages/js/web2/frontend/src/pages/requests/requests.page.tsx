@@ -7,19 +7,20 @@ import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
 
-const handleClick = async (cellValues: GridRenderCellParams) => {
-    console.log("CLICK");
-    console.log(cellValues);
-    console.log(cellValues.row);
-   const data : UserDto = cellValues.row;
-    data.is_banned = true;
-    data.full_name = "Neco arc";
-    console.log("updating");
-    const b = await UsersService.updateUser(data);
-    console.log(b);
-    const a = await UsersService.findByWeb3Address(data.web3_address);
-    console.log("result:");
-    console.log(a);
+const approveClick = async (cellValues: GridRenderCellParams) => {
+    if (confirm("Are you sure you want to approve this account?")) {
+        const data: UserDto = cellValues.row;
+        const b = await UsersService.approveDoctor(data.id.toString());
+        console.log(b);
+        console.log("Thing was saved to the database.");
+    } else {
+        console.log("The doctor is not approved");
+    }
+
+};
+
+const rejectClick = async (cellValues: GridRenderCellParams) => {
+    console.log("Idk, should we delete account?");
 };
 
 const columns: GridColDef[] = [
@@ -65,12 +66,15 @@ const columns: GridColDef[] = [
             return (
                 <Stack direction="row" justifyContent="space-around" style={{ width: "100%" }}
                        onClick={e => e.stopPropagation()}>
-                    <Button variant="outlined" size="small" color="error">Reject</Button>
+                    <Button variant="outlined" size="small" color="error" onClick={() => {
+                        console.log("LCLIC");
+                        rejectClick(params);
+                    }}>Reject</Button>
                     <Button variant="contained" disableElevation size="small" color="success"
                             startIcon={<Check />}
                             onClick={() => {
                                 console.log("LCLIC");
-                                handleClick(params);
+                                approveClick(params);
                             }}>Approve</Button>
                 </Stack>
             );

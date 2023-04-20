@@ -54,4 +54,11 @@ export const UsersService = new (class {
             type: UserDto
         });
     }
+
+    approveDoctor(userID: string): Promise<UserDto> {
+        return http.request({
+            url: endpoints.users.verify_by_id.replace(":id", userID),
+            type: UserDto
+        });
+    }
 });
