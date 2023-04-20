@@ -1,4 +1,3 @@
-import { UserEntity } from "@hdapp/shared/db-common/entities/user.entity";
 import { UserFiltersDto } from "../../dto/user-filters.dto";
 import { UserDto } from "../../dto/user.dto";
 import { PagedResponse } from "../../types/paged-response.type";
