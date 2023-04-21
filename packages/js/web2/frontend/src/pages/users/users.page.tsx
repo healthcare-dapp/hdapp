@@ -18,12 +18,27 @@ import { PageWidget } from "../../widgets/page";
 
 const saveClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
-    const b = await UsersService.updateUser(data);
-    console.log(cellValues);
+    const data1: UserDto = { web3_address: cellValues.row.web3_address,
+        email: cellValues.row.email,
+        full_name: cellValues.row.full_name,
+        birth_date: cellValues.row.birth_date,
+        medical_organization_name: cellValues.row.medical_organization_name,
+        confirmation_documents: cellValues.row.confirmation_documents,
+        has_doctor_capabilities: cellValues.row.has_doctor_capabilities,
+        has_moderator_capabilities: cellValues.row.has_moderator_capabilities,
+        has_administrator_capabilities: cellValues.row.has_administrator_capabilities,
+        has_verified_email: cellValues.row.has_verified_email,
+        is_verified_doctor: cellValues.row.is_verified_doctor,
+        is_banned: cellValues.row.is_banned,
+        id: cellValues.row.id
+    };
+    console.log(data);
+    console.log(data1);
+    const b = await UsersService.updateUser(data1);
     console.log(b);
     console.log("Save complete");
-    cellValues.api.stopRowEditMode({ id: cellValues.id });
-    cellValues.api.getRow(cellValues.id).editable = false;
+    // cellValues.api.stopRowEditMode({ id: cellValues.id });
+    // cellValues.api.getRow(cellValues.id).editable = false;
 };
 const discardClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
@@ -31,7 +46,6 @@ const discardClick = async (cellValues: GridRenderCellParams) => {
     const b = await UsersService.updateUser(data);
     console.log(b);
     console.log("Ban status switched to " + data.is_banned.valueOf());
-    cellValues.api.stopRowEditMode;
 };
 
 const setting = {

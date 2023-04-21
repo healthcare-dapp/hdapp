@@ -35,29 +35,21 @@ export const UsersService = new (class {
     }
 
     updateUser(user: UserDto): Promise<UserDto> {
+        console.log("received:");
+        console.log(user);
         return http.request({
-            data: { web3_address: user.web3_address,
-                email: user.email,
-                full_name: "CHANGE NOW",
-                birth_date: user.birth_date,
-                medical_organization_name: user.medical_organization_name,
-                confirmation_documents: user.confirmation_documents,
-                has_doctor_capabilities: user.has_doctor_capabilities,
-                has_moderator_capabilities: user.has_moderator_capabilities,
-                has_administrator_capabilities: user.has_administrator_capabilities,
-                has_verified_email: user.has_verified_email,
-                is_verified_doctor: user.is_verified_doctor,
-                is_banned: user.is_banned,
-            },
+            data: user,
             url: endpoints.users.patch_by_id.replace(":id", user.id.toString()),
-            type: UserDto
+            type: UserDto,
+            method: "POST"
         });
     }
 
     approveDoctor(userID: string): Promise<UserDto> {
         return http.request({
             url: endpoints.users.verify_by_id.replace(":id", userID),
-            type: UserDto
+            type: UserDto,
+            method: "POST"
         });
     }
 });
