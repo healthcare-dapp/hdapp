@@ -1,9 +1,9 @@
-import { EmailAddress, Web3Address } from "@hdapp/shared/web2-common/types";
 import { LocalDate } from "@js-joda/core";
 import { ApiProperty } from "@nestjs/swagger";
 import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 import { LocalDateTransformer } from "../transformers/local-date.transformer";
 import { FileEntity } from "./file.entity";
+import type { EmailAddress, Web3Address } from "@hdapp/shared/web2-common/types";
 
 @Entity()
 export class UserEntity {
