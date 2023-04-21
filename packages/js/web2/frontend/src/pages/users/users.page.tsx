@@ -13,63 +13,6 @@ import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
 
-// function CreateNewUser() {
-//     const [open, setOpen] = useState(false);
-
-//     const handleClickOpen = () => {
-//         setOpen(true);
-//     };
-
-//     const handleClose = () => {
-//         setOpen(false);
-//     };
-
-//     return (
-//         <div>
-//             <Dialog open={open} onClose={handleClose}>
-//                 <DialogTitle>User Creator</DialogTitle>
-//                 <DialogContent>
-//                     <DialogContentText>
-//                         Write information for the new user
-//                     </DialogContentText>
-//                     <Stack spacing={1}>
-//                         <TextField autoFocus
-//                                    margin="dense"
-//                                    id="email"
-//                                    label="Email Address"
-//                                    fullWidth
-//                                    variant="standard" />
-//                         <TextField margin="dense"
-//                                    id="name"
-//                                    label="Full Name"
-//                                    fullWidth
-//                                    variant="standard" />
-//                         <TextField margin="dense"
-//                                    id="date of birth"
-//                                    label="Date of birth"
-//                                    fullWidth
-//                                    variant="standard" />
-//                         <TextField margin="dense"
-//                                    id="pass"
-//                                    label="Password"
-//                                    fullWidth
-//                                    variant="standard" />
-//                         <TextField margin="dense"
-//                                    id="role"
-//                                    label="Role"
-//                                    fullWidth
-//                                    variant="standard" />
-//                     </Stack>
-//                 </DialogContent>
-//                 <DialogActions>
-//                     <Button onClick={handleClose}>Cancel</Button>
-//                     <Button onClick={handleClose}>Create new user</Button>
-//                 </DialogActions>
-//             </Dialog>
-//         </div>
-//     );
-// }
-
 const saveClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
     const data1: UserDto = { web3_address: cellValues.row.web3_address,
@@ -95,37 +38,17 @@ const saveClick = async (cellValues: GridRenderCellParams) => {
 };
 const discardClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
-    data.is_banned = !data.is_banned;
-    const b = await UsersService.updateUser(data, data.id.toString());
+    const b = await UsersService.switchBan(!data.is_banned, data.id.toString());
     console.log(b);
     console.log("Ban status switched to " + data.is_banned.valueOf());
 };
-
-// const createNewUser = () => {
-//     const data: UserDto = cellValues.row;
-//     data.is_banned = !data.is_banned;
-//     const b = await UsersService.updateUser(data, data.id.toString());
-//     console.log(b);
-//     console.log("Ban status switched to " + data.is_banned.valueOf());
-// };
 
 const setting = {
     editable: true
 };
 
 const columns: GridColDef[] = [
-    // {
-    //     field: "editButton",
-    //     headerName: "",
-    //     width: 90,
-    //     renderCell(params) {
-    //         return (
-    //             <Button variant="contained" size="small" color="primary" onClick={() => {
-    //                 editClick(params);
-    //             }}>Edit</Button>
-    //         );
-    //     }
-    // },
+
     {
         field: "web3_address",
         flex: 1,
@@ -204,7 +127,7 @@ const columns: GridColDef[] = [
                 <Stack direction="row" justifyContent="space-around" style={{ width: "100%" }}
                        onClick={e => e.stopPropagation()}>
                     <Button variant="contained" size="small" color="primary" onClick={() =>saveClick(params)}>save</Button>
-                    <Button variant="contained" size="small" color="error" onClick={() =>discardClick(params)}>ban</Button>
+                    <Button variant="contained" size="small" color="error" onClick={() =>discardClick(params)}>{params.row.is_banned ? "UNBAN" : "BAN"}</Button>
                 </Stack>
             );
         }
@@ -305,7 +228,7 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                             <MenuItem value="Administator">Administator</MenuItem>
                             <MenuItem value="Moderator">Moderator</MenuItem>
                             <MenuItem value="Doctor">Doctor</MenuItem>
-                            <MenuItem value="Patient">Patient</MenuItem>
+                            <MenuItem value="Client">Client</MenuItem>
                         </Select>
                         <FormHelperText>Select the role for the created user</FormHelperText>
                     </Stack>

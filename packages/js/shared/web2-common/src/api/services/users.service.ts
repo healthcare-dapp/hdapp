@@ -46,6 +46,16 @@ export const UsersService = new (class {
         });
     }
 
+    switchBan(ban: boolean, id: string): Promise<UserDto> {
+        console.log(ban);
+        return http.request({
+            data: { is_banned: ban },
+            url: endpoints.users.patch_by_id.replace(":id", id),
+            type: UserDto,
+            method: "PATCH"
+        });
+    }
+
     approveDoctor(userID: string): Promise<UserDto> {
         return http.request({
             url: endpoints.users.verify_by_id.replace(":id", userID),
