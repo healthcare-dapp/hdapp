@@ -34,7 +34,7 @@ const saveClick = async (cellValues: GridRenderCellParams) => {
     };
     console.log(data);
     console.log(data1);
-    const b = await UsersService.updateUser(data1);
+    const b = await UsersService.updateUser(data, data.id.toString());
     console.log(b);
     console.log("Save complete");
     // cellValues.api.stopRowEditMode({ id: cellValues.id });
@@ -43,7 +43,7 @@ const saveClick = async (cellValues: GridRenderCellParams) => {
 const discardClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
     data.is_banned = !data.is_banned;
-    const b = await UsersService.updateUser(data);
+    const b = await UsersService.updateUser(data, data.id.toString());
     console.log(b);
     console.log("Ban status switched to " + data.is_banned.valueOf());
 };

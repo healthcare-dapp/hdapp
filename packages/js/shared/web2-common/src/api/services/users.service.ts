@@ -1,3 +1,4 @@
+import { UpdateUserDto } from "@hdapp/shared/web2-common/dto";
 import { UserFiltersDto } from "../../dto/user-filters.dto";
 import { UserDto } from "../../dto/user.dto";
 import { PagedResponse } from "../../types/paged-response.type";
@@ -34,14 +35,14 @@ export const UsersService = new (class {
         });
     }
 
-    updateUser(user: UserDto): Promise<UserDto> {
+    updateUser(user: UserDto, id: string): Promise<UserDto> {
         console.log("received:");
         console.log(user);
         return http.request({
             data: user,
-            url: endpoints.users.patch_by_id.replace(":id", user.id.toString()),
+            url: endpoints.users.patch_by_id.replace(":id", id),
             type: UserDto,
-            method: "POST"
+            method: "PATCH"
         });
     }
 
