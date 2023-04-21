@@ -2,19 +2,73 @@ import { setJwtToken } from "@hdapp/shared/web2-common/api/http";
 import { UsersService } from "@hdapp/shared/web2-common/api/services";
 import { UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { Add, AdminPanelSettings, LocalPolice, MedicalInformation, Person, Refresh, Search, Tune } from "@mui/icons-material";
-import { AppBar, Box, Button, Checkbox, IconButton, InputAdornment, Stack, TextField, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Button, Checkbox, FormHelperText, IconButton, InputAdornment, MenuItem, Select, Stack, TextField, Toolbar, Typography } from "@mui/material";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
 import { DataGrid, GridColDef, GridRenderCellParams, useGridApiContext, useGridApiRef } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
 
-// const editClick = async (cellValues: GridRenderCellParams) => {
-//     console.log("CLICK");
-//     setting.editable = true;
-//     cellValues.api.getRow(cellValues.row.id).editable=true;
-//     cellValues.api.startRowEditMode({ id: cellValues.row.id });
-//     //apiRef.current.startRowEditMode({ id: cellValues.row.id });
-// };
+// function CreateNewUser() {
+//     const [open, setOpen] = useState(false);
+
+//     const handleClickOpen = () => {
+//         setOpen(true);
+//     };
+
+//     const handleClose = () => {
+//         setOpen(false);
+//     };
+
+//     return (
+//         <div>
+//             <Dialog open={open} onClose={handleClose}>
+//                 <DialogTitle>User Creator</DialogTitle>
+//                 <DialogContent>
+//                     <DialogContentText>
+//                         Write information for the new user
+//                     </DialogContentText>
+//                     <Stack spacing={1}>
+//                         <TextField autoFocus
+//                                    margin="dense"
+//                                    id="email"
+//                                    label="Email Address"
+//                                    fullWidth
+//                                    variant="standard" />
+//                         <TextField margin="dense"
+//                                    id="name"
+//                                    label="Full Name"
+//                                    fullWidth
+//                                    variant="standard" />
+//                         <TextField margin="dense"
+//                                    id="date of birth"
+//                                    label="Date of birth"
+//                                    fullWidth
+//                                    variant="standard" />
+//                         <TextField margin="dense"
+//                                    id="pass"
+//                                    label="Password"
+//                                    fullWidth
+//                                    variant="standard" />
+//                         <TextField margin="dense"
+//                                    id="role"
+//                                    label="Role"
+//                                    fullWidth
+//                                    variant="standard" />
+//                     </Stack>
+//                 </DialogContent>
+//                 <DialogActions>
+//                     <Button onClick={handleClose}>Cancel</Button>
+//                     <Button onClick={handleClose}>Create new user</Button>
+//                 </DialogActions>
+//             </Dialog>
+//         </div>
+//     );
+// }
 
 const saveClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
@@ -30,8 +84,7 @@ const saveClick = async (cellValues: GridRenderCellParams) => {
         has_verified_email: cellValues.row.has_verified_email,
         is_verified_doctor: cellValues.row.is_verified_doctor,
         is_banned: cellValues.row.is_banned,
-        id: cellValues.row.id
-    };
+        id: cellValues.row.id };
     console.log(data);
     console.log(data1);
     const b = await UsersService.updateUser(data, data.id.toString());
@@ -47,6 +100,14 @@ const discardClick = async (cellValues: GridRenderCellParams) => {
     console.log(b);
     console.log("Ban status switched to " + data.is_banned.valueOf());
 };
+
+// const createNewUser = () => {
+//     const data: UserDto = cellValues.row;
+//     data.is_banned = !data.is_banned;
+//     const b = await UsersService.updateUser(data, data.id.toString());
+//     console.log(b);
+//     console.log("Ban status switched to " + data.is_banned.valueOf());
+// };
 
 const setting = {
     editable: true
@@ -160,6 +221,103 @@ export const UsersPage = observer(forwardRef((props, ref) => {
             setUsers(response.items);
         })();
     }, []);
+
+    const [open, setOpen] = useState(false);
+
+    const handleClickOpen = () => {
+        setOpen(true);
+    };
+    const [email, setEmail] = useState("");
+    const [name, setName] = useState("");
+    const [dateOfBirth, setDateOfBirth] = useState("");
+    const [password, setPassword] = useState("");
+    const [role, setRole] = useState("");
+
+    const createNewUser = () => {
+
+        const handleClose = () => {
+            setOpen(false);
+        };
+
+        const handleEmailChange = event => {
+            setEmail(event.target.value);
+        };
+
+        const handleNameChange = event => {
+            setName(event.target.value);
+        };
+
+        const handleDateOfBirthChange = event => {
+            setDateOfBirth(event.target.value);
+        };
+
+        const handlePasswordChange = event => {
+            setPassword(event.target.value);
+        };
+
+        const handleRoleChange = event => {
+            setRole(event.target.value);
+        };
+
+        const handleCreateUser = () => {
+            console.log(email, name, dateOfBirth, password, role);
+            handleClose();
+        };
+
+        return (
+            <Dialog open={open} onClose={handleClose}>
+                <DialogTitle>User Creator</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Write information for the new user
+                    </DialogContentText>
+                    <Stack spacing={1}>
+                        <TextField autoFocus
+                                   margin="dense"
+                                   id="email"
+                                   label="Email Address"
+                                   fullWidth
+                                   variant="standard"
+                                   value={email}
+                                   onChange={handleEmailChange} />
+                        <TextField margin="dense"
+                                   id="name"
+                                   label="Full Name"
+                                   fullWidth
+                                   variant="standard"
+                                   value={name}
+                                   onChange={handleNameChange} />
+                        <TextField margin="dense"
+                                   id="date-of-birth"
+                                   label="Date of birth"
+                                   fullWidth
+                                   variant="standard"
+                                   value={dateOfBirth}
+                                   onChange={handleDateOfBirthChange} />
+                        <TextField margin="dense"
+                                   id="pass"
+                                   label="Password"
+                                   fullWidth
+                                   variant="standard"
+                                   value={password}
+                                   onChange={handlePasswordChange} />
+                        <Select margin="dense" id="role" label="Choose Role" fullWidth variant="standard" value={role} onChange={handleRoleChange}>
+                            <MenuItem value="Administator">Administator</MenuItem>
+                            <MenuItem value="Moderator">Moderator</MenuItem>
+                            <MenuItem value="Doctor">Doctor</MenuItem>
+                            <MenuItem value="Patient">Patient</MenuItem>
+                        </Select>
+                        <FormHelperText>Select the role for the created user</FormHelperText>
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleCreateUser}>Create new user</Button>
+                </DialogActions>
+            </Dialog>
+        );
+    };
+
     return (
         <PageWidget>
             <Stack height="100%">
@@ -187,7 +345,10 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                             <Refresh />
                         </IconButton>
                         <Box sx={{ flex: 1 }} />
-                        <Button variant="outlined" startIcon={<Add />} color="primary" sx={{ ml: 1, flexShrink: 0 }}>
+                        <Button variant="outlined" startIcon={<Add />} color="primary" sx={{ ml: 1, flexShrink: 0 }} onClick={() => {
+                            handleClickOpen();
+                            createNewUser();
+                        }}>
                             New user
                         </Button>
                     </Toolbar>
@@ -197,6 +358,7 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                           rows={users}
                           editMode="row"
                           style={{ border: 0, flexGrow: 1 }} />
+                { createNewUser() }
             </Stack>
         </PageWidget>
     );

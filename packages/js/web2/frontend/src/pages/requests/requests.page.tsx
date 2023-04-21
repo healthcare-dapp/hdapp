@@ -7,12 +7,12 @@ import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
 
+
 const approveClick = async (cellValues: GridRenderCellParams) => {
     if (confirm("Are you sure you want to approve this account?")) {
         const data: UserDto = cellValues.row;
         const b = await UsersService.approveDoctor(data.id.toString());
         console.log(b);
-        console.log("Thing was saved to the database.");
     } else {
         console.log("The doctor is not approved");
     }

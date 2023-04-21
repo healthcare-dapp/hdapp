@@ -116,8 +116,6 @@ export class UsersController {
         @Body(new IoTsValidationPipe(UpdateUserDto)) data: UpdateUserDto,
     ): Promise<UserDto> {
         try {
-            console.log(data);
-            console.log(data.full_name);
             const updateData = UserAdapter.transformUpdateDtoToEntity(data);
             await this.users.updateOne(id, updateData);
 
