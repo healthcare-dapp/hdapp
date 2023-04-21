@@ -3,8 +3,12 @@ import {
     Add,
     AddCommentOutlined,
     ArrowBack,
+    Attachment,
+    Delete,
+    DeleteOutline,
     ImageOutlined,
-    Menu,
+    InfoOutlined,
+    Menu as MenuIcon,
     MoreVert,
     Search,
     Send,
@@ -18,10 +22,16 @@ import {
     Box,
     Button,
     Container,
+    Divider,
     Fab,
     IconButton,
+    InputBase,
     List,
     ListItemButton,
+    ListItemIcon,
+    Menu,
+    MenuItem,
+    MenuList,
     Paper,
     Stack,
     styled,
@@ -247,7 +257,10 @@ const RightPanel: FC = observer(() => {
     const [chat, setChat] = useState<ChatEntry>();
     const [participants, setParticipants] = useState<(ProfileEntry & { avatar_url?: string })[]>([]);
     const [messages, setMessages] = useState<(ChatMessageEntry & { attachments: string[] })[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
     const onlineAddresses = sessionManager.webrtc.onlinePeerAddresses;
+    const [accountMenu, setAccountMenu] = useState<null | HTMLElement>(null);
+    const open = Boolean(accountMenu);
 
     const otherParticipants = participants
         .filter(p => p.address !== sessionManager.wallet.address);
@@ -328,25 +341,94 @@ const RightPanel: FC = observer(() => {
         setMessageText("");
     }
 
+    const isStartCallActive = !messages.some(msg => msg.content.includes("https://meet.jit.si"));
+
+    async function startCall() {
+        await db.chatMessages.addChatMessage({
+            attachment_ids: [],
+            chat_hash: chatHash!,
+            content: "https://meet.jit.si/" + chatHash,
+            created_by: sessionManager.wallet.address
+        }, encryption);
+    }
+
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAccountMenu(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAccountMenu(null);
+    };
+
     return (
         <Paper variant="outlined" sx={{ borderRadius: 0, height: "100%", border: 0, overflow: "hidden", flexGrow: 1, display: "flex", flexDirection: "column" }}>
             <AppBar position="static" elevation={1} color="default" sx={{ px: 1, py: 0.5, backgroundColor: canShowBothPanels ? "white" : void 0 }}>
-                <Stack direction="row" alignItems="center">
-                    { !canShowBothPanels && <IconButton onClick={() => navigate("/messages")}><ArrowBack /></IconButton> }
-                    <Stack spacing={-0.5} sx={{ pl: 1 }}>
-                        <Typography fontSize={16} fontWeight="500">{ chatName }</Typography>
-                        <Typography fontSize={14} fontWeight="500"
-                                    color={onlineAddresses.includes(otherParticipants[0]?.address) ? "success" : "text.secondary"}>
-                            { onlineAddresses.includes(otherParticipants[0]?.address) ? "online" : "offline" }
-                        </Typography>
-                    </Stack>
-                    <Box flexGrow={1} />
-                    { canShowExtendedHeader
-                        ? <Button variant="outlined" startIcon={<VideoCall />} sx={{ mr: 1 }}>Start call</Button>
-                        : <IconButton size="large" color="inherit"><VideoCall /></IconButton> }
-                    { canShowExtendedHeader && <IconButton size="large" color="inherit"><Search /></IconButton> }
-                    <IconButton size="large" color="inherit"><MoreVert /></IconButton>
+                <Stack direction="row" alignItems="center" sx={{ height: "48px" }}>
+                    { isSearching ? (
+                        <>
+                            <IconButton onClick={() => setIsSearching(false)}><ArrowBack /></IconButton>
+                            <InputBase placeholder="Search your messages..." sx={{ flex: 1, pl: 1 }} />
+                        </>
+                    ) : (
+                        <>
+                            { !canShowBothPanels && <IconButton onClick={() => navigate("/messages")}><ArrowBack /></IconButton> }
+                            <Stack spacing={-0.5} sx={{ pl: 1 }}>
+                                <Typography fontSize={16} fontWeight="500">{ chatName }</Typography>
+                                <Typography fontSize={14} fontWeight="500"
+                                            color={onlineAddresses.includes(otherParticipants[0]?.address) ? "success" : "text.secondary"}>
+                                    { onlineAddresses.includes(otherParticipants[0]?.address) ? "online" : "offline" }
+                                </Typography>
+                            </Stack>
+                            <Box flexGrow={1} />
+                            { canShowExtendedHeader
+                                ? <Button variant="outlined" disabled={!isStartCallActive} onClick={startCall} startIcon={<VideoCall />} sx={{ mr: 1 }}>Start call</Button>
+                                : <IconButton size="large" color="inherit" disabled={!isStartCallActive} onClick={startCall}><VideoCall /></IconButton> }
+                            { canShowExtendedHeader && <IconButton size="large" color="inherit" onClick={() => setIsSearching(true)}><Search /></IconButton> }
+                            <IconButton size="large" color="inherit"
+                                        onClick={handleClick}
+                                        aria-controls={open ? "account-menu" : undefined}
+                                        aria-haspopup="true"
+                                        aria-expanded={open ? "true" : undefined}><MoreVert /></IconButton>
+                        </>
+                    ) }
+
                 </Stack>
+                <Menu anchorEl={accountMenu}
+                      id="account-menu"
+                      open={open}
+                      onClose={handleClose}
+                      onClick={handleClose}
+                      transformOrigin={{ horizontal: "right", vertical: "top" }}
+                      anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+                      sx={{ p: 0 }}>
+                    <MenuList dense sx={{ p: 0 }}>
+                        <MenuItem onClick={async () => {
+                            handleClose();
+                        }}>
+                            <ListItemIcon>
+                                <Attachment fontSize="small" />
+                            </ListItemIcon>
+                            Attachments
+                        </MenuItem>
+                        <Divider />
+                        <MenuItem onClick={async () => {
+                            handleClose();
+                        }}>
+                            <ListItemIcon>
+                                <InfoOutlined fontSize="small" />
+                            </ListItemIcon>
+                            Chat details
+                        </MenuItem>
+                        <MenuItem onClick={async () => {
+                            handleClose();
+                        }} sx={{ color: theme.palette.error.main }}>
+                            <ListItemIcon>
+                                <DeleteOutline color="error" fontSize="small" />
+                            </ListItemIcon>
+                            Leave this chat
+                        </MenuItem>
+                    </MenuList>
+                </Menu>
             </AppBar>
             <OverflowCard sx={{ flexGrow: 1, height: 0 }}
                           ref={messagesListRef}>
@@ -364,9 +446,22 @@ const RightPanel: FC = observer(() => {
                                     <img src={url} key={url} style={{ width: "100%", borderRadius: 4 }} />
                                 ) }
                                 <Stack spacing={1} direction="row">
-                                    <Typography fontSize={14}>
-                                        { msg.content }
-                                    </Typography>
+                                    { msg.content.startsWith("https://meet.jit.si") ? ( // @ts-ignore
+                                        <Stack spacing={1} direction="row" as="a" href={msg.content} target="_blank"
+                                               style={{ textDecoration: "none", color: "inherit" }}>
+                                            <Stack sx={{ background: alpha(theme.palette.primary.main, 0.75), p: 1, borderRadius: "4px", alignSelf: "flex-start" }}>
+                                                <VideoCall sx={{ color: "white" }} />
+                                            </Stack>
+                                            <Stack>
+                                                <Typography fontSize="14px" fontWeight="500" color="text.primary">Ongoing Jitsi call</Typography>
+                                                <Typography fontSize="14px" color="text.secondary" lineHeight="18px">You're invited to join a conference room</Typography>
+                                            </Stack>
+                                        </Stack>
+                                    ) : (
+                                        <Typography fontSize={14}>
+                                            { msg.content }
+                                        </Typography>
+                                    ) }
                                     <Box flexGrow={1} />
                                     <Typography color="text.secondary" fontSize={14} style={{ flexShrink: 0, alignSelf: "flex-end" }}>
                                         { formatTemporal(msg.created_at) }
@@ -429,7 +524,7 @@ export const MessagesPage = () => {
                                         aria-label="menu"
                                         sx={{ mr: 2 }}
                                         onClick={() => setOpenCounter(openCounter + 1)}>
-                                <Menu />
+                                <MenuIcon />
                             </IconButton>
                             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                                 Messages

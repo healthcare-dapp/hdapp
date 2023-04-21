@@ -8,6 +8,7 @@ import { sessionManager } from "../managers/session.manager";
 import { walletService } from "../services/wallet.service";
 
 export const AddDeviceDialog: FC<{ onClose(): void }> = observer(x => {
+    const { encryption } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [qrUrl, setQrUrl] = useState<string>();

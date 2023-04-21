@@ -139,6 +139,9 @@ export const MyProfileWidget: FC = x => {
                                         &nbsp;
                                             { !hasCondensedDetails && <br /> }
                                             { formatTemporal(profile.birth_date, temporalFormats.MMMddyyyy) }
+                                            &nbsp;
+                                            { profile.birth_date.dayOfMonth() === LocalDate.now().dayOfMonth() && profile.birth_date.monthValue() === LocalDate.now().monthValue()
+                                                && <span title="Happy birthday!">🎉</span> }
                                         </Typography>
                                     ) }
                                     { isEditMode ? (
