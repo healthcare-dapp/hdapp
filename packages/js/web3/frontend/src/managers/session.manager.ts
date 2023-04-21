@@ -177,6 +177,19 @@ export class SessionManager {
 
         await this._initVars(walletShort, wallet, provider);
     }
+
+    lock() {
+        runInAction(() => {
+            this._encryptionProvider = null;
+            this._walletShort = null;
+            this._web3Manager = null;
+            this._dbManager = null;
+            this._notificationsManager = null;
+            this._accountManager = null;
+            this._accessControlManager = null;
+            this._webrtcManager = null;
+        });
+    }
 }
 
 export const sessionManager = new SessionManager();

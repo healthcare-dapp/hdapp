@@ -149,7 +149,7 @@ const SignInMainPage: FC<{ isAddingAccount?: boolean; title?: string; onClose?()
     );
 };
 
-const SignInPrivateKeyPage: FC<{ onBackButton(): void }> = x => {
+const SignInPrivateKeyPage: FC<{ onBackButton(): void; onCompleted(): void }> = x => {
     const theme = useTheme();
     const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
     const [privateKey, setPrivateKey] = useState("");
@@ -190,8 +190,9 @@ const SignInPrivateKeyPage: FC<{ onBackButton(): void }> = x => {
                 <LoadingButton disableElevation variant="contained"
                                disabled={privateKey.length !== 64}
                                loading={walletManager.addUsingPrivateKey.pending}
-                               onClick={() => {
-                                   void walletManager.addUsingPrivateKey.run(privateKey);
+                               onClick={async () => {
+                                   await walletManager.addUsingPrivateKey.run(privateKey);
+                                   x.onCompleted();
                                }}>
                     Add an account
                 </LoadingButton>
@@ -426,15 +427,16 @@ export const SignInPage = observer<SignInProps>(function SignInPage(x, ref) {
                    sx={{ height: "100%", py: 2, px: isSmall ? 0 : 2 }}>
                 { !x.isAddingAccount && <Logo /> }
                 { page
-                    ? page === "private-key"
-                        ? <SignInPrivateKeyPage onBackButton={() => setPage(undefined)} />
-                        : page === "mnemonic-phrase"
-                            ? <SignInMnemonicPhrasePage onBackButton={() => setPage(undefined)} />
-                            : page === "qr"
-                                ? <SignInQrPage onBackButton={() => setPage(undefined)} />
-                                : page === "url"
-                                    ? <SignInUrlPage />
-                                    : <SignInPrivateKeyPage onBackButton={() => setPage(undefined)} />
+                    ? page === "private-key" ? (
+                        <SignInPrivateKeyPage onCompleted={() => x.isAddingAccount ? location.reload() : null}
+                                              onBackButton={() => setPage(undefined)} />
+                    ) : page === "mnemonic-phrase"
+                        ? <SignInMnemonicPhrasePage onBackButton={() => setPage(undefined)} />
+                        : page === "qr"
+                            ? <SignInQrPage onBackButton={() => setPage(undefined)} />
+                            : page === "url"
+                                ? <SignInUrlPage />
+                                : null
                     : (
                         <SignInMainPage isAddingAccount={!!x.isAddingAccount}
                                         title={x.isAddingAccount ? "Add another account to this device" : "Sign in"}

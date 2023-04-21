@@ -133,9 +133,14 @@ export class UsersService {
         return this.users.save(user);
     }
 
-    updateOne(uid: string | number, user: DeepPartial<UserEntity>) {
+    async updateOne(uid: string, user: DeepPartial<UserFullEntity>) {
         try {
-            return this.users.update(uid.toString(), user);
+            const { isVerifiedDoctor, isBanned, ...dbUser } = user;
+            await this.users.update(uid, dbUser);
+            const newUser = await this.findOneById(uid);
+            if (isBanned && newUser.web3Address && !newUser.isBanned) {
+                await this.web3.banUser(newUser.web3Address);
+            }
         } catch (e) {
             if (e instanceof EntityNotFoundError) {
                 throw new UserNotFoundError(e);

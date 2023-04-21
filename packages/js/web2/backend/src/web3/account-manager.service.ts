@@ -72,6 +72,13 @@ export class Web3AccountManagerService implements OnModuleInit {
         debug("Successfully sent MATIC to", address);
     }
 
+    async banUser(address: Web3Address) {
+        if (!this._contract)
+            throw new Error("no contract");
+
+        await this._contract.ban(address);
+    }
+
     async promoteToDoctor(address: Web3Address) {
         if (!this._contract)
             throw new Error("no contract");

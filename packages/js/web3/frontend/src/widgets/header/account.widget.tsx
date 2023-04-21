@@ -74,7 +74,10 @@ export const HeaderAccountWidget = observer(() => {
                         <Typography variant="subtitle2">Connected accounts</Typography>
                     </MenuItem>
                     { walletManager.list.map(w => (
-                        <MenuItem key={w.address} onClick={handleClose}>
+                        <MenuItem key={w.address}
+                                  onClick={() => {
+                                      location.reload();
+                                  }}>
                             <Stack direction="row" alignItems="center" spacing={2}
                                    style={{ width: "100%" }}>
                                 <Avatar src={makeBlockie(w.address)} sx={{ width: 20, height: 20 }} />
