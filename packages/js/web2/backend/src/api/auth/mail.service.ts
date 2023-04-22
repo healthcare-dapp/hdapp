@@ -1,3 +1,4 @@
+import { UserEntity } from "@hdapp/shared/db-common/entities/user.entity";
 import { EmailAddress, Web3Address } from "@hdapp/shared/web2-common/types";
 import { ErrorClass, Logger } from "@hdapp/shared/web2-common/utils";
 import { Injectable } from "@nestjs/common";
@@ -14,21 +15,28 @@ export class MailService {
     ) { }
 
     async sendWalletInfo(
-        userEmail: EmailAddress,
+        user: UserEntity,
         walletPublicKey: Web3Address,
         walletPrivateKey: string,
-        walletMnemonic: string,
+        walletMnemonic: string
     ) {
         try {
+            const userB64 = Buffer.from(
+                JSON.stringify({
+                    full_name: user.fullName,
+                    birth_date: user.birthDate
+                }),
+                "utf-8"
+            ).toString("base64");
             await this.mailer.sendMail({
-                to: userEmail, // list of receivers
+                to: user.email, // list of receivers
                 subject: "Your HDAPP WalletInfo", // Subject line
-                text: `Thanks for creating an account on HDAPP!\r\nIn order to sign in into your new account, press the following link: https://hdapp.ruslang.xyz/app?privateKey=${walletPrivateKey}\r\n\r\nYour wallet details:\r\nPublic key: ${walletPublicKey}\r\nPrivate key: ${walletPrivateKey}\r\nMnemonic: ${walletMnemonic}`, // plaintext body
+                text: `Hello, ${user.fullName}!\r\n\r\nThanks for creating an account on HDAPP!\r\nIn order to sign in into your new account, press the following link: https://hdapp.ruslang.xyz/app?privateKey=${walletPrivateKey}&user=${userB64}\r\n\r\nYour wallet details:\r\nPublic key: ${walletPublicKey}\r\nPrivate key: ${walletPrivateKey}\r\nMnemonic: ${walletMnemonic}`, // plaintext body
             });
 
-            debug("Sent wallet info e-mail.", { email: userEmail });
+            debug("Sent wallet info e-mail.", { email: user.email });
         } catch (err) {
-            throw new SendMailError({ err, email: userEmail }, "Could not send e-mail with wallet info");
+            throw new SendMailError({ err, email: user.email }, "Could not send e-mail with wallet info");
         }
     }
 

@@ -1,5 +1,3 @@
-import { UsersService } from "@hdapp/shared/web2-common/api/services";
-import { AsyncAction } from "@hdapp/shared/web2-common/utils";
 import { LocalDate, LocalDateTime } from "@js-joda/core";
 import { Upload } from "@mui/icons-material";
 import {
@@ -11,8 +9,6 @@ import {
     Button,
     Stack,
     IconButton,
-    Backdrop,
-    CircularProgress,
     Avatar,
     ButtonBase,
     Typography,
@@ -23,8 +19,6 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { ChangeEvent, FC, useEffect, useState } from "react";
 import { ModalProvider } from "../App2";
-
-const getUserByWeb3Address = new AsyncAction(UsersService.findByWeb3Address);
 
 export interface SetUserDataDialogResult {
     fullName: string
@@ -41,12 +35,14 @@ export const SetUserDataDialog: FC<{ address: string; onClose(result: SetUserDat
     const isMobileViewMd = useMediaQuery(theme.breakpoints.down("md"));
 
     useEffect(() => {
-        getUserByWeb3Address.tryRun(x.address)
-            ?.then(user => {
-                setBirthDate(new Date(user.birth_date));
-                setFullName(user.full_name);
-            })
-            .catch(console.error);
+        const search = new URLSearchParams(location.search);
+        const b64 = search.get("user");
+        if (!b64)
+            return;
+
+        const user = JSON.parse(atob(b64));
+        setBirthDate(new Date(user.birth_date));
+        setFullName(user.full_name);
     }, [x.address]);
 
     function handleAvatarInputChange(e: ChangeEvent<HTMLInputElement>) {
@@ -119,10 +115,6 @@ export const SetUserDataDialog: FC<{ address: string; onClose(result: SetUserDat
                             onClick={() => birthDate && x.onClose({ fullName, birthDate: LocalDateTime.parse(birthDate.toISOString().slice(0, -1)).toLocalDate(), avatar })}>Let's go</Button>
                 </Stack>
             </DialogContent>
-            <Backdrop sx={{ color: "#fff", zIndex: theme => theme.zIndex.drawer + 1 }}
-                      open={getUserByWeb3Address.pending}>
-                <CircularProgress color="inherit" />
-            </Backdrop>
         </Dialog>
     );
 });

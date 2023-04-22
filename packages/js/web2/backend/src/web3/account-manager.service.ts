@@ -45,6 +45,7 @@ export class Web3AccountManagerService implements OnModuleInit {
             return {
                 isVerifiedDoctor: false,
                 isBanned: false,
+                isProfilePublic: false,
             };
         }
 
@@ -52,6 +53,7 @@ export class Web3AccountManagerService implements OnModuleInit {
         return {
             isVerifiedDoctor: !!info?.isDoctor,
             isBanned: !!info?.isBanned,
+            isProfilePublic: !!info?.isProfilePublic,
         };
     }
 

@@ -1,3 +1,4 @@
+import { UserPublicProfileDto } from "@hdapp/shared/web2-common/dto/user/public-profile.dto";
 import { autoBind } from "@hdapp/shared/web2-common/utils";
 import { LocalDate, LocalDateTime } from "@js-joda/core";
 import { EncryptionProvider } from "../utils/encryption.provider";
@@ -19,6 +20,7 @@ interface ProfileDbEntryEncryptedData {
     weight: number | null
     avatar_hash: string | null
     medical_organization_name: string | null
+    public_profile: UserPublicProfileDto | null
 }
 
 export interface ProfileEntry {
@@ -32,6 +34,7 @@ export interface ProfileEntry {
     weight: number | null
     avatar_hash: string | null
     medical_organization_name: string | null
+    public_profile: UserPublicProfileDto | null
 }
 
 export interface ProfileForm {
@@ -43,6 +46,7 @@ export interface ProfileForm {
     weight: number | null
     avatar_hash: string | null
     medical_organization_name: string | null
+    public_profile: UserPublicProfileDto | null
 }
 
 export interface ProfileSearchRequest {
@@ -69,6 +73,7 @@ const transformer = (provider: EncryptionProvider) => (dbEntry: ProfileDbEntry):
         weight: encrypted.weight,
         medical_organization_name: encrypted.medical_organization_name,
         blood_type: encrypted.blood_type,
+        public_profile: encrypted.public_profile,
         birth_date: LocalDate.parse(encrypted.birth_date),
         updated_at: LocalDateTime.parse(encrypted.updated_at)
     };
@@ -83,6 +88,7 @@ const reverseTransformer = (provider: EncryptionProvider) => (entry: ProfileEntr
         weight: entry.weight,
         medical_organization_name: entry.medical_organization_name,
         blood_type: entry.blood_type,
+        public_profile: entry.public_profile,
         birth_date: entry.birth_date.toString(),
         updated_at: entry.updated_at.toString()
     };

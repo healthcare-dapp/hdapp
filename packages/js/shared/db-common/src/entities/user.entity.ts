@@ -3,8 +3,8 @@ import { ApiProperty } from "@nestjs/swagger";
 import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 import { LocalDateTransformer } from "../transformers/local-date.transformer";
 import { FileEntity } from "./file.entity";
+import type { UserOrganizationDetailsDto, UserPublicProfileDto } from "@hdapp/shared/web2-common/dto/user";
 import type { EmailAddress, Web3Address } from "@hdapp/shared/web2-common/types";
-
 @Entity()
 export class UserEntity {
     @PrimaryGeneratedColumn()
@@ -45,6 +45,18 @@ export class UserEntity {
     @Column({ default: false })
     @ApiProperty({ description: "True if user is a administrator" })
         hasAdministratorCapabilities: boolean;
+
+    @Column({ default: false })
+    @ApiProperty({ description: "True if user is an organization" })
+        hasOrganizationCapabilities: boolean;
+
+    @Column({ type: "json" })
+    @ApiProperty({ description: "Organization details" })
+        organizationDetails: UserOrganizationDetailsDto | null;
+
+    @Column({ type: "json" })
+    @ApiProperty({ description: "Public profile provided by the user" })
+        publicProfile: UserPublicProfileDto | null;
 
     @Column({ default: false })
     @ApiProperty({ description: "True if user has verified their email" })

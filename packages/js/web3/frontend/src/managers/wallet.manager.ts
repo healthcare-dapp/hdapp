@@ -77,6 +77,7 @@ export class WalletManager {
                     height: null,
                     medical_organization_name: null,
                     weight: null,
+                    public_profile: null
                 },
                 sessionManager.encryption
             );
@@ -131,6 +132,7 @@ export class WalletManager {
                     height: null,
                     medical_organization_name: null,
                     weight: null,
+                    public_profile: null
                 },
                 sessionManager.encryption
             );

@@ -7,6 +7,9 @@ export const UserFiltersDto = partial({
     is_verified_doctor: boolean,
     is_banned: boolean,
     has_web3_address: boolean,
+    areas_of_focus: string,
+    location: string,
+    organization_id: string,
 });
 
 export type UserFiltersDto = TypeOf<typeof UserFiltersDto>;

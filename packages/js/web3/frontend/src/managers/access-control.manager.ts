@@ -5,6 +5,7 @@ import { SHA256 } from "crypto-js";
 import { ethers, toBigInt } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable } from "mobx";
+import { runAndCacheWeb3Call } from "../services/web3-cache.service";
 import { EncryptionProvider } from "../utils/encryption.provider";
 import { DbManager } from "./db.manager";
 import { NotificationsManager, Urgency } from "./notifications.manager";
@@ -189,8 +190,12 @@ export class AccessControlManager {
     }
 
     async getDataPermissionsForUser(address: string): Promise<HDMAccessControl.DataPermissionsStructOutput[]> {
-        const hashes = await this._web3.accessControlManager
-            .getDataPermissionsByUser(address);
+        const hashes = await runAndCacheWeb3Call(
+            "getDataPermissionsByUser",
+            (...args) => this._web3.accessControlManager.getDataPermissionsByUser(...args),
+            address
+        );
+
         const records = await this._db.records.searchRecords({}, this._encryption);
         const blocks = await this._db.blocks.getBlocks();
         const relevantHashes = hashes.filter(h => {
@@ -200,8 +205,11 @@ export class AccessControlManager {
 
         const permissions = await Promise.all(
             relevantHashes.map(async hash => {
-                return await this._web3.accessControlManager
-                    .getDataPermissionsInfo(hash);
+                return await runAndCacheWeb3Call(
+                    "getDataPermissionsInfo",
+                    (...args) => this._web3.accessControlManager.getDataPermissionsInfo(...args),
+                    hash
+                );
             })
         );
 
@@ -216,6 +224,7 @@ export class AccessControlManager {
                 user,
                 hash
             );
+
             await this._db.devices.addDevice(
                 {
                     added_at: LocalDateTime.now(),

@@ -1,5 +1,5 @@
 import { CreateUserEntity, UserEntity } from "@hdapp/shared/db-common/entities";
-import { UserFiltersDto } from "@hdapp/shared/web2-common/dto";
+import { PublicUserSearchFiltersDto, UserFiltersDto } from "@hdapp/shared/web2-common/dto";
 import { StatisticsDto } from "@hdapp/shared/web2-common/dto/statistics.dto";
 import { getRightOrFail } from "@hdapp/shared/web2-common/io-ts-utils";
 import { EmailAddress, Web3Address, web3AddressType } from "@hdapp/shared/web2-common/types";
@@ -47,7 +47,7 @@ export class UsersService {
         void this.web3.giveFreeMoney(web3Address);
 
         await this.mail.sendWalletInfo(
-            user.email,
+            user,
             web3Address,
             wallet.privateKey.replace("0x", ""),
             wallet.mnemonic!.phrase,
@@ -265,6 +265,72 @@ export class UsersService {
                 totalDoctors: allVerifiedDoctors.length,
                 pending: allUsers.length - withAddress.length,
             },
+        };
+    }
+
+    async getFilters(): Promise<PublicUserSearchFiltersDto> {
+        const allUsers = await this.users.find();
+        const withAddress = allUsers.filter(u => u.web3Address);
+        const allDoctors = await Promise.all(
+            withAddress.map(db => this.web3.getAccountInfo(db.web3Address!).then(web3 => ({ db, web3 })))
+        );
+        const allDoctorsWithPublicProfiles = allDoctors
+            .filter(({ db, web3 }) => !web3.isProfilePublic && db.publicProfile);
+
+        const aggregatedAreasOfFocus = allDoctorsWithPublicProfiles
+            .filter(({ db }) => db.publicProfile!.areasOfFocus)
+            .map(({ db }) => ({ value: db.publicProfile!.areasOfFocus!, count: 1 }))
+            .flatMap((cur, index, arr) => {
+                const prev = index > 0 ? arr[index - 1] : undefined;
+                if (prev && prev.value === cur.value) {
+                    // @ts-ignore
+                    arr[index - 1] = null;
+                    return { value: cur.value, count: prev.count + cur.count };
+                }
+
+                return cur;
+            })
+            .filter(cur => cur);
+
+        const aggregatedLocations = allDoctorsWithPublicProfiles
+            .filter(({ db }) => db.publicProfile!.location)
+            .map(({ db }) => ({ value: db.publicProfile!.location!, count: 1 }))
+            .flatMap((cur, index, arr) => {
+                const prev = index > 0 ? arr[index - 1] : undefined;
+                if (prev && prev.value === cur.value) {
+                    // @ts-ignore
+                    arr[index - 1] = null;
+                    return { value: cur.value!, count: prev.count + cur.count };
+                }
+
+                return cur;
+            })
+            .filter(cur => cur);
+
+        const aggregatedOrganizations = await Promise.all(
+            allDoctorsWithPublicProfiles
+                .filter(({ db }) => db.publicProfile!.organization_id)
+                .map(({ db }) => ({ value: db.publicProfile!.organization_id, count: 1 }))
+                .flatMap((cur, index, arr) => {
+                    const prev = index > 0 ? arr[index - 1] : undefined;
+                    if (prev && prev.value === cur.value) {
+                        // @ts-ignore
+                        arr[index - 1] = null;
+                        return { value: cur.value!, count: prev.count + cur.count };
+                    }
+
+                    return cur;
+                })
+                .filter(cur => cur)
+                .map(async cur => {
+                    const org = await this.users.findOneOrFail({ where: { id: cur.value } });
+                    return { id: cur.value!, name: org.fullName, count: cur.count };
+                })
+        );
+        return {
+            areas_of_focus: aggregatedAreasOfFocus,
+            locations: aggregatedLocations,
+            organizations: aggregatedOrganizations
         };
     }
 }
