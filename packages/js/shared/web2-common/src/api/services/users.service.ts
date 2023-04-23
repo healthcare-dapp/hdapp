@@ -66,6 +66,7 @@ export const UsersService = new (class {
 
     findPublicProfilesPaged(filters: UserFiltersDto, options?: FindPagedOptions): Promise<PagedResponse<PublicUserDto>> {
         return http.request({
+            method: "GET",
             url: endpoints.users.find_public_profiles_paged,
             params: {
                 filters: btoa(JSON.stringify(filters)),

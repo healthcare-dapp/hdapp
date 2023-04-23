@@ -53,15 +53,15 @@ export class UsersController {
         };
     }
 
-    @Get(endpoints.users.find_public_profiles_paged)
+    @Get(endpoints.users.get_filters)
     @ApiOperation({ description: "Retrieve filters for public profile search" })
-    async getPublicUserProfiles(): Promise<PublicUserSearchFiltersDto> {
+    async getPublicUserProfileFilters(): Promise<PublicUserSearchFiltersDto> {
         return await this.users.getFilters();
     }
 
-    @Get(endpoints.users.get_filters)
+    @Get(endpoints.users.find_public_profiles_paged)
     @ApiOperation({ description: "Retrieve users that have public profiles." })
-    async getPublicUserProfileFilters(@Query("from_id") from_id?: string,
+    async getPublicUserProfilesPaged(@Query("from_id") from_id?: string,
         @Query("filters", new Base64Pipe(), new IoTsValidationPipe(UserFiltersDto)) filters?: UserFiltersDto,
         @Query("sort_by") sort_by?: string,
         @Query("sort_desc") sort_desc_str?: string,
