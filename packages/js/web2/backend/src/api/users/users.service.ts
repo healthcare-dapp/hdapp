@@ -44,7 +44,7 @@ export class UsersService {
             throw e;
         }
 
-        void this.web3.giveFreeMoney(web3Address);
+        await this.web3.giveFreeMoney(web3Address);
 
         await this.mail.sendWalletInfo(
             user,
