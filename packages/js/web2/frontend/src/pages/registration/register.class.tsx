@@ -94,7 +94,7 @@ export class Registration extends React.Component<{}, {
         this.updateCheckbox = this.updateCheckbox.bind(this);
         this.validateName = this.validateName.bind(this);
         this.validateMail = this.validateMail.bind(this);
-        this.validateBirthday=this.validateBirthday.bind(this);
+        this.validateBirthday = this.validateBirthday.bind(this);
         this.validateMedicalName = this.validateMedicalName.bind(this);
         this.validateAdress = this.validateAdress.bind(this);
         this.validateSpecialty = this.validateSpecialty.bind(this);
@@ -112,7 +112,7 @@ export class Registration extends React.Component<{}, {
     }
 
     async updateCheckbox(event: ChangeEvent, check: boolean) {
-        this.setState({
+        await this.setState({
             isAgreed: check
         });
         await this.fieldCheck();
@@ -166,8 +166,7 @@ export class Registration extends React.Component<{}, {
                 dateValue: "",
                 dateHelper: "Enter or select your birthdate, you must be 18+ years old"
             });
-        else
-        {
+        else {
             await this.setState({
                 dateError: false,
                 dateValue: birthday.toDateString(),
@@ -229,12 +228,13 @@ export class Registration extends React.Component<{}, {
 
     async fieldCheck() {
         if (this.state.isDoctor)
-            this.setState({ canSubmit: (this.state.isAgreed && this.state.date !== null && !this.state.nameError
-                 && !this.state.mailError && !this.state.medicalNameError && !this.state.adressError && !this.state.specialtyError && !this.state.dateError) });
+            await this.setState({ canSubmit: (this.state.isAgreed && this.state.date !== null && !this.state.nameError && this.state.specialtyValue.trim() !== ""
+                 && !this.state.mailError && !this.state.medicalNameError && !this.state.adressError && this.state.medicalNameValue.trim() !== ""
+                  && !this.state.specialtyError && !this.state.dateError && this.state.nameValue.trim() !== "" && this.state.mailValue.trim() !== "" && this.state.adressValue.trim() !== "") });
         else
-            this.setState({ canSubmit: (this.state.isAgreed && this.state.date !== null && !this.state.nameError
-                 && !this.state.mailError && !this.state.dateError) });
-        console.log(this.state.canSubmit);
+            await this.setState({ canSubmit: (this.state.isAgreed && this.state.date !== null && !this.state.nameError
+                 && !this.state.mailError && !this.state.dateError && this.state.nameValue.trim() !== "" && this.state.mailValue.trim() !== "") });
+
     }
 
     uploadRender() {
