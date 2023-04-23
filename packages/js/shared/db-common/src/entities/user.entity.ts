@@ -50,11 +50,11 @@ export class UserEntity {
     @ApiProperty({ description: "True if user is an organization" })
         hasOrganizationCapabilities: boolean;
 
-    @Column({ type: "json" })
+    @Column({ type: "json", nullable: true })
     @ApiProperty({ description: "Organization details" })
         organizationDetails: UserOrganizationDetailsDto | null;
 
-    @Column({ type: "json" })
+    @Column({ type: "json", nullable: true })
     @ApiProperty({ description: "Public profile provided by the user" })
         publicProfile: UserPublicProfileDto | null;
 
