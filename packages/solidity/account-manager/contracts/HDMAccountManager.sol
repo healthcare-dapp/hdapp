@@ -7,6 +7,7 @@ contract HDMAccountManager is AccessControl {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     struct AccountInfo {
+        bool isProfilePublic;
         bool isDoctor;
         bool isBanned;
     }
@@ -25,6 +26,24 @@ contract HDMAccountManager is AccessControl {
         );
 
         accounts[_account].isDoctor = true;
+    }
+
+    function makeCurrentAccountPublic() public {
+        require(
+            accounts[msg.sender].isProfilePublic == false,
+            "HDMAccountManager: account has a public profile already."
+        );
+
+        accounts[msg.sender].isProfilePublic = true;
+    }
+
+    function makeCurrentAccountPrivate() public {
+        require(
+            accounts[msg.sender].isProfilePublic == true,
+            "HDMAccountManager: account has no public profile already."
+        );
+
+        accounts[msg.sender].isProfilePublic = false;
     }
 
     function ban(address _account) public onlyRole(MANAGER_ROLE) {

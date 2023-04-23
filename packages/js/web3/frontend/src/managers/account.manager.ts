@@ -2,11 +2,13 @@ import { AsyncAction } from "@hdapp/shared/web2-common/utils";
 import { ethers, EtherscanPlugin, EtherscanProvider, formatEther, Network, Transaction } from "ethers";
 import EventEmitter from "events";
 import { makeAutoObservable, runInAction } from "mobx";
+import { runAndCacheWeb3Call } from "../services/web3-cache.service";
 import { Web3Manager } from "./web3.manager";
 
 interface Web3Account {
     isBanned: boolean
     isDoctor: boolean
+    isProfilePublic: boolean
 }
 
 export class AccountManager {
@@ -60,6 +62,13 @@ export class AccountManager {
         return this._account.isDoctor;
     }
 
+    get isProfilePublic() {
+        if (!this._account)
+            throw new Error("no account yet.");
+
+        return this._account.isProfilePublic;
+    }
+
     constructor(
         private _web3: Web3Manager
     ) {
@@ -80,9 +89,14 @@ export class AccountManager {
 
     private readonly _loadAccount = new AsyncAction(async () => {
         try {
-            const account = await this._web3.accountManager.getAccountInfo(this._web3.address);
+            const account = await runAndCacheWeb3Call(
+                "getAccountInfo",
+                (...args) => this._web3.accountManager.getAccountInfo(...args),
+                this._web3.address
+            );
+
             runInAction(() => {
-                this._account = { isBanned: account.isBanned, isDoctor: account.isDoctor };
+                this._account = { isBanned: account.isBanned, isDoctor: account.isDoctor, isProfilePublic: account.isProfilePublic };
             });
         } catch (e) {
             console.error(e);
@@ -90,8 +104,16 @@ export class AccountManager {
     });
 
     private readonly _loadMiscInfo = new AsyncAction(async () => {
+        if (!this._web3.signer.provider)
+            return;
+
         try {
-            const balance = await this._web3.signer.provider?.getBalance(this._web3.address);
+            const balance = await runAndCacheWeb3Call(
+                "getBalance",
+                (...args) => this._web3.signer.provider!.getBalance(...args),
+                this._web3.address
+            );
+
             runInAction(() => {
                 this._balance = balance ?? null;
             });
@@ -116,4 +138,12 @@ export class AccountManager {
             console.error(e);
         }
     });
+
+    async makeProfilePublic() {
+        await this._web3.accountManager.makeCurrentAccountPublic();
+    }
+
+    async makeProfilePrivate() {
+        await this._web3.accountManager.makeCurrentAccountPrivate();
+    }
 }

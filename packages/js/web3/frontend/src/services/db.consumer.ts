@@ -29,7 +29,7 @@ export abstract class DbConsumer implements IDbConsumer {
             request.addEventListener("success", () => {
                 if (!request.result) {
                     this._logger.debug("Could not find the record.", { tsn, key, request });
-                    reject(new DbRecordNotFoundError("Record not found."));
+                    return reject(new DbRecordNotFoundError("Record not found."));
                 }
                 try {
                     resolve(processor(request.result));
@@ -61,7 +61,7 @@ export abstract class DbConsumer implements IDbConsumer {
             request.addEventListener("success", () => {
                 if (request.result !== undefined) {
                     this._logger.debug("Could not find the record.", { tsn, key, request });
-                    reject(new DbRecordNotFoundError("Record not found."));
+                    return reject(new DbRecordNotFoundError("Record not found."));
                 }
 
                 resolve();
@@ -136,7 +136,7 @@ export abstract class DbConsumer implements IDbConsumer {
             request.addEventListener("success", () => {
                 if (!request.result) {
                     this._logger.debug("Could not find the record.", { tsn, request });
-                    reject(new DbRecordNotFoundError("Record not found."));
+                    return reject(new DbRecordNotFoundError("Record not found."));
                 }
                 try {
                     resolve(object);

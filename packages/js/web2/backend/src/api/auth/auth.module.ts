@@ -8,6 +8,7 @@ import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./jwt.strategy";
 import { LocalStrategy } from "./local.strategy";
 import { MailService } from "./mail.service";
+import { Web3Strategy } from "./web3.strategy";
 
 @Module({
     imports: [
@@ -15,7 +16,7 @@ import { MailService } from "./mail.service";
         JwtModule.register({ secret: process.env.JWT_SECRET }),
         PassportModule,
     ],
-    providers: [AuthService, JwtStrategy, LocalStrategy, MailService, RedisService],
+    providers: [AuthService, JwtStrategy, LocalStrategy, MailService, RedisService, Web3Strategy],
     controllers: [AuthController],
 })
 export class AuthModule {}

@@ -1,5 +1,5 @@
 import { CreateUserEntity } from "@hdapp/shared/db-common/entities";
-import { CreateUserDto, UpdateUserDto, UserDto } from "@hdapp/shared/web2-common/dto";
+import { CreateUserDto, PublicUserDto, UpdateUserDto, UserDto } from "@hdapp/shared/web2-common/dto";
 import { LocalDate } from "@js-joda/core";
 import { DeepPartial } from "typeorm";
 import { UserFullEntity } from "../entities/user-full.entity";
@@ -19,12 +19,21 @@ export const UserAdapter = new (class {
             has_administrator_capabilities: entity.hasAdministratorCapabilities,
             has_doctor_capabilities: entity.hasDoctorCapabilities,
             has_moderator_capabilities: entity.hasModeratorCapabilities,
+            has_organization_capabilities: entity.hasOrganizationCapabilities,
             has_verified_email: entity.hasVerifiedEmail,
             is_banned: entity.isBanned,
             is_verified_doctor: entity.isVerifiedDoctor,
+            organization_details: entity.organizationDetails ?? undefined,
+            public_profile: entity.publicProfile ?? undefined,
             medical_organization_name: entity.hasDoctorCapabilities
                 ? entity.medicalOrganizationName ?? undefined
                 : undefined,
+        };
+    }
+    transformToPublicDto(entity: UserFullEntity): PublicUserDto {
+        return {
+            web3_address: entity.web3Address,
+            public_profile: entity.publicProfile ?? undefined,
         };
     }
 

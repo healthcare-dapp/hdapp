@@ -7,6 +7,9 @@ export class Web3UserEntity {
 
     @ApiProperty({ description: "True if user has been banned from the smart contracts" })
         isBanned: boolean;
+
+    @ApiProperty({ description: "True if user has agreed to disclose their profile info" })
+        isProfilePublic: boolean;
 }
 
 // It's not an actual database entity, rather, it's a concatenation of a

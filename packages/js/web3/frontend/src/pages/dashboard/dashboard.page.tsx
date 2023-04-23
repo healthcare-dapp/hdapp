@@ -1,6 +1,6 @@
 
 import { AsyncAction } from "@hdapp/shared/web2-common/utils/async-action";
-import { Menu as MenuIcon, PersonAdd, QrCodeRounded, Search, Tune } from "@mui/icons-material";
+import { Menu as MenuIcon, PersonAdd, PersonSearchOutlined, QrCodeRounded, Search, Tune } from "@mui/icons-material";
 import {
     AppBar,
     Box,
@@ -18,6 +18,7 @@ import {
 import Grid from "@mui/system/Unstable_Grid";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { ModalProvider } from "../../App2";
 import { QrCodeDialog } from "../../dialogs/qr-code.dialog";
 import { ScanQrCodeDialog } from "../../dialogs/scan-qr-code.dialog";
@@ -49,6 +50,7 @@ const getMyProfileAction = new AsyncAction((sm: SessionManager) =>
 
 export const DashboardPage = observer(() => {
     const { account } = sessionManager;
+    const navigate = useNavigate();
     const theme = useTheme();
     const canShowSidebar = useMediaQuery(theme.breakpoints.up("md"));
     const canShowSharingInfo = useMediaQuery(theme.breakpoints.up("sm"));
@@ -107,6 +109,12 @@ export const DashboardPage = observer(() => {
                         <Button variant="text" size="small" startIcon={<PersonAdd />} color="primary"
                                 onClick={() => ModalProvider.show(ScanQrCodeDialog, { onClose() {} })}>
                             New contact
+                        </Button>
+                    ) }
+                    { canShowSharingInfo && (
+                        <Button variant="contained" disableElevation startIcon={<PersonSearchOutlined />} color="primary"
+                                onClick={() => navigate("/discover")}>
+                            Discover doctors
                         </Button>
                     ) }
                     { canShowSharingInfo && (

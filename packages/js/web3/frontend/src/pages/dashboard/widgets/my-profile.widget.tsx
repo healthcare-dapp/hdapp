@@ -1,9 +1,12 @@
+import { UsersService } from "@hdapp/shared/web2-common/api/services/users.service";
+import { getRightOrFail } from "@hdapp/shared/web2-common/io-ts-utils/get-right";
+import { web3AddressType } from "@hdapp/shared/web2-common/types/web3-address.type";
 import { AsyncAction, formatTemporal, temporalFormats } from "@hdapp/shared/web2-common/utils";
-import { LocalDate } from "@js-joda/core";
-import { ExpandMore, AddPhotoAlternate, Edit, Check, LockOutlined } from "@mui/icons-material";
-import { Stack, Box, useTheme, Accordion, AccordionSummary, Typography, AccordionDetails, Avatar, Button, useMediaQuery, CircularProgress, TextField, MenuItem, Select, InputLabel, FormControl } from "@mui/material";
+import { Instant, LocalDate } from "@js-joda/core";
+import { ExpandMore, AddPhotoAlternate, Edit, Check, LockOutlined, Add } from "@mui/icons-material";
+import { Stack, Box, useTheme, Accordion, AccordionSummary, Typography, AccordionDetails, Avatar, Button, useMediaQuery, CircularProgress, TextField, MenuItem, Select, InputLabel, FormControl, FormControlLabel, Checkbox } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-import { ChangeEvent, FC, useState } from "react";
+import { ChangeEvent, FC, useEffect, useState } from "react";
 import { SessionManager, sessionManager } from "../../../managers/session.manager";
 import { ProfileEntry, ProfileForm } from "../../../services/profile.service";
 import { useDatabase } from "../../../utils/use-database";
@@ -14,15 +17,17 @@ const getFileBlobAction = new AsyncAction((sm: SessionManager, hash: string) =>
     sm.db.files.getFileBlob(hash, sm.encryption));
 
 export const MyProfileWidget: FC = x => {
-    const { db, encryption, wallet } = sessionManager;
+    const { account, db, encryption, wallet, web3 } = sessionManager;
     const theme = useTheme();
     const isAlwaysExpanded = useMediaQuery(theme.breakpoints.up("md"));
     const hasCondensedDetails = useMediaQuery(theme.breakpoints.up("sm"));
     const isChangeAvatarPositionAltered = useMediaQuery(theme.breakpoints.up("sm"));
     const [isExpanded, setIsExpanded] = useState(false);
     const [profile, setProfile] = useState<ProfileEntry>();
+    const [avatarBlob, setAvatarBlob] = useState<Blob>();
     const [avatar, setAvatar] = useState<string>();
     const [isEditMode, setIsEditMode] = useState(false);
+    const [isPublic, setIsPublic] = useState(false);
     const [profileForm, setProfileForm] = useState<ProfileForm>();
 
     useDatabase(async () => {
@@ -30,11 +35,32 @@ export const MyProfileWidget: FC = x => {
         setProfile(result);
 
         if (result.avatar_hash) {
-            const avatarBlob = await getFileBlobAction.forceRun(sessionManager, result.avatar_hash);
-            const url = URL.createObjectURL(avatarBlob);
+            const blob = await getFileBlobAction.forceRun(sessionManager, result.avatar_hash);
+            const url = URL.createObjectURL(blob);
+            setAvatarBlob(blob);
             setAvatar(url);
         }
     }, ["profiles", "file_blobs"]);
+
+    useEffect(() => {
+        try {
+            setIsPublic(account.isProfilePublic);
+        } catch (e) {
+            /**/
+        }
+    }, [account]);
+
+    useEffect(() => {
+        (async () => {
+            const result = await getProfileAction.forceRun(sessionManager, wallet.address);
+            setProfile(result);
+            setProfileForm(result);
+            setIsPublic(account.isProfilePublic);
+        })();
+    }, [isEditMode]);
+
+    if (account.isLoading)
+        return null;
 
     async function handleAvatarInputChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target!.files![0];
@@ -53,6 +79,47 @@ export const MyProfileWidget: FC = x => {
             },
             encryption
         );
+    }
+
+    async function save() {
+        if (!profileForm)
+            return;
+
+        setIsEditMode(false);
+        await db.profiles.updateProfile(
+            wallet.address,
+            profileForm,
+            encryption
+        );
+
+        const message = JSON.stringify({ timestamp: Instant.now().toString() });
+
+        if (account.isProfilePublic !== isPublic) {
+            if (isPublic)
+                await account.makeProfilePublic();
+            else
+                await account.makeProfilePrivate();
+        }
+
+        const avatarUrl = await (avatarBlob
+            ? new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = _e => resolve(reader.result as string);
+                reader.onerror = _e => reject(reader.error);
+                reader.onabort = _e => reject(new Error("Read aborted"));
+                reader.readAsDataURL(avatarBlob);
+            })
+            : undefined);
+
+        await UsersService.updatePublicProfile({
+            address: getRightOrFail(web3AddressType.decode(wallet.address)),
+            message,
+            signed: await web3.signer.signMessage(message),
+            public_profile: {
+                ...profileForm.public_profile,
+                avatar: avatarUrl
+            }
+        });
     }
 
     return (
@@ -205,6 +272,112 @@ export const MyProfileWidget: FC = x => {
                                         </Typography>
                                     ) }
                                 </Box>
+                                { isEditMode && account.isDoctor && (
+                                    <FormControlLabel control={<Checkbox checked={isPublic} />}
+                                                      label="Make my profile public"
+                                                      onChange={() => setIsPublic(!isPublic)} />
+                                ) }
+                                { isPublic && (
+                                    <Stack spacing={1}>
+                                        { isEditMode ? (
+                                            <TextField size="small" variant="outlined"
+                                                       label="Public full name"
+                                                       placeholder="unspecified"
+                                                       value={profileForm?.public_profile?.full_name ?? null}
+                                                       onChange={e => setProfileForm(o => ({ ...o!, public_profile: { ...o?.public_profile, full_name: e.target.value } }))} />
+                                        ) : (
+                                            <Typography>
+                                                <b>Public full name:</b>
+                                    &nbsp;
+                                                { !hasCondensedDetails && <br /> }
+                                                { profile.public_profile?.full_name ?? <i>unspecified</i> }
+                                            </Typography>
+                                        ) }
+                                        { isEditMode ? (
+                                            <TextField size="small" variant="outlined"
+                                                       label="Areas of focus"
+                                                       placeholder="unspecified"
+                                                       value={profileForm?.public_profile?.areasOfFocus ?? null}
+                                                       onChange={e => setProfileForm(o => ({ ...o!, public_profile: { ...o?.public_profile, areasOfFocus: e.target.value } }))} />
+                                        ) : (
+                                            <Typography>
+                                                <b>Areas of focus:</b>
+                                    &nbsp;
+                                                { !hasCondensedDetails && <br /> }
+                                                { profile.public_profile?.areasOfFocus ?? <i>unspecified</i> }
+                                            </Typography>
+                                        ) }
+                                        { isEditMode ? (
+                                            <TextField size="small" variant="outlined"
+                                                       label="Specialty"
+                                                       placeholder="unspecified"
+                                                       value={profileForm?.public_profile?.specialty ?? null}
+                                                       onChange={e => setProfileForm(o => ({ ...o!, public_profile: { ...o?.public_profile, specialty: e.target.value } }))} />
+                                        ) : (
+                                            <Typography>
+                                                <b>Specialty:</b>
+                                    &nbsp;
+                                                { !hasCondensedDetails && <br /> }
+                                                { profile.public_profile?.specialty ?? <i>unspecified</i> }
+                                            </Typography>
+                                        ) }
+                                        { isEditMode ? (
+                                            <TextField size="small" variant="outlined"
+                                                       label="Location"
+                                                       placeholder="unspecified"
+                                                       value={profileForm?.public_profile?.location ?? null}
+                                                       onChange={e => setProfileForm(o => ({ ...o!, public_profile: { ...o?.public_profile, location: e.target.value } }))} />
+                                        ) : (
+                                            <Typography>
+                                                <b>Location:</b>
+                                    &nbsp;
+                                                { !hasCondensedDetails && <br /> }
+                                                { profile.public_profile?.location ?? <i>unspecified</i> }
+                                            </Typography>
+                                        ) }
+                                        { isEditMode ? (
+                                            <TextField size="small" variant="outlined"
+                                                       label="Languages"
+                                                       placeholder="unspecified"
+                                                       value={profileForm?.public_profile?.languages ?? null}
+                                                       onChange={e => setProfileForm(o => ({ ...o!, public_profile: { ...o?.public_profile, languages: e.target.value.split(", ") } }))} />
+                                        ) : (
+                                            <Typography>
+                                                <b>Languages:</b>
+                                    &nbsp;
+                                                { !hasCondensedDetails && <br /> }
+                                                { profile.public_profile?.languages ?? <i>unspecified</i> }
+                                            </Typography>
+                                        ) }
+                                        <Typography variant="subtitle2">Contact information</Typography>
+                                        { profileForm?.public_profile?.socials?.map((social, index) => (
+                                            <Stack direction="row" spacing={1} key={index}>
+                                                { isEditMode ? (
+                                                    <>
+                                                        <TextField size="small" variant="outlined"
+                                                                   label="Name"
+                                                                   style={{ flex: 1 }}
+                                                                   value={social.name ?? null}
+                                                                   onChange={e => setProfileForm(o => ({ ...o!, public_profile: { ...o?.public_profile, socials: profileForm?.public_profile?.socials.map((s, i) => i === index ? ({ ...s, name: e.target.value }) : s) } }))} />
+                                                        <TextField size="small" variant="outlined"
+                                                                   label="Value"
+                                                                   style={{ flex: 1 }}
+                                                                   value={social.value ?? null}
+                                                                   onChange={e => setProfileForm(o => ({ ...o!, public_profile: { ...o?.public_profile, socials: profileForm?.public_profile?.socials.map((s, i) => i === index ? ({ ...s, value: e.target.value }) : s) } }))} />
+                                                    </>
+                                                ) : (
+                                                    <Typography>
+                                                        <b>{ social.name }:</b>
+                                    &nbsp;
+                                                        { !hasCondensedDetails && <br /> }
+                                                        { social.value }
+                                                    </Typography>
+                                                ) }
+                                            </Stack>
+                                        )) }
+                                        { isEditMode && <Button variant="outlined" startIcon={<Add />} onClick={() => setProfileForm(o => ({ ...o!, public_profile: { ...o?.public_profile, socials: [...(profileForm?.public_profile?.socials ?? []), { name: "", value: "" }] } }))}>Add new</Button> }
+                                    </Stack>
+                                ) }
                             </Stack>
                         ) : <Typography color="error" align="center" style={{ alignSelf: "center", justifyContent: "center", padding: "20px 0" }}>There was an error loading your profile.</Typography> }
                 </Stack>
@@ -260,16 +433,7 @@ export const MyProfileWidget: FC = x => {
                             <Button size="small" variant="contained" disableElevation color="success"
                                     startIcon={<Check />}
                                     sx={{ ml: 1 }}
-                                    onClick={() => {
-                                        if (!profileForm) return;
-
-                                        setIsEditMode(false);
-                                        void db.profiles.updateProfile(
-                                            wallet.address,
-                                            profileForm,
-                                            encryption
-                                        );
-                                    }}>Save changes</Button>
+                                    onClick={save}>Save changes</Button>
                         </>
                     ) }
                 </Stack>
