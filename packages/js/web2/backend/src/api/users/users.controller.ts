@@ -70,7 +70,7 @@ export class UsersController {
 
         const pagedEntities = await this.users.findPaged(
             from_id ?? "0",
-            filters ?? {},
+            { ...filters ?? {}, is_profile_public: true },
             /* sort_by ??  */"id",
             shouldBeInDescendingOrder,
         );

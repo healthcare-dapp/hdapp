@@ -216,6 +216,8 @@ export class UsersService {
                     return false;
                 if (filters.is_verified_doctor !== undefined && u.isVerifiedDoctor !== filters.is_verified_doctor)
                     return false;
+                if (filters.is_profile_public !== undefined && u.isProfilePublic !== filters.is_profile_public)
+                    return false;
                 return true;
             });
 
@@ -275,7 +277,7 @@ export class UsersService {
             withAddress.map(db => this.web3.getAccountInfo(db.web3Address!).then(web3 => ({ db, web3 })))
         );
         const allDoctorsWithPublicProfiles = allDoctors
-            .filter(({ db, web3 }) => !web3.isProfilePublic && db.publicProfile);
+            .filter(({ db, web3 }) => web3.isProfilePublic && db.publicProfile);
 
         const aggregatedAreasOfFocus = allDoctorsWithPublicProfiles
             .filter(({ db }) => db.publicProfile!.areasOfFocus)

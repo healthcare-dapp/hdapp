@@ -1,6 +1,6 @@
 import { UsersService } from "@hdapp/shared/web2-common/api/services";
 import { PublicUserDto, PublicUserSearchFiltersDto } from "@hdapp/shared/web2-common/dto";
-import { CorporateFareOutlined, List, Menu as MenuIcon, Search } from "@mui/icons-material";
+import { KeyboardArrowUpOutlined, Menu as MenuIcon, Search } from "@mui/icons-material";
 import {
     Box,
     Container,
@@ -15,6 +15,8 @@ import {
     ListItemButton,
     Badge,
     Avatar,
+    CardActionArea,
+    Card,
 } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { observer } from "mobx-react-lite";
@@ -35,6 +37,7 @@ export const DiscoverPage = observer(() => {
     const [areasOfFocusFilter, setAreasOfFocusFilter] = useState<string>();
     const [locationFilter, setLocationFilter] = useState<string>();
     const [organizationFilter, setOrganizationFilter] = useState<string>();
+    const [activeId, setActiveId] = useState<string>();
 
     useEffect(() => {
         (async () => {
@@ -148,62 +151,79 @@ export const DiscoverPage = observer(() => {
                         <Stack>
                             { users.length
                                 ? users.map(profile => (
-                                    <Stack direction="row" alignItems="center" spacing={2} sx={{ p: 2 }}
-                                           key={profile.web3_address}>
-                                        <Avatar sx={{ width: "96px", height: "96px" }} src={profile.public_profile?.avatar} />
-                                        <Stack textAlign="left" spacing={0.5}>
-                                            <Stack spacing={-0.5}>
-                                                <Typography variant="h6">
-                                                    { profile.public_profile?.full_name }
-                                                </Typography>
-                                                <Typography fontSize={12} color={theme.palette.grey[600]}
-                                                            sx={{ fontWeight: 400 }}>
-                                                    { profile.web3_address }
-                                                </Typography>
-                                            </Stack>
-                                            { profile.public_profile?.areasOfFocus && (
-                                                <Typography fontSize={14}>
-                                                    <b>Areas of focus:</b>
+                                    <Card key={profile.web3_address} style={activeId !== profile.web3_address ? { border: "none" } : undefined}
+                                          variant="outlined">
+                                        <CardActionArea disableRipple={activeId === profile.web3_address}
+                                                        disabled={activeId === profile.web3_address}
+                                                        onClick={() => setActiveId(activeId === profile.web3_address ? undefined : profile.web3_address!)}
+                                                        sx={{ p: 2 }}
+                                                        style={{ pointerEvents: "auto", userSelect: "text" }}>
+                                            <Stack direction="row" alignItems="flex-start" spacing={2}>
+                                                <Avatar sx={{ width: "96px", height: "96px" }} src={profile.public_profile?.avatar} />
+                                                <Stack textAlign="left" spacing={0.5}>
+                                                    <Stack spacing={-0.5}>
+                                                        <Typography variant="h6">
+                                                            { profile.public_profile?.full_name }
+                                                        </Typography>
+                                                        <Typography fontSize={12} color={theme.palette.grey[600]}
+                                                                    sx={{ fontWeight: 400 }}>
+                                                            { profile.web3_address }
+                                                        </Typography>
+                                                    </Stack>
+                                                    { profile.public_profile?.areasOfFocus && (
+                                                        <Typography fontSize={14}>
+                                                            <b>Areas of focus:</b>
                                                     &nbsp;
-                                                    { profile.public_profile?.areasOfFocus }
-                                                </Typography>
-                                            ) }
-                                            { profile.public_profile?.specialty && (
-                                                <Typography fontSize={14}>
-                                                    <b>Specialty:</b>
+                                                            { profile.public_profile?.areasOfFocus }
+                                                        </Typography>
+                                                    ) }
+                                                    { profile.public_profile?.location && (
+                                                        <Typography fontSize={14}>
+                                                            <b>Location:</b>
                                                     &nbsp;
-                                                    { profile.public_profile?.specialty }
-                                                </Typography>
-                                            ) }
-                                            { profile.public_profile?.location && (
-                                                <Typography fontSize={14}>
-                                                    <b>Location:</b>
-                                                    &nbsp;
-                                                    { profile.public_profile?.location }
-                                                </Typography>
-                                            ) }
-                                            { profile.public_profile?.languages?.length && (
-                                                <Typography fontSize={14}>
-                                                    <b>Languages:</b>
-                                                    &nbsp;
-                                                    { profile.public_profile?.languages.join(", ") }
-                                                </Typography>
-                                            ) }
-                                            { profile.public_profile?.socials?.length && (
-                                                <Typography fontSize={14}>
-                                                    <b>Contacts:</b>
-                                                    <br />
-                                                    { profile.public_profile?.socials.map(social => (
+                                                            { profile.public_profile?.location }
+                                                        </Typography>
+                                                    ) }
+                                                    { activeId === profile.web3_address && (
                                                         <>
-                                                            <b>{ social.name }</b><br />
-                                                            { social.value }<br />
+                                                            { profile.public_profile?.specialty && (
+                                                                <Typography fontSize={14}>
+                                                                    <b>Specialty:</b>
+                                                    &nbsp;
+                                                                    { profile.public_profile?.specialty }
+                                                                </Typography>
+                                                            ) }
+                                                            { profile.public_profile?.languages?.length && (
+                                                                <Typography fontSize={14}>
+                                                                    <b>Languages:</b>
+                                                    &nbsp;
+                                                                    { profile.public_profile?.languages.join(", ") }
+                                                                </Typography>
+                                                            ) }
+                                                            { profile.public_profile?.socials?.length && (
+                                                                <Typography fontSize={14}>
+                                                                    <b>Contacts:</b>
+                                                                    <br />
+                                                                    { profile.public_profile?.socials.map(social => (
+                                                                        <>
+                                                                            <b>{ social.name }:</b> { social.value }<br />
+                                                                        </>
+                                                                    )) }
+                                                                </Typography>
+                                                            ) }
                                                         </>
-                                                    )) }
-                                                </Typography>
-                                            ) }
-                                        </Stack>
-                                        <Box flex={1} />
-                                    </Stack>
+                                                    ) }
+
+                                                </Stack>
+                                                <Box flex={1} />
+                                                { activeId && (
+                                                    <IconButton onClick={() => setActiveId(undefined)}>
+                                                        <KeyboardArrowUpOutlined />
+                                                    </IconButton>
+                                                ) }
+                                            </Stack>
+                                        </CardActionArea>
+                                    </Card>
                                 )) : (
                                     <Typography color="text.secondary">
                                         No doctors found.
