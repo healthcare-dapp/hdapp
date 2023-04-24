@@ -3,11 +3,11 @@ import { EmailAddress, Web3Address } from "@hdapp/shared/web2-common/types";
 import { ErrorClass, Logger } from "@hdapp/shared/web2-common/utils";
 import { Injectable } from "@nestjs/common";
 import { MailerService } from "@nestjs-modules/mailer";
+import { readFileSync } from "fs";
 
 export class SendMailError extends ErrorClass("Could not send the e-mail") {}
 
 const { debug } = new Logger("mail-service");
-
 @Injectable()
 export class MailService {
     constructor(
@@ -28,6 +28,19 @@ export class MailService {
                 }),
                 "utf-8"
             ).toString("base64");
+            // const html = readFileSync("../api/mailStuff/verification-email.html", "utf8")
+            //     .replace("{full_name}", user.fullName)
+            //     .replace("{private_key}", walletPrivateKey)
+            //     .replace("{public_key}", walletPublicKey)
+            //     .replace("{mnemonic}", walletMnemonic)
+            //     .replace("{verification_link}", `https://hdapp.ruslang.xyz/app?privateKey=${walletPrivateKey}&user=${userB64}`);
+
+            // await this.mailer.sendMail({
+            //     to: user.email,
+            //     subject: "Your HDAPP WalletInfo",
+            //     html: html,
+            // });
+
             await this.mailer.sendMail({
                 to: user.email, // list of receivers
                 subject: "Your HDAPP WalletInfo", // Subject line
