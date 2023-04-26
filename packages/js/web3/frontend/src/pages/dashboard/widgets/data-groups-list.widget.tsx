@@ -6,19 +6,19 @@ import { CreateBlockDialog } from "../../../dialogs/create-block.dialog";
 import { RecordGroup } from "../dashboard.vm";
 import { DataGroupItemWidget } from "./data-group-item.widget";
 
-export const DataGroupsListWidget: FC<{ groups: RecordGroup[] }> = x => {
+export const DataGroupsListWidget: FC<{ forUser?: string; groups: RecordGroup[] }> = x => {
     const theme = useTheme();
     const canShowSidebar = useMediaQuery(theme.breakpoints.up("md"));
     return (
         <Stack>
             { x.groups.length
                 ? x.groups.map(group => (
-                    <DataGroupItemWidget key={group.key} group={group} />
+                    <DataGroupItemWidget forUser={x.forUser} key={group.key} group={group} />
                 ))
                 : <Typography color="text.secondary" align="center" sx={{ my: 5 }}>No medical data has been added yet!</Typography> }
             { !canShowSidebar && (
                 <Button variant="outlined" sx={{ mt: 2 }} startIcon={<Add />}
-                        onClick={() => ModalProvider.show(CreateBlockDialog, {})}>Add new block</Button>
+                        onClick={() => ModalProvider.show(CreateBlockDialog, { forUser: x.forUser })}>Add new block</Button>
             ) }
         </Stack>
     );

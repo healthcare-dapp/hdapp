@@ -1,3 +1,4 @@
+import estyled from "@emotion/styled";
 import { formatTemporal } from "@hdapp/shared/web2-common/utils";
 import {
     Add,
@@ -79,6 +80,20 @@ const ChatButton = styled(ListItemButton)(({ theme }) => ({
         }
     }
 }));
+
+const UploadButton = estyled.form`
+    position: relative;
+
+    input {
+        opacity: 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+`;
 
 const OverflowCard = styled(Box)`
     overflow: auto;
@@ -479,7 +494,29 @@ const RightPanel: FC = observer(() => {
                 </Stack>
             </OverflowCard>
             <Stack direction="row" sx={{ px: canShowExtendedHeader ? 2 : 1, py: 1 }} spacing={1} alignItems="stretch">
-                <IconButton sx={{ backgroundColor: theme.palette.grey[200], boxShadow: theme.shadows[1] }}><Add /></IconButton>
+                <UploadButton>
+                    <IconButton sx={{ backgroundColor: theme.palette.grey[200], boxShadow: theme.shadows[1] }}><Add /></IconButton>
+                    <input onChange={async e => {
+                        if (!e.target.files?.length)
+                            return;
+
+                        const fileIds: string[] = [];
+                        for (let i = 0; i < e.target.files.length; i++) {
+                            const file = e.target.files[i];
+                            const hash = await db.files.uploadFile(file, sessionManager.wallet.address, encryption);
+                            fileIds.push(hash);
+                        }
+
+                        await db.chatMessages.addChatMessage({
+                            attachment_ids: fileIds,
+                            chat_hash: chatHash!,
+                            content: "",
+                            created_by: sessionManager.wallet.address
+                        }, encryption);
+
+                        e.target.form?.reset();
+                    }} type="file" />
+                </UploadButton>
                 <TextField variant="outlined" placeholder="Write a message" size="small"
                            InputProps={{ style: { borderRadius: 100, fontSize: 14, height: "100%" } }}
                            style={{ flexGrow: 1, width: 0 }}

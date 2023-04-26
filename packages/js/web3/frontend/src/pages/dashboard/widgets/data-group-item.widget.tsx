@@ -11,12 +11,13 @@ import { RecordGroup, RecordGroupType } from "../dashboard.vm";
 import { DataRecordItemWidget } from "./data-record-item.widget";
 import { DataRecordsGridWidget } from "./data-records-grid.widget";
 
-export const DataGroupItemWidget: FC<{ group: RecordGroup }> = x => {
+export const DataGroupItemWidget: FC<{ forUser?: string; group: RecordGroup }> = x => {
     const theme = useTheme();
     const canShowSharingInfo = useMediaQuery(theme.breakpoints.up("sm"));
     const [isExpanded, setIsExpanded] = useState(false);
     const [isArchiveOpened, setIsArchiveOpened] = useState(false);
     const [firstSharedWith, secondSharedWith, ...moreSharedWith] = x.group.shared_with;
+    const isOwned = x.group.isOwned;
     return (
         <Accordion expanded={isExpanded} onChange={() => setIsExpanded(v => !v)}>
             <AccordionSummary expandIcon={<ExpandMore />}
@@ -51,7 +52,7 @@ export const DataGroupItemWidget: FC<{ group: RecordGroup }> = x => {
             </AccordionSummary>
             <AccordionDetails>
                 <Stack spacing={2}>
-                    <DataRecordsGridWidget blockId={x.group.type === RecordGroupType.ByBlock ? x.group.key : void 0}>
+                    <DataRecordsGridWidget forUser={x.forUser} blockId={x.group.type === RecordGroupType.ByBlock ? x.group.key : void 0}>
                         { x.group.records.filter(r => !r.is_archived).map(record => (
                             <DataRecordItemWidget key={record.hash}
                                                   hash={record.hash}
@@ -69,26 +70,30 @@ export const DataGroupItemWidget: FC<{ group: RecordGroup }> = x => {
                             { isArchiveOpened ? "Hide" : "Show" } archived
                         </Button>
                         <Box flexGrow={1} />
-                        { canShowSharingInfo ? (
-                            <Button variant="outlined" color="primary" startIcon={<Edit />}
-                                    onClick={() => ModalProvider.show(CreateBlockDialog, { blockHash: x.group.key })}>
-                                Edit block
-                            </Button>
-                        ) : (
-                            <IconButton onClick={() => ModalProvider.show(CreateBlockDialog, { blockHash: x.group.key })}>
-                                <Edit />
-                            </IconButton>
+                        { isOwned && (
+                            canShowSharingInfo ? (
+                                <Button variant="outlined" color="primary" startIcon={<Edit />}
+                                        onClick={() => ModalProvider.show(CreateBlockDialog, { forUser: x.forUser, blockHash: x.group.key })}>
+                                    Edit block
+                                </Button>
+                            ) : (
+                                <IconButton onClick={() => ModalProvider.show(CreateBlockDialog, { forUser: x.forUser, blockHash: x.group.key })}>
+                                    <Edit />
+                                </IconButton>
+                            )
                         ) }
-                        { canShowSharingInfo ? (
-                            <Button variant="contained" disableElevation color="success" startIcon={<ShieldOutlined />}
-                                    onClick={() => ModalProvider.show(ShareRecordDialog, { hash: x.group.key })}>
-                                Manage access
-                            </Button>
-                        ) : (
-                            <IconButton color="success"
+                        { isOwned && (
+                            canShowSharingInfo ? (
+                                <Button variant="contained" disableElevation color="success" startIcon={<ShieldOutlined />}
                                         onClick={() => ModalProvider.show(ShareRecordDialog, { hash: x.group.key })}>
-                                <Shield />
-                            </IconButton>
+                                    Manage access
+                                </Button>
+                            ) : (
+                                <IconButton color="success"
+                                            onClick={() => ModalProvider.show(ShareRecordDialog, { hash: x.group.key })}>
+                                    <Shield />
+                                </IconButton>
+                            )
                         ) }
                     </Stack>
                     { isArchiveOpened && (

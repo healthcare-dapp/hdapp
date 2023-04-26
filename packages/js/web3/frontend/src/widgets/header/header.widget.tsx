@@ -1,4 +1,4 @@
-import { CalendarMonthOutlined, ContactsOutlined, ForumOutlined, Notes, Sync, ViewDayOutlined } from "@mui/icons-material";
+import { AutoAwesomeOutlined, CalendarMonthOutlined, ContactsOutlined, ForumOutlined, Notes, Sync, ViewDayOutlined } from "@mui/icons-material";
 import {
     alpha,
     Box,
@@ -120,6 +120,13 @@ export const HeaderWidget = observer(() => {
                                         <Stack direction="row" alignItems="center" spacing={1}>
                                             <ContactsOutlined fontSize="medium" />
                                             <span>Contacts</span>
+                                        </Stack>
+                                    </NavLinkStyled>
+                                    <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}
+                                                   to="/discover">
+                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                            <AutoAwesomeOutlined fontSize="medium" />
+                                            <span>Discover</span>
                                         </Stack>
                                     </NavLinkStyled>
                                     <NavLinkStyled className={cn => cn.isActive ? "active" : void 0}

@@ -1,5 +1,6 @@
 import { UsersService } from "@hdapp/shared/web2-common/api/services";
 import { PublicUserDto, PublicUserSearchFiltersDto } from "@hdapp/shared/web2-common/dto";
+import { AsyncAction } from "@hdapp/shared/web2-common/utils/async-action";
 import { KeyboardArrowUpOutlined, Menu as MenuIcon, Search } from "@mui/icons-material";
 import {
     Box,
@@ -17,6 +18,8 @@ import {
     Avatar,
     CardActionArea,
     Card,
+    Backdrop,
+    CircularProgress,
 } from "@mui/material";
 import Grid2 from "@mui/material/Unstable_Grid2/Grid2";
 import { observer } from "mobx-react-lite";
@@ -26,6 +29,9 @@ import { DrawerWidget } from "../../widgets/drawer/index";
 import { FancyList } from "../../widgets/fancy-list/fancy-list.widget";
 import { HeaderWidget } from "../../widgets/header/index";
 import { ShareQrWidget } from "../../widgets/share-qr/share-qr.widget";
+
+const getFiltersAction = new AsyncAction(UsersService.getPublicProfileFilters);
+const findProfilesPagedAction = new AsyncAction(UsersService.findPublicProfilesPaged);
 
 export const DiscoverPage = observer(() => {
     const [openCounter, setOpenCounter] = useState(0);
@@ -41,13 +47,13 @@ export const DiscoverPage = observer(() => {
 
     useEffect(() => {
         (async () => {
-            setFilters(await UsersService.getPublicProfileFilters());
+            setFilters(await getFiltersAction.run());
         })();
     }, []);
 
     useEffect(() => {
         (async () => {
-            setUsers((await UsersService.findPublicProfilesPaged({
+            setUsers((await findProfilesPagedAction.forceRun({
                 query,
                 areas_of_focus: areasOfFocusFilter,
                 location: locationFilter,
@@ -233,6 +239,10 @@ export const DiscoverPage = observer(() => {
                     </Grid2>
                 </Grid2>
             </Container>
+            <Backdrop sx={{ color: "#fff", zIndex: theme.zIndex.drawer + 1 }}
+                      open={getFiltersAction.pending || findProfilesPagedAction.pending}>
+                <CircularProgress color="inherit" />
+            </Backdrop>
             <BottomBarWidget />
             <ShareQrWidget />
         </>

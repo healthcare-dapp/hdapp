@@ -1,3 +1,7 @@
+import { UsersService } from "@hdapp/shared/web2-common/api/services/users.service";
+import { PublicUserDto } from "@hdapp/shared/web2-common/dto/user.dto";
+import { Web3Address } from "@hdapp/shared/web2-common/types/web3-address.type";
+import { HDMAccountManager } from "@hdapp/solidity/account-manager";
 import { ArrowBack, CopyAll, InfoOutlined, QrCodeRounded } from "@mui/icons-material";
 import { LoadingButton } from "@mui/lab";
 import {
@@ -21,11 +25,14 @@ import QrCode from "qrcode";
 import { FC, useEffect, useState } from "react";
 import { ModalProvider } from "../App2";
 import { sessionManager } from "../managers/session.manager";
+import { runAndCacheWeb3Call } from "../services/web3-cache.service";
+import { Web3Badges } from "../widgets/web3-badges.widget";
 import { ScanQrCodeDialog } from "./scan-qr-code.dialog";
 
 const regenerationTimeout = 5 * 60 * 1000;
 
 export const QrCodeDialog: FC<{ onClose(): void }> = observer(x => {
+    const { web3 } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [qrUrl, setQrUrl] = useState<string>();
@@ -84,8 +91,31 @@ export const QrCodeDialog: FC<{ onClose(): void }> = observer(x => {
             .then(setQrUrl);
     }, [ac.currentConnectionKey]);
 
-    const connectionRequests = sessionManager.notifications.array
-        .flatMap(n => n.type === "user_connection_requested" ? n : []);
+    const [connectionRequests, setConnectionRequests] = useState<Partial<PublicUserDto & {
+        web3: HDMAccountManager.AccountInfoStruct
+    }>[]>([]);
+
+    useEffect(() => {
+        (async () => {
+            const fetched = await Promise.all(
+                sessionManager.notifications.array
+                    .flatMap(n => n.type === "user_connection_requested" ? n : [])
+                    .map(async n => {
+                        const profile = await UsersService.findPublicProfileByWeb3Address(n.userAddress)
+                            .catch(() => null);
+                        return {
+                            ...profile ?? { web3_address: n.userAddress as Web3Address },
+                            web3: await runAndCacheWeb3Call(
+                                "getAccountInfo",
+                                (...args) => web3.accountManager.getAccountInfo(...args),
+                                n.userAddress
+                            )
+                        };
+                    })
+            );
+            setConnectionRequests(fetched);
+        })();
+    }, [sessionManager.notifications.array]);
 
     const secondsUntilRegeneration = Math.floor(
         (regenerationTimeout + (ac.connectionKeyGeneratedAt ?? 0) - Date.now()) / 1000
@@ -121,33 +151,45 @@ export const QrCodeDialog: FC<{ onClose(): void }> = observer(x => {
                                 </Typography>
                                 <Stack spacing={1} alignItems="center" sx={{ width: "100%" }}>
                                     { connectionRequests.map(r => (
-                                        <Card sx={{ maxWidth: "100%" }} key={r.created_at.toString()}>
+                                        <Card sx={{ maxWidth: "100%" }} key={r.web3_address}>
                                             <Stack direction="column" spacing={1} sx={{ p: 2 }}>
                                                 <Stack spacing={1.5} direction="row" alignItems="center" sx={{ pb: 1 }}>
-                                                    <Avatar sx={{ width: 40, height: 40, backgroundColor: theme.palette.success.light }} />
+                                                    <Avatar sx={{ width: 40, height: 40, backgroundColor: theme.palette.success.light }}
+                                                            src={r.public_profile?.avatar} />
                                                     <Stack>
-                                                        <Typography variant="subtitle2">
-                                                            User
-                                                        </Typography>
+                                                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                                                            <Typography variant="subtitle2">
+                                                                { r.public_profile?.full_name ?? "Private user" }
+                                                            </Typography>
+                                                            { r.web3 && <Web3Badges size="small" account={r.web3} /> }
+                                                        </Stack>
                                                         <Typography fontSize={12} color={theme.palette.grey[600]} sx={{ fontWeight: 400 }}>
-                                                            { r.userAddress }
+                                                            { r.web3_address }
                                                         </Typography>
                                                     </Stack>
                                                 </Stack>
-                                                { /* <Box style={{ display: "grid", gap: "4px", gridTemplateColumns: "auto auto" }}>
-                                                    <Typography noWrap fontSize={14} sx={{ fontWeight: 400 }}>
-                                                        <b>Specialization</b><br />
-                                                        Physchiatrist
-                                                    </Typography>
-                                                    <Typography noWrap fontSize={14} sx={{ fontWeight: 400 }}>
-                                                        <b>Account created on</b><br />
-                                                        December 6th, 2022
-                                                    </Typography>
-                                                    <Typography noWrap fontSize={14} sx={{ fontWeight: 400, gridColumn: "span 2" }}>
-                                                        <b>Medical organization</b><br />
-                                                        State Hospital of St. Petersburg
-                                                    </Typography>
-                                                </Box> */ }
+                                                { r.public_profile && (
+                                                    <Box style={{ display: "grid", gap: "4px", gridTemplateColumns: "auto auto" }}>
+                                                        { r.public_profile.specialty && (
+                                                            <Typography noWrap fontSize={14} sx={{ fontWeight: 400 }}>
+                                                                <b>Specialty</b><br />
+                                                                { r.public_profile.specialty }
+                                                            </Typography>
+                                                        ) }
+                                                        { r.public_profile.areasOfFocus && (
+                                                            <Typography noWrap fontSize={14} sx={{ fontWeight: 400 }}>
+                                                                <b>Areas of focus</b><br />
+                                                                { r.public_profile.areasOfFocus }
+                                                            </Typography>
+                                                        ) }
+                                                        { r.public_profile.location && (
+                                                            <Typography noWrap fontSize={14} sx={{ fontWeight: 400 }}>
+                                                                <b>Location</b><br />
+                                                                { r.public_profile.location }
+                                                            </Typography>
+                                                        ) }
+                                                    </Box>
+                                                ) }
                                                 <Stack direction="row" spacing={1} justifyContent="flex-end">
                                                     <Button color="error">Ignore</Button>
                                                     <LoadingButton variant="contained" disableElevation

@@ -17,6 +17,7 @@ export interface RecordGroup {
     type: RecordGroupType
     key: string
     title: string
+    isOwned: boolean
     records: RecordEntry[]
     aggregated_updated_at: LocalDateTime
     shared_with: { full_name: string; address: string; avatar: string }[]
@@ -25,7 +26,7 @@ export interface RecordGroup {
 const { warn } = new Logger("dashboard-vm");
 
 export class DashboardViewModel {
-    constructor() {
+    constructor(private _ownedBy?: string) {
         makeAutoObservable(this);
     }
 
@@ -61,7 +62,8 @@ export class DashboardViewModel {
     }
 
     private async _groupByBlock(records: RecordEntry[]): Promise<RecordGroup[]> {
-        const blocks: BlockEntry[] = await sessionManager.db.blocks.getBlocks();
+        const blocks: BlockEntry[] = (await sessionManager.db.blocks.getBlocks())
+            .filter(r => this._ownedBy ? r.owned_by === this._ownedBy : true);
         const groups: RecordGroup[] = blocks.map(block => (
             {
                 key: block.hash,
@@ -69,7 +71,8 @@ export class DashboardViewModel {
                 aggregated_updated_at: block.created_at,
                 records: [],
                 shared_with: [],
-                type: RecordGroupType.ByBlock
+                type: RecordGroupType.ByBlock,
+                isOwned: block.owned_by === sessionManager.wallet.address
             }
         ));
         for (const record of records) {
@@ -98,6 +101,7 @@ export class DashboardViewModel {
                 title: "Ungrouped",
                 aggregated_updated_at: LocalDateTime.now(),
                 key: "ungrouped",
+                isOwned: false,
                 shared_with: [],
                 type: RecordGroupType.ByBlock
             });
@@ -112,10 +116,10 @@ export class DashboardViewModel {
         if (!sessionManager.encryption)
             throw new Error("Can't load records without encryption provider.");
 
-        const records = await sessionManager.db.records.searchRecords(
+        const records = (await sessionManager.db.records.searchRecords(
             this._recordSearchRequest,
             sessionManager.encryption
-        );
+        )).filter(r => this._ownedBy ? r.owned_by === this._ownedBy : true);
 
         const groups = await this._groupByBlock(records);
 

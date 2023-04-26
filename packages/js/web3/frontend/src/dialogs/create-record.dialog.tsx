@@ -29,7 +29,9 @@ import MUIRichTextEditor from "mui-rte";
 import { FC, useState } from "react";
 import { ModalProvider } from "../App2";
 import { SessionManager, sessionManager } from "../managers/session.manager";
+import { ProfileEntry } from "../services/profile.service";
 import { RecordForm } from "../services/record.service";
+import { trimWeb3Address } from "../utils/trim-web3-address";
 import { useDatabase } from "../utils/use-database";
 import { CreateBlockDialog } from "./create-block.dialog";
 import type { EditorState } from "draft-js";
@@ -73,7 +75,7 @@ Object.assign(defaultTheme, {
     }
 });
 
-export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onClose(): void }> = observer(x => {
+export const CreateRecordDialog: FC<{ forUser?: string; blockId?: string; isDoctor?: boolean; onClose(): void }> = observer(x => {
     const { db, wallet, encryption } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
@@ -82,16 +84,21 @@ export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onCl
     const [blockIds, setBlockIds] = useState<string[]>(x.blockId ? [x.blockId] : []);
     const [type, setType] = useState("");
     const [isBlockIdSelectorOpen, setIsBlockIdSelectorOpen] = useState(false);
-    const [blockEntries, setBlockEntries] = useState<{ key: string; title: string }[]>([]);
+    const [blockEntries, setBlockEntries] = useState<{ key: string; title: string; address: string }[]>([]);
     const [attachments, setAttachments] = useState<File[]>([]);
+    const [profile, setProfile] = useState<ProfileEntry>();
 
     useDatabase(async () => {
         const blks = await db.blocks.getBlocks();
 
         setBlockEntries(
-            blks.map(b => ({ key: b.hash, title: b.friendly_name }))
+            blks.filter(b => b.owned_by === (x.forUser ?? wallet.address))
+                .map(b => ({ key: b.hash, title: b.friendly_name, address: b.owned_by }))
         );
-    }, ["blocks"]);
+
+        if (x.forUser)
+            setProfile(await db.profiles.getProfile(x.forUser, encryption).catch(() => undefined));
+    }, ["blocks", "profiles"]);
 
     async function handleRecordCreate() {
         const attachmentIds: string[] = [];
@@ -112,7 +119,7 @@ export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onCl
                 type,
                 block_ids: blockIds,
                 created_by: wallet.address,
-                owned_by: wallet.address,
+                owned_by: x.forUser ?? wallet.address,
                 attachment_ids: attachmentIds
             }
         );
@@ -131,6 +138,10 @@ export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onCl
             </DialogTitle>
             <Stack direction={isMobileView ? "column" : "row"} spacing={2} sx={{ px: 2, pb: 2 }}>
                 <Stack spacing={2} sx={{ flexGrow: 1 }}>
+                    { x.forUser && (
+                        <TextField variant="outlined" label="Patient" disabled
+                                   value={profile?.full_name ?? trimWeb3Address(x.forUser)} />
+                    ) }
                     <TextField required variant="outlined" label="Title"
                                value={title} onChange={e => setTitle(e.target.value)} />
                     <ThemeProvider theme={defaultTheme}>
@@ -159,7 +170,7 @@ export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onCl
 
                                     if (value.includes(addRecordStr)) {
                                         setIsBlockIdSelectorOpen(false);
-                                        const block = await ModalProvider.show(CreateBlockDialog, {});
+                                        const block = await ModalProvider.show(CreateBlockDialog, { forUser: x.forUser });
                                         if (!block)
                                             return;
                                         setBlockIds(ids => [...ids, block.hash]);
@@ -176,12 +187,17 @@ export const CreateRecordDialog: FC<{ blockId?: string; isDoctor?: boolean; onCl
                                         )) }
                                     </Box>
                                 )}>
-                            { [...blockEntries, { key: addRecordStr, title: "Add new block" }].map(blk => (
+                            { [...blockEntries, { key: addRecordStr, title: "Add new block", address: "" }].map(blk => (
                                 <MenuItem key={blk.key}
                                           value={blk.key}>
                                     <Stack alignItems="center" direction="row" spacing={1}>
                                         { (blk.title === "Add new block") && <Add fontSize="small" /> }
                                         <span>{ blk.title }</span>
+                                        { blk.address && blk.address !== wallet.address && (
+                                            <span style={{ color: theme.palette.text.secondary }}>
+                                                ({ trimWeb3Address(blk.address) })
+                                            </span>
+                                        ) }
                                     </Stack>
                                 </MenuItem>
                             )) }

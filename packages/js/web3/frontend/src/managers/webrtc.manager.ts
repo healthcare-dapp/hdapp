@@ -341,6 +341,8 @@ export class Peer {
         const syncable = await this.getSyncableData();
         const fileHashes = await this._manager.db.files.getFileBlobHashes();
 
+        debug("starting sync", { syncable, fileHashes });
+
         await this._sendMessage("SYNC_SUMMARY", {
             dbRecordsCount: syncable.length,
             fileRecordsCount: fileHashes.length,
@@ -537,17 +539,18 @@ export class Peer {
             .map(d => ({ ...d, __type: "recordNote" }));
         const files = (await this._manager.db.files.getFiles())
             .filter(f => chatMessages.some(cm => cm.attachment_ids.includes(f.hash))
-                || records.some(r => r.attachment_ids.includes(f.hash)))
+                || records.some(r => r.attachment_ids.includes(f.hash))
+                || profiles.some(r => r.avatar_hash === f.hash))
             .map(d => ({ ...d, __type: "file" }));
         const eventLogs = (await this._manager.db.eventLogs.getEventLogs())
             .filter(el => el.related_entities.some(re => {
                 switch (re.type) {
                     case "record":
                         return records.some(r => r.hash === re.value);
-                    case "profile":
+                    /* case "profile":
                         return this.#device.owned_by === re.value;
                     case "device":
-                        return this.#device.hash === re.value;
+                        return this.#device.hash === re.value; */
                     default:
                         return false;
                 }
@@ -576,6 +579,8 @@ export class Peer {
         const records = await this.getSyncableData();
 
         const fileHashes = await this._manager.db.files.getFileBlobHashes();
+
+        debug("showing current state", { records, fileHashes });
 
         await this._sendMessage("SHOW_CURRENT_STATE", {
             files: fileHashes,

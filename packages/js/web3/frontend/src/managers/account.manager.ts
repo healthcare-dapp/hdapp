@@ -140,10 +140,16 @@ export class AccountManager {
     });
 
     async makeProfilePublic() {
-        await this._web3.accountManager.makeCurrentAccountPublic();
+        await(
+            await this._web3.accountManager.makeCurrentAccountPublic()
+        ).wait();
+        await this._loadAccount.tryRun();
     }
 
     async makeProfilePrivate() {
-        await this._web3.accountManager.makeCurrentAccountPrivate();
+        await(
+            await this._web3.accountManager.makeCurrentAccountPrivate()
+        ).wait();
+        await this._loadAccount.tryRun();
     }
 }
