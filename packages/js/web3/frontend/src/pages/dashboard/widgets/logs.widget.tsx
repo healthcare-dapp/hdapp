@@ -77,11 +77,6 @@ export const LogsWidget: React.FC = () => {
                                         <Typography variant="subtitle2">
                                             { log.created_by_full?.full_name ?? trimWeb3Address(log.created_by) }
                                         </Typography>
-                                        { log.created_by_full && (
-                                            <Typography variant="subtitle2" color={theme.palette.grey[600]} sx={{ fontWeight: 400 }}>
-                                                ({ trimWeb3Address(log.created_by) })
-                                            </Typography>
-                                        ) }
                                         <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400, marginLeft: "auto" }}>
                                             { formatTemporal(log.created_at) }
                                         </Typography>
