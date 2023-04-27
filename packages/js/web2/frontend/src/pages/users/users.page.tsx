@@ -203,7 +203,7 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                 organization_details: undefined,
                 public_profile: undefined
             };
-            users.push(newuser);
+            setUsers(users.concat([newuser]));
             handleClose();
         };
 
