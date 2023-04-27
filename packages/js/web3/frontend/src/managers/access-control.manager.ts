@@ -11,6 +11,13 @@ import { DbManager } from "./db.manager";
 import { NotificationsManager, Urgency } from "./notifications.manager";
 import { sessionManager } from "./session.manager";
 import { Web3Manager } from "./web3.manager";
+type DataPermissions = {
+    hash: bigint
+    owner: string
+    user: string
+    isRevoked: boolean
+    expiresAt: bigint
+};
 
 interface Web3Account {
     isBanned: boolean
@@ -191,7 +198,7 @@ export class AccessControlManager {
         ));
     }
 
-    async getDataPermissionsForUser(address: string): Promise<HDMAccessControl.DataPermissionsStructOutput[]> {
+    async getDataPermissionsForUser(address: string): Promise<DataPermissions[]> {
         const hashes = [...await runAndCacheWeb3Call(
             "getDataPermissionsByUser",
             (...args) => this._web3.accessControlManager.getDataPermissionsByUser(...args),
@@ -207,11 +214,18 @@ export class AccessControlManager {
 
         const permissions = await Promise.all(
             relevantHashes.map(async hash => {
-                return await runAndCacheWeb3Call(
+                const data = await runAndCacheWeb3Call(
                     "getDataPermissionsInfo",
                     (...args) => this._web3.accessControlManager.getDataPermissionsInfo(...args),
                     hash
                 );
+                return {
+                    hash: data.hash,
+                    owner: data.owner,
+                    user: data.user,
+                    isRevoked: data.isRevoked,
+                    expiresAt: data.expiresAt
+                };
             })
         );
 
