@@ -37,7 +37,7 @@ export const LogoutDialog: FC<{ onClose?(): void }> = observer(x => {
                 <Button color="error" onClick={async () => {
                     await walletService.removeWallet(sessionManager.wallet.address);
                     await sessionManager.db.service.reset();
-                    location.reload();
+                    setInterval(() => location.reload(), 500);
                     x.onClose?.();
                 }}>I'm aware, please sign out</Button>
                 <Button onClick={() => x.onClose?.()} variant="contained" disableElevation autoFocus>
