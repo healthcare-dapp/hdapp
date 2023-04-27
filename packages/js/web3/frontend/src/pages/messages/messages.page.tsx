@@ -209,10 +209,11 @@ const LeftPanel: FC = observer(() => {
                                 </Badge>
                                 <Stack spacing={0.25} flexGrow={1} width={0}>
                                     <Stack direction="row" alignItems="center" spacing={2}>
-                                        <Typography fontSize={14} fontWeight={500} color="inherit">
+                                        <Typography fontSize={14} fontWeight={500} color="inherit" noWrap
+                                                    style={{ textOverflow: "ellipsis", overflow: "hidden" }}>
                                             { chat.name }
                                         </Typography>
-                                        <Typography variant="subtitle2" color="inherit" fontSize={12} style={{ fontWeight: 400, marginLeft: "auto", opacity: 0.5 }}>
+                                        <Typography variant="subtitle2" color="inherit" fontSize={12} noWrap style={{ fontWeight: 400, marginLeft: "auto", opacity: 0.5 }}>
                                             { formatTemporal(chat.last_message?.created_at) }
                                         </Typography>
                                     </Stack>
