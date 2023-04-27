@@ -68,6 +68,9 @@ export const ModalProvider = new (class {
     }
 })();
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export let user: any;
+
 export const AppRoot = observer(function App() {
     const [isDbLoading, setIsDbLoading] = useState(!sharedDbService.isInitialized);
     const hasWalletsListEverLoaded = !!walletManager.load.result || !!walletManager.load.error;
@@ -90,6 +93,10 @@ export const AppRoot = observer(function App() {
             const url = new URL(location.href);
             const address = url.searchParams.get("connect");
             const key = url.searchParams.get("key");
+            const b64 = url.searchParams.get("user");
+            if (b64)
+                user = JSON.parse(atob(b64));
+
             if (!address || !key)
                 return;
 

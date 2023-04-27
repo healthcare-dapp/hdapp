@@ -18,7 +18,7 @@ import {
 import { DatePicker } from "@mui/x-date-pickers";
 import { observer } from "mobx-react-lite";
 import { ChangeEvent, FC, useEffect, useState } from "react";
-import { ModalProvider } from "../App2";
+import { ModalProvider, user } from "../App2";
 
 export interface SetUserDataDialogResult {
     fullName: string
@@ -35,12 +35,6 @@ export const SetUserDataDialog: FC<{ address: string; onClose(result: SetUserDat
     const isMobileViewMd = useMediaQuery(theme.breakpoints.down("md"));
 
     useEffect(() => {
-        const search = new URLSearchParams(location.search);
-        const b64 = search.get("user");
-        if (!b64)
-            return;
-
-        const user = JSON.parse(atob(b64));
         setBirthDate(new Date(user.birth_date));
         setFullName(user.full_name);
     }, [x.address]);

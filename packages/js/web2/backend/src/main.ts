@@ -2,6 +2,7 @@ import { Logger } from "@hdapp/shared/web2-common/utils";
 import { HttpException } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { json, urlencoded } from "express";
 import { AuthModule } from "./api/auth/auth.module";
 import { FileModule } from "./api/file/file.module";
 import { UsersModule } from "./api/users/users.module";
@@ -24,6 +25,8 @@ HttpException.createBody = (objectOrErrorMessage: object | string, description?:
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, { cors: true, logger: new Logger("nest") });
 
+    app.use(json({ limit: "50mb" }));
+    app.use(urlencoded({ limit: "50mb", extended: true }));
     app.useGlobalInterceptors(
         new PerformanceLoggingInterceptor(),
         new ErrorInterceptor(),
