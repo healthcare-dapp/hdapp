@@ -637,6 +637,8 @@ export class WebRTCManager {
                 });
             }, 500);
         });
+
+        this._accessControl.on("device_added", () => void this.reloadEvents());
     }
 
     get accessControl() {
@@ -683,6 +685,10 @@ export class WebRTCManager {
 
     signMessage(message: string): Promise<string> {
         return this._web3.signer.signMessage(message);
+    }
+
+    reloadEvents() {
+        void this._bindWeb3Events();
     }
 
     private async _bindWeb3Events() {

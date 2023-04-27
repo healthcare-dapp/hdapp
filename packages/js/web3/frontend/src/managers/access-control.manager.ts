@@ -112,6 +112,8 @@ export class AccessControlManager {
             urgency: Urgency.NORMAL,
             userAddress: requester
         });
+
+        this._emit("device_added");
     }
 
     private async _handleUserConnectionCreated(user1: string, user2: string) {
