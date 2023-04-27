@@ -1,6 +1,6 @@
 import { setJwtToken } from "@hdapp/shared/web2-common/api/http";
 import { UsersService } from "@hdapp/shared/web2-common/api/services";
-import { UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
+import { CreateUserDto, UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { Add, AdminPanelSettings, LocalPolice, MedicalInformation, Person, Refresh, Search, Tune } from "@mui/icons-material";
 import { AppBar, Box, Button, Checkbox, FormHelperText, IconButton, InputAdornment, MenuItem, Select, Stack, TextField, Toolbar, Typography } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
@@ -12,6 +12,7 @@ import { DataGrid, GridColDef, GridRenderCellParams, useGridApiContext, useGridA
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
+import { EmailAddress, emailAddressType } from "@hdapp/shared/web2-common/types/email-address.type";
 
 const saveClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
@@ -184,6 +185,25 @@ export const UsersPage = observer(forwardRef((props, ref) => {
 
         const handleCreateUser = () => {
             console.log(email, name, dateOfBirth, password, role);
+            const newuser: UserDto = {
+                email: email as EmailAddress,
+                full_name: name,
+                birth_date: dateOfBirth,
+                id: users.length,
+                web3_address: null,
+                confirmation_documents: undefined,
+                medical_organization_name: undefined,
+                has_doctor_capabilities: false,
+                has_moderator_capabilities: false,
+                has_administrator_capabilities: false,
+                has_organization_capabilities: false,
+                has_verified_email: false,
+                is_verified_doctor: false,
+                is_banned: false,
+                organization_details: undefined,
+                public_profile: undefined
+            };
+            users.push(newuser);
             handleClose();
         };
 
@@ -228,7 +248,7 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                             <MenuItem value="Administator">Administator</MenuItem>
                             <MenuItem value="Moderator">Moderator</MenuItem>
                             <MenuItem value="Doctor">Doctor</MenuItem>
-                            <MenuItem value="Client">Client</MenuItem>
+                            <MenuItem value="Patient">Patient</MenuItem>
                         </Select>
                         <FormHelperText>Select the role for the created user</FormHelperText>
                     </Stack>
