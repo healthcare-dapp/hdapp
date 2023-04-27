@@ -37,6 +37,9 @@ type AppointmentFull = AppointmentEntry & {
     created_by_full?: ProfileEntry & {
         avatar_url?: string
     }
+    participants: (ProfileEntry & {
+        avatar_url?: string
+    })[]
 };
 
 const getAppointmentsAction = new AsyncAction((sm: SessionManager, form: AppointmentSearchRequest) =>
@@ -63,29 +66,55 @@ const AppointmentItem: FC<{ appointment: AppointmentFull }> = x => {
                 <span />
                 <Grid2 container>
                     <Grid2 xs={6}>
-                        <Stack spacing={1}>
-                            <Typography fontSize={12} color="text.secondary">Invited by</Typography>
-                            {
-                                x.appointment.created_by_full ? (
-                                    <Stack spacing={1} direction="row" alignItems="center" width="100%">
-                                        <Avatar sx={{ background: theme.palette.success.light, width: 40, height: 40 }}
-                                                src={x.appointment.created_by_full.avatar_url} />
-                                        <Stack direction="column" alignItems="flex-start" width={0} flexGrow={1}>
-                                            <Typography variant="subtitle2">
-                                                { x.appointment.created_by_full.full_name }
-                                            </Typography>
-                                            <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400 }}>
-                                                { trimWeb3Address(x.appointment.created_by_full.address) }
-                                            </Typography>
+                        { x.appointment.created_by !== sessionManager.wallet.address ? (
+                            <Stack spacing={1}>
+                                <Typography fontSize={12} color="text.secondary">Invited by</Typography>
+                                {
+                                    x.appointment.created_by_full ? (
+                                        <Stack spacing={1} direction="row" alignItems="center" width="100%">
+                                            <Avatar sx={{ background: theme.palette.success.light, width: 40, height: 40 }}
+                                                    src={x.appointment.created_by_full.avatar_url} />
+                                            <Stack direction="column" alignItems="flex-start" width={0} flexGrow={1}>
+                                                <Typography variant="subtitle2">
+                                                    { x.appointment.created_by_full.full_name }
+                                                </Typography>
+                                                <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400 }}>
+                                                    { trimWeb3Address(x.appointment.created_by_full.address) }
+                                                </Typography>
+                                            </Stack>
                                         </Stack>
-                                    </Stack>
-                                ) : (
-                                    <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400 }}>
-                                        { trimWeb3Address(x.appointment.created_by) }
-                                    </Typography>
-                                )
-                            }
-                        </Stack>
+                                    ) : (
+                                        <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400 }}>
+                                            { trimWeb3Address(x.appointment.created_by) }
+                                        </Typography>
+                                    )
+                                }
+                            </Stack>
+                        ) : (
+                            <Stack spacing={1}>
+                                <Typography fontSize={12} color="text.secondary">Client</Typography>
+                                {
+                                    x.appointment.participants[0] ? (
+                                        <Stack spacing={1} direction="row" alignItems="center" width="100%">
+                                            <Avatar sx={{ background: theme.palette.success.light, width: 40, height: 40 }}
+                                                    src={x.appointment.participants[0].avatar_url} />
+                                            <Stack direction="column" alignItems="flex-start" width={0} flexGrow={1}>
+                                                <Typography variant="subtitle2">
+                                                    { x.appointment.participants[0].full_name }
+                                                </Typography>
+                                                <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400 }}>
+                                                    { trimWeb3Address(x.appointment.participants[0].address) }
+                                                </Typography>
+                                            </Stack>
+                                        </Stack>
+                                    ) : (
+                                        <Typography variant="subtitle2" color={theme.palette.grey[600]} fontSize={12} style={{ fontWeight: 400 }}>
+                                            { trimWeb3Address(x.appointment.participant_ids[0]) }
+                                        </Typography>
+                                    )
+                                }
+                            </Stack>
+                        ) }
                     </Grid2>
                     <Grid2 xs={6}>
                         <Stack spacing={1}>
@@ -132,7 +161,22 @@ export const AppointmentsPage = observer(() => {
                                     : void 0
                             };
                         })
-                        .catch(() => void 0)
+                        .catch(() => void 0),
+                    participants: await Promise.all(
+                        entry.participant_ids.map(async id => {
+                            return await db.profiles.getProfile(id, encryption)
+                                .then(async profile => {
+                                    return {
+                                        ...profile,
+                                        avatar_url: profile.avatar_hash
+                                            ? await db.files.getFileBlob(profile.avatar_hash, encryption)
+                                                .then(blob => URL.createObjectURL(blob))
+                                                .catch(() => void 0)
+                                            : void 0
+                                    };
+                                });
+                        })
+                    )
                 };
             })
         );
