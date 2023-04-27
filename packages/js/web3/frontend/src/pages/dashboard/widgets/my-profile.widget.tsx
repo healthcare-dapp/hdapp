@@ -145,6 +145,11 @@ export const MyProfileWidget: FC = x => {
                     avatar: avatarUrl
                 }
             });
+
+            const result = await getProfileAction.forceRun(sessionManager, wallet.address);
+            setProfile(result);
+            setProfileForm(result);
+            setIsPublic(account.isProfilePublic);
         } finally {
             setIsUpdating(false);
         }

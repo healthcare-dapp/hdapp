@@ -222,7 +222,7 @@ export const DiscoverPage = observer(() => {
 
                                                 </Stack>
                                                 <Box flex={1} />
-                                                { activeId && (
+                                                { activeId === profile.web3_address && (
                                                     <IconButton onClick={() => setActiveId(undefined)}>
                                                         <KeyboardArrowUpOutlined />
                                                     </IconButton>
