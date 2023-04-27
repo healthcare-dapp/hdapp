@@ -192,11 +192,11 @@ export class AccessControlManager {
     }
 
     async getDataPermissionsForUser(address: string): Promise<HDMAccessControl.DataPermissionsStructOutput[]> {
-        const hashes = await runAndCacheWeb3Call(
+        const hashes = [...await runAndCacheWeb3Call(
             "getDataPermissionsByUser",
             (...args) => this._web3.accessControlManager.getDataPermissionsByUser(...args),
             address
-        );
+        )];
 
         const records = await this._db.records.searchRecords({}, this._encryption);
         const blocks = await this._db.blocks.getBlocks();
