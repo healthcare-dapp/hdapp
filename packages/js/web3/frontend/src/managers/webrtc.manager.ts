@@ -519,10 +519,10 @@ export class Peer {
             .getDataPermissionsForUser(this.#device.owned_by);
 
         const records = (await this._manager.db.records.searchRecords({}, this._manager.encryption))
-            .filter(r => permissions.find(p => p.hash.toString() === r.hash))
+            .filter(r => permissions.find(p => p.hash?.toString() === r.hash))
             .map(d => ({ ...d, __type: "record" }));
         const blocks = (await this._manager.db.blocks.getBlocks())
-            .filter(r => permissions.find(p => p.hash.toString() === r.hash))
+            .filter(r => permissions.find(p => p.hash?.toString() === r.hash))
             .map(d => ({ ...d, __type: "block" }));
         const profiles = [
             await this._manager.db.profiles.getProfile(this._manager.web3Address, this._manager.encryption)
