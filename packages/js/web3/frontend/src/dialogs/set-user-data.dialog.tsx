@@ -35,6 +35,9 @@ export const SetUserDataDialog: FC<{ address: string; onClose(result: SetUserDat
     const isMobileViewMd = useMediaQuery(theme.breakpoints.down("md"));
 
     useEffect(() => {
+        if (!user)
+            return;
+
         setBirthDate(new Date(user.birth_date));
         setFullName(user.full_name);
     }, [x.address]);
