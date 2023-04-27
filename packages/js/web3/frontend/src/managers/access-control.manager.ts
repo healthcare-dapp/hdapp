@@ -201,7 +201,7 @@ export class AccessControlManager {
         const records = await this._db.records.searchRecords({}, this._encryption);
         const blocks = await this._db.blocks.getBlocks();
         const relevantHashes = hashes.filter(h => {
-            const hash = h.toString();
+            const hash = h.toString(16);
             return records.some(r => r.hash === hash) || blocks.some(b => b.hash === hash);
         });
 
