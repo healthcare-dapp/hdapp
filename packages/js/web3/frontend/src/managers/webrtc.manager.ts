@@ -330,6 +330,9 @@ export class Peer {
                 case "recordNote":
                     void this._manager.db.recordNotes.upsertRecordNote(record, this._manager.encryption);
                     break;
+                case "appointment":
+                    void this._manager.db.appointments.upsertAppointment(record, this._manager.encryption);
+                    break;
                 case "eventLog":
                     void this._manager.db.eventLogs.upsertEventLog(record);
                     break;
@@ -537,6 +540,9 @@ export class Peer {
         const recordNotes = (await this._manager.db.recordNotes.getRecordNotes(this._manager.encryption))
             .filter(rn => rn.hash)
             .map(d => ({ ...d, __type: "recordNote" }));
+        const appointments = (await this._manager.db.appointments.searchAppointments({}, this._manager.encryption))
+            .filter(rn => rn.hash && rn.participant_ids.includes(this._manager.web3Address))
+            .map(d => ({ ...d, __type: "appointment" }));
         const files = (await this._manager.db.files.getFiles())
             .filter(f => chatMessages.some(cm => cm.attachment_ids.includes(f.hash))
                 || records.some(r => r.attachment_ids.includes(f.hash))
@@ -565,6 +571,7 @@ export class Peer {
             ...eventLogs,
             ...files,
             ...profiles,
+            ...appointments
             // ...devices,
         ];
     }
