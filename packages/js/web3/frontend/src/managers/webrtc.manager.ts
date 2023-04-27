@@ -541,7 +541,7 @@ export class Peer {
             .filter(rn => rn.hash)
             .map(d => ({ ...d, __type: "recordNote" }));
         const appointments = (await this._manager.db.appointments.searchAppointments({}, this._manager.encryption))
-            .filter(rn => rn.hash && rn.participant_ids.includes(this._manager.web3Address))
+            .filter(rn => rn.hash && rn.participant_ids.includes(this.#device.owned_by))
             .map(d => ({ ...d, __type: "appointment" }));
         const files = (await this._manager.db.files.getFiles())
             .filter(f => chatMessages.some(cm => cm.attachment_ids.includes(f.hash))
