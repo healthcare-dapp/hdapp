@@ -87,15 +87,16 @@ export const AppRoot = observer(function App() {
 
     useEffect(() => {
         (async () => {
-            if (!sessionManager.isSignedIn)
-                return;
-
             const url = new URL(location.href);
-            const address = url.searchParams.get("connect");
-            const key = url.searchParams.get("key");
             const b64 = url.searchParams.get("user");
             if (b64)
                 user = JSON.parse(atob(b64));
+
+            if (!sessionManager.isSignedIn)
+                return;
+
+            const address = url.searchParams.get("connect");
+            const key = url.searchParams.get("key");
 
             if (!address || !key)
                 return;
