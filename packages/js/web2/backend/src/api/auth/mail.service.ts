@@ -55,10 +55,18 @@ export class MailService {
 
     async sendEmailVerification(userEmail: EmailAddress, verifyToken: string) {
         try {
+            // await this.mailer.sendMail({
+            //     to: userEmail, // list of receivers
+            //     subject: "HDAPP Email Verification", // Subject line
+            //     text: `Verify your email by clicking this link: https://hdapp.ruslang.xyz/api/auth/verify/${verifyToken}`, // plaintext body
+            // });
+
+             const html = readFileSync("../api/mailStuff/verification-email.html", "utf8");
+
             await this.mailer.sendMail({
-                to: userEmail, // list of receivers
-                subject: "HDAPP Email Verification", // Subject line
-                text: `Verify your email by clicking this link: https://hdapp.ruslang.xyz/api/auth/verify/${verifyToken}`, // plaintext body
+                to: userEmail,
+                subject: "HDAPP Email Verification",
+                html: html,
             });
 
             debug("Sent verification e-mail.", { email: userEmail });
