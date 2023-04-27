@@ -218,6 +218,12 @@ export class UsersService {
                     return false;
                 if (filters.is_profile_public !== undefined && u.isProfilePublic !== filters.is_profile_public)
                     return false;
+                if (filters.location !== undefined && u.publicProfile?.location !== filters.location)
+                    return false;
+                if (filters.areas_of_focus !== undefined && u.publicProfile?.areasOfFocus !== filters.location)
+                    return false;
+                if (filters.organization_id !== undefined && u.publicProfile?.organization_id !== filters.location)
+                    return false;
                 return true;
             });
 
