@@ -190,7 +190,7 @@ export const ShareRecordDialog = observer<{ hash: string; onClose?(): void }>(x 
                                    onClick={async () => {
                                        await performShareAction.run(
                                            sessionManager,
-                                           x.hash,
+                                           "0x" + x.hash,
                                            selectedContact!.address,
                                            expiryDuration,
                                            note,
