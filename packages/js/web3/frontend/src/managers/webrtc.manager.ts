@@ -638,7 +638,10 @@ export class WebRTCManager {
             }, 500);
         });
 
-        this._accessControl.on("device_added", () => void this.reloadEvents());
+        this._accessControl.on("device_added", () => {
+            void this.reloadEvents();
+            void this.start();
+        });
     }
 
     get accessControl() {
@@ -807,6 +810,9 @@ export class WebRTCManager {
         );
 
         for (const device of devices) {
+            if (this._peers.has(device.hash))
+                return;
+
             this.send(device, { type: "ping" });
             this._waitingPongDevices.push(device.hash);
         }
