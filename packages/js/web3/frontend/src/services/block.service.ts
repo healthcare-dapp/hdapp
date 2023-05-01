@@ -81,6 +81,21 @@ export class BlockService extends DbConsumer {
         }
     }
 
+    async getBlockHashes(): Promise<string[]> {
+        try {
+            const devices = await this._findMany(
+                (db: BlockDbEntry) => db.hash,
+                () => true
+            );
+            return devices;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new BlockNotFoundError("Block was not found.");
+
+            throw e;
+        }
+    }
+
     async getBlocks(): Promise<BlockEntry[]> {
         try {
             const devices = await this._findMany(

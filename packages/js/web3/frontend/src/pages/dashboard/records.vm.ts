@@ -23,9 +23,9 @@ export interface RecordGroup {
     shared_with: { full_name: string; address: string; avatar: string }[]
 }
 
-const { warn } = new Logger("dashboard-vm");
+const { warn } = new Logger("records-vm");
 
-export class DashboardViewModel {
+export class RecordsViewModel {
     constructor(private _ownedBy?: string) {
         makeAutoObservable(this);
     }

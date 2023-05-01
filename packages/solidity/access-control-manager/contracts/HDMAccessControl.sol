@@ -15,9 +15,11 @@ interface HDMAccountManager {
 contract HDMAccessControl is AccessControl {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
-    mapping(uint256 => DataPermissions) public permissions;
+    DataPermissions[] public permissions;
     mapping(address => uint256[]) public permissionsByOwners;
     mapping(address => uint256[]) public permissionsByUsers;
+    mapping(uint256 => uint256[]) public permissionsByHashes;
+    mapping(uint256 => address) public hashOwners;
     mapping(address => DataRequest[]) public requests;
     
     mapping(bytes32 => bool) public userConnectionRequests;
@@ -31,9 +33,21 @@ contract HDMAccessControl is AccessControl {
         uint256 data;
     }
 
-    // 3 slots
+    // 4 slots
     struct DataPermissions {
         uint256 hash;       // 32 bytes
+        uint256 parentHash; // 32 bytes
+        address owner;      // 20 bytes
+        address user;       // 20 bytes
+        bool isRevoked;     // 1 byte
+        uint48 expiresAt;   // 6 bytes
+    }
+
+    // 5 slots
+    struct DataPermissionsWithIndex {
+        uint256 index;
+        uint256 hash;       // 32 bytes
+        uint256 parentHash; // 32 bytes
         address owner;      // 20 bytes
         address user;       // 20 bytes
         bool isRevoked;     // 1 byte
@@ -49,13 +63,13 @@ contract HDMAccessControl is AccessControl {
     event DataPermissionsGranted (
         address indexed user,
         address indexed owner,
-        uint256 indexed dataHash
+        uint256 indexed permsIndex
     );
 
     event DataPermissionsRevoked (
         address indexed user,
         address indexed owner,
-        uint256 indexed dataHash
+        uint256 indexed permsIndex
     );
 
     event UserConnectionCreated (
@@ -119,53 +133,104 @@ contract HDMAccessControl is AccessControl {
 
     function grantPermissions(
         address _user,
-        uint256 _dataHash,
+        uint256 _hash,
         uint48 _expiresIn
     ) public checkIfSenderIsBanned {
-        permissions[_dataHash] = DataPermissions(
-            _dataHash,
-            msg.sender,
-            _user,
-            false,
-            _expiresIn == 0 ? 0 : uint48(block.timestamp) + _expiresIn
+        require(
+            _hash != 0x0,
+            "HDMAccessControl: null data hashes are not allowed."
         );
 
-        permissionsByOwners[msg.sender].push(_dataHash);
-        permissionsByUsers[_user].push(_dataHash);
+        require(
+            _user != msg.sender,
+            "HDMAccessControl: user cannot grant permissions for data of their own."
+        );
+
+        uint256 index = permissions.length;
+
+        DataPermissions storage perms = permissions.push();
+        perms.hash = _hash;
+        perms.owner = msg.sender;
+        perms.user = _user;
+        perms.isRevoked = false;
+        perms.expiresAt = _expiresIn == 0 ? 0 : uint48(block.timestamp) + _expiresIn;
+
+        permissionsByOwners[msg.sender].push(index);
+        permissionsByUsers[_user].push(index);
+        permissionsByHashes[_hash].push(index);
+        hashOwners[_hash] = msg.sender;
 
         emit DataPermissionsGranted(
             _user,
             msg.sender,
-            _dataHash
+            index
         );
     }
 
-    function revokePermissions(uint256 _dataHash)
+    function grantPermissionsFor(
+        uint256 _hash,
+        uint256 _parentHash,
+        uint48 _expiresIn
+    ) public checkIfSenderIsBanned {
+        require(
+            _hash != 0x0,
+            "HDMAccessControl: null data hashes are not allowed."
+        );
+
+        require(
+            checkPermissions(_parentHash, msg.sender),
+            "HDMAccessControl: you are not allow to claim permissions based on this parent hash."
+        );
+
+        address parentHashOwner = hashOwners[_parentHash];
+        uint256 index = permissions.length;
+
+        DataPermissions storage perms = permissions.push();
+        perms.hash = _hash;
+        perms.owner = parentHashOwner;
+        perms.parentHash = _parentHash;
+        perms.user = msg.sender;
+        perms.isRevoked = false;
+        perms.expiresAt = _expiresIn == 0 ? 0 : uint48(block.timestamp) + _expiresIn;
+
+        permissionsByOwners[parentHashOwner].push(index);
+        permissionsByUsers[msg.sender].push(index);
+        permissionsByHashes[_hash].push(index);
+        hashOwners[_hash] = parentHashOwner;
+
+        emit DataPermissionsGranted(
+            msg.sender,
+            parentHashOwner,
+            index
+        );
+    }
+
+    function revokePermissions(uint256 _index)
         public
         checkIfSenderIsBanned
     {
-        DataPermissions storage permsRef = permissions[_dataHash];
+        DataPermissions storage perms = permissions[_index];
 
         require(
-            permsRef.owner == msg.sender, 
+            perms.owner == msg.sender, 
             "HDMAccessControl: user has no rights to manage this data object."
         );
 
         require(
-            !permsRef.isRevoked, 
+            !perms.isRevoked, 
             "HDMAccessControl: data had been revoked already."
         );
 
-        permissions[_dataHash].isRevoked = true;
+        permissions[_index].isRevoked = true;
 
         emit DataPermissionsRevoked(
-            permsRef.user,
+            perms.user,
             msg.sender,
-            _dataHash
+            _index
         );
     }
 
-    function getDataPermissionsByOwner(address _owner)
+    function getDataPermissionsIndicesByOwner(address _owner)
         external
         view
         returns (uint256[] memory)
@@ -173,7 +238,7 @@ contract HDMAccessControl is AccessControl {
         return permissionsByOwners[_owner];
     }
 
-    function getDataPermissionsByUser(address _user)
+    function getDataPermissionsIndicesByUser(address _user)
         external
         view
         returns (uint256[] memory)
@@ -181,12 +246,92 @@ contract HDMAccessControl is AccessControl {
         return permissionsByUsers[_user];
     }
 
-    function getDataPermissionsInfo(uint256 _dataHash)
+    function checkPermissions(uint256 _hash, address _user)
+        internal
+        view
+        returns (bool)
+    {
+        uint256[] memory indices = permissionsByHashes[_hash];
+        for (uint256 i = 0; i < indices.length; i++) {
+            uint256 index = indices[i];
+            DataPermissions storage perms = permissions[index];
+            if (perms.isRevoked)
+                continue;
+            if (perms.user != address(0) && perms.user != _user)
+                continue;
+            if (perms.expiresAt != 0x0 && perms.expiresAt < uint48(block.timestamp))
+                continue;
+            
+            if (perms.parentHash != 0x0) {
+                return checkPermissions(perms.parentHash, _user);
+            } else {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function getDataPermissionsByUser(address _user)
+        external
+        view
+        returns (DataPermissionsWithIndex[] memory)
+    {
+        uint256[] memory indices = permissionsByUsers[_user];
+        DataPermissionsWithIndex[] memory filtered = new DataPermissionsWithIndex[](indices.length);
+        for (uint256 i = 0; i < indices.length; i++) {
+            uint256 index = indices[i];
+            DataPermissions storage perms = permissions[index];
+            if (!checkPermissions(perms.hash, _user))
+                continue;
+
+            filtered[i] = DataPermissionsWithIndex(
+                index,
+                perms.hash,
+                perms.parentHash,
+                perms.owner,
+                perms.user,
+                perms.isRevoked,
+                perms.expiresAt
+            );
+        }
+
+        return filtered;
+    }
+
+    function getDataPermissionsByOwner(address _owner)
+        external
+        view
+        returns (DataPermissionsWithIndex[] memory)
+    {
+        uint256[] memory indices = permissionsByOwners[_owner];
+        DataPermissionsWithIndex[] memory filtered = new DataPermissionsWithIndex[](indices.length);
+        for (uint256 i = 0; i < indices.length; i++) {
+            uint256 index = indices[i];
+            DataPermissions storage perms = permissions[index];
+            if (!checkPermissions(perms.hash, address(0)))
+                continue;
+
+            filtered[i] = DataPermissionsWithIndex(
+                index,
+                perms.hash,
+                perms.parentHash,
+                perms.owner,
+                perms.user,
+                perms.isRevoked,
+                perms.expiresAt
+            );
+        }
+
+        return filtered;
+    }
+
+    function getDataPermissionsInfo(uint256 _index)
         external
         view
         returns (DataPermissions memory)
     {
-        return permissions[_dataHash];
+        return permissions[_index];
     }
 
     function setAccountManagerContractAddress(address _accountManagerAddress) 

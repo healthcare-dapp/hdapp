@@ -1,5 +1,4 @@
 import { AsyncAction, Logger } from "@hdapp/shared/web2-common/utils";
-import { HDMAccessControl } from "@hdapp/solidity/access-control-manager";
 import { Instant, LocalDateTime } from "@js-joda/core";
 import { SHA256 } from "crypto-js";
 import { ethers, toBigInt } from "ethers";
@@ -11,8 +10,10 @@ import { DbManager } from "./db.manager";
 import { NotificationsManager, Urgency } from "./notifications.manager";
 import { sessionManager } from "./session.manager";
 import { Web3Manager } from "./web3.manager";
-type DataPermissions = {
+
+export type DataPermissions = {
     hash: bigint
+    parentHash: bigint
     owner: string
     user: string
     isRevoked: boolean
@@ -198,38 +199,62 @@ export class AccessControlManager {
         ));
     }
 
+    async populateDataPermissions(permissions: DataPermissions[]) {
+        const records = await this._db.records.getRecordHashes();
+        const blocks = await this._db.blocks.getBlockHashes();
+
+        // Client-side filtering
+        const filtered = permissions.map(data => ({
+            hash: data.hash,
+            parentHash: data.parentHash,
+            owner: data.owner,
+            user: data.user,
+            isRevoked: data.isRevoked,
+            expiresAt: data.expiresAt
+        })).filter(perms => {
+            const hash = perms.hash.toString(16);
+            const hasParentHash = perms.parentHash !== 0n;
+            const parentHash = perms.parentHash.toString(16);
+
+            // Permissions without a parent hash can only
+            // be granted by the owner, and so are always valid
+            if (!hasParentHash)
+                return true;
+
+            // Permission to manage a block or record based
+            // on all-data-manage permission
+            if (this._web3.address === `0x${parentHash}`
+                && (records.includes(hash) || blocks.includes(hash)))
+                return true;
+
+            // Permission to manage a record based on its block permission
+            if (blocks.includes(parentHash) && records.includes(hash))
+                return true;
+
+            return false;
+        });
+
+        return filtered;
+    }
+
     async getDataPermissionsForUser(address: string): Promise<DataPermissions[]> {
-        const hashes = [...await runAndCacheWeb3Call(
+        const permissions = [...(await runAndCacheWeb3Call(
             "getDataPermissionsByUser",
             (...args) => this._web3.accessControlManager.getDataPermissionsByUser(...args),
             address
-        )];
+        ))];
 
-        const records = await this._db.records.searchRecords({}, this._encryption);
-        const blocks = await this._db.blocks.getBlocks();
-        const relevantHashes = hashes.filter(h => {
-            const hash = h.toString(16);
-            return records.some(r => r.hash === hash) || blocks.some(b => b.hash === hash);
-        });
+        return await this.populateDataPermissions(permissions);
+    }
 
-        const permissions = await Promise.all(
-            relevantHashes.map(async hash => {
-                const data = await runAndCacheWeb3Call(
-                    "getDataPermissionsInfo",
-                    (...args) => this._web3.accessControlManager.getDataPermissionsInfo(...args),
-                    hash
-                );
-                return {
-                    hash: data.hash,
-                    owner: data.owner,
-                    user: data.user,
-                    isRevoked: data.isRevoked,
-                    expiresAt: data.expiresAt
-                };
-            })
-        );
+    async getDataPermissionsForOwner(address: string): Promise<DataPermissions[]> {
+        const permissions = [...(await runAndCacheWeb3Call(
+            "getDataPermissionsByOwner",
+            (...args) => this._web3.accessControlManager.getDataPermissionsByOwner(...args),
+            address
+        ))];
 
-        return permissions.filter(info => !info.isRevoked/*  && info.expiresAt */);
+        return await this.populateDataPermissions(permissions);
     }
 
     readonly requestUserConnection = new AsyncAction(async (user: string, privateKey: string) => {

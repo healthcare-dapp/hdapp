@@ -12,39 +12,22 @@ import { CreateBlockDialog } from "../../../dialogs/create-block.dialog";
 import { CreateRecordDialog } from "../../../dialogs/create-record.dialog";
 import { RequestDataDialog } from "../../../dialogs/request-data.dialog";
 import { sessionManager } from "../../../managers/session.manager";
-import { ProfileEntry } from "../../../services/profile.service";
 import { useDatabase } from "../../../utils/use-database";
-import { DashboardViewModel } from "../dashboard.vm";
+import { PatientsViewModel } from "../patients.vm";
 import { DataGroupsListWidget } from "./data-groups-list.widget";
 
 export const MyPatientsWidget: FC = observer(x => {
-    const { db, encryption, web3 } = sessionManager;
+    const [vm] = useState(() => new PatientsViewModel(sessionManager));
+    const { db } = sessionManager;
     const theme = useTheme();
     const navigate = useNavigate();
     const hasCondensedDetails = useMediaQuery(theme.breakpoints.up("sm"));
     const [expandedId, setExpandedId] = useState<string>();
-    const [patients, setPatients] = useState<(ProfileEntry & { vm: DashboardViewModel; avatar_url?: string })[]>([]);
+    const { profiles } = vm;
 
     useDatabase(async () => {
-        const profiles = await Promise.all(
-            (await db.profiles.searchProfiles({}, encryption))
-                .filter(p => p.address !== web3.address)
-                .map(async p => {
-                    return {
-                        ...p,
-                        vm: new DashboardViewModel(p.address),
-                        avatar_url: p.avatar_hash
-                            ? URL.createObjectURL(
-                                await db.files.getFileBlob(p.avatar_hash, encryption)
-                            )
-                            : void 0
-                    };
-                })
-        );
-        setPatients(profiles);
-        for (const profile of profiles)
-            void profile.vm.loadRecords.tryRun();
-    });
+        await vm.loadProfiles.tryRun();
+    }, ["files", "profiles"]);
 
     return (
         <>
@@ -56,8 +39,8 @@ export const MyPatientsWidget: FC = observer(x => {
                 </IconButton>
             </Stack>
             <Stack>
-                { patients.length
-                    ? patients.map(p => {
+                { profiles.length
+                    ? profiles.map(p => {
                         const lastUpdatedAggregated = p.vm.groups.map(g => g.aggregated_updated_at.until(LocalDateTime.now(), ChronoUnit.HOURS))
                             .sort((a, b) => a - b).shift();
                         return (
@@ -154,25 +137,28 @@ export const MyPatientsWidget: FC = observer(x => {
                                                 </Stack>
                                             </Stack>
                                         </Card>
-                                        <DataGroupsListWidget forUser={p.address} groups={toJS(p.vm.groups)} />
-                                        <Grid2 container spacing={2}>
-                                            <Grid2 xs={6}>
-                                                <Button variant="outlined" onClick={() => ModalProvider.show(CreateRecordDialog, { forUser: p.address })} style={{ width: "100%", height: "100%", minHeight: "100px", maxHeight: "200px" }}>
-                                                    <Stack alignItems="center">
-                                                        <Add />
-                                                        <Typography fontWeight="500">New record</Typography>
-                                                    </Stack>
-                                                </Button>
+                                        <DataGroupsListWidget canCreateBlock={p.is_full_access} forUser={p.address}
+                                                              groups={toJS(p.vm.groups)} />
+                                        { p.is_full_access && (
+                                            <Grid2 container spacing={2}>
+                                                <Grid2 xs={6}>
+                                                    <Button variant="outlined" onClick={() => ModalProvider.show(CreateRecordDialog, { forUser: p.address })} style={{ width: "100%", height: "100%", minHeight: "100px", maxHeight: "200px" }}>
+                                                        <Stack alignItems="center">
+                                                            <Add />
+                                                            <Typography fontWeight="500">New record</Typography>
+                                                        </Stack>
+                                                    </Button>
+                                                </Grid2>
+                                                <Grid2 xs={6}>
+                                                    <Button variant="outlined" onClick={() => ModalProvider.show(CreateBlockDialog, { forUser: p.address })} style={{ width: "100%", height: "100%", minHeight: "100px", maxHeight: "200px" }}>
+                                                        <Stack alignItems="center">
+                                                            <AddBoxOutlined />
+                                                            <Typography fontWeight="500">New block</Typography>
+                                                        </Stack>
+                                                    </Button>
+                                                </Grid2>
                                             </Grid2>
-                                            <Grid2 xs={6}>
-                                                <Button variant="outlined" onClick={() => ModalProvider.show(CreateBlockDialog, { forUser: p.address })} style={{ width: "100%", height: "100%", minHeight: "100px", maxHeight: "200px" }}>
-                                                    <Stack alignItems="center">
-                                                        <AddBoxOutlined />
-                                                        <Typography fontWeight="500">New block</Typography>
-                                                    </Stack>
-                                                </Button>
-                                            </Grid2>
-                                        </Grid2>
+                                        ) }
                                     </Stack>
                                 </AccordionDetails>
                             </Accordion>

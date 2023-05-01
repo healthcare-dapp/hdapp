@@ -29,12 +29,23 @@ import { trimWeb3Address } from "../utils/trim-web3-address";
 import { useDatabase } from "../utils/use-database";
 
 const upsertBlockAction = new AsyncAction(async (sm: SessionManager, form: BlockForm, blockHash?: string) => {
-    if (blockHash) {
-        await sm.db.blocks.patchBlock(blockHash, form);
-        return await sm.db.blocks.getBlock(blockHash);
+    const entry = await (async () => {
+        if (blockHash) {
+            await sm.db.blocks.patchBlock(blockHash, form);
+            return await sm.db.blocks.getBlock(blockHash);
+        }
+        return await sm.db.blocks.addBlock(form);
+    })();
+
+    if (form.owned_by !== sm.web3.address) {
+        await sm.web3.accessControlManager.grantPermissionsFor(
+            entry.hash,
+            sm.web3.address,
+            0
+        );
     }
 
-    return await sm.db.blocks.addBlock(form);
+    return entry;
 });
 
 export const CreateBlockDialog: FC<{ blockHash?: string; forUser?: string; isDoctor?: boolean; onClose?(block?: BlockEntry): void }> = observer(x => {

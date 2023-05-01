@@ -29,7 +29,7 @@ import { BottomBarWidget } from "../../widgets/bottom-bar";
 import { DrawerWidget } from "../../widgets/drawer";
 import { HeaderWidget } from "../../widgets/header";
 import { ShareQrWidget } from "../../widgets/share-qr";
-import { DashboardViewModel } from "./dashboard.vm";
+import { RecordsViewModel } from "./records.vm";
 import { LogsWidget } from "./widgets/logs.widget";
 import { MyChatsWidget } from "./widgets/my-chats.widget";
 import { MyMedicalDataWidget } from "./widgets/my-medical-data.widget";
@@ -44,7 +44,7 @@ const JumboText = styled(Typography)(({ theme }) => ({
     },
 }));
 
-const vm = new DashboardViewModel();
+const vm = new RecordsViewModel();
 const getMyProfileAction = new AsyncAction((sm: SessionManager) =>
     sm.db.profiles.getProfile(sm.web3.address, sm.encryption));
 

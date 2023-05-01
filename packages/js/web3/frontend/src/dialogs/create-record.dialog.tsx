@@ -37,7 +37,17 @@ import { CreateBlockDialog } from "./create-block.dialog";
 import type { EditorState } from "draft-js";
 
 const addRecordAction = new AsyncAction(
-    (sm: SessionManager, form: RecordForm) => sm.db.records.addRecord(form, sm.encryption)
+    async (sm: SessionManager, form: RecordForm) => {
+        const record = await sm.db.records.addRecord(form, sm.encryption);
+        if (form.owned_by !== sm.web3.address) {
+            await sm.web3.accessControlManager.grantPermissionsFor(
+                record.hash,
+                sm.web3.address,
+                0
+            );
+        }
+        return record;
+    }
 );
 
 const addRecordStr = "__ADD_RECORD__";

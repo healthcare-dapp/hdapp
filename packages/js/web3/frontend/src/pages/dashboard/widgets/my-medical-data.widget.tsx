@@ -11,10 +11,10 @@ import { sessionManager } from "../../../managers/session.manager";
 import { BlockEntry } from "../../../services/block.service";
 import { ProfileEntry } from "../../../services/profile.service";
 import { useDatabase } from "../../../utils/use-database";
-import { DashboardViewModel, RecordGroupType } from "../dashboard.vm";
+import { RecordsViewModel, RecordGroupType } from "../records.vm";
 import { DataGroupsListWidget } from "./data-groups-list.widget";
 
-export const MyMedicalDataWidget: FC<{ vm: DashboardViewModel }> = observer(x => {
+export const MyMedicalDataWidget: FC<{ vm: RecordsViewModel }> = observer(x => {
     const { db, encryption } = sessionManager;
     const theme = useTheme();
     const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
@@ -200,7 +200,7 @@ export const MyMedicalDataWidget: FC<{ vm: DashboardViewModel }> = observer(x =>
                         <CircularProgress sx={{ alignSelf: "center" }} />
                     </>
                 )
-                : <DataGroupsListWidget groups={toJS(x.vm.groups)} /> }
+                : <DataGroupsListWidget canCreateBlock groups={toJS(x.vm.groups)} /> }
 
         </>
     );

@@ -120,6 +120,18 @@ export class RecordService extends DbConsumer {
         }
     }
 
+    async getRecordHashes(): Promise<string[]> {
+        try {
+            const entity = await this._findMany((db: RecordDbEntry) => db.hash, () => true);
+            return entity;
+        } catch (e) {
+            if (e instanceof DbRecordNotFoundError)
+                throw new RecordNotFoundError("Record was not found.");
+
+            throw e;
+        }
+    }
+
     async searchRecords(request: RecordSearchRequest, provider: EncryptionProvider): Promise<RecordEntry[]> {
         try {
             const devices = await this._findMany(
@@ -152,9 +164,9 @@ export class RecordService extends DbConsumer {
         }
     }
 
-    async addRecord(form: RecordForm, provider: EncryptionProvider): Promise<void> {
+    async addRecord(form: RecordForm, provider: EncryptionProvider): Promise<RecordEntry> {
         try {
-            await this._add({
+            return await this._add({
                 ...form,
                 is_archived: false,
                 hash: SHA256(Instant.now().toString() + " " + form.title + " " + form.owned_by).toString(),

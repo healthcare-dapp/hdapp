@@ -7,7 +7,7 @@ import { FC, useState } from "react";
 import { ModalProvider } from "../../../App2";
 import { CreateBlockDialog } from "../../../dialogs/create-block.dialog";
 import { ShareRecordDialog } from "../../../dialogs/share-record.dialog";
-import { RecordGroup, RecordGroupType } from "../dashboard.vm";
+import { RecordGroup, RecordGroupType } from "../records.vm";
 import { DataRecordItemWidget } from "./data-record-item.widget";
 import { DataRecordsGridWidget } from "./data-records-grid.widget";
 
@@ -52,7 +52,8 @@ export const DataGroupItemWidget: FC<{ forUser?: string; group: RecordGroup }> =
             </AccordionSummary>
             <AccordionDetails>
                 <Stack spacing={2}>
-                    <DataRecordsGridWidget forUser={x.forUser} blockId={x.group.type === RecordGroupType.ByBlock ? x.group.key : void 0}>
+                    <DataRecordsGridWidget canCreateRecord={isOwned}
+                                           forUser={x.forUser} blockId={x.group.type === RecordGroupType.ByBlock ? x.group.key : void 0}>
                         { x.group.records.filter(r => !r.is_archived).map(record => (
                             <DataRecordItemWidget key={record.hash}
                                                   hash={record.hash}
