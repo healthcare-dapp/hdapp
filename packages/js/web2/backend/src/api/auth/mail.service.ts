@@ -58,7 +58,7 @@ export class MailService {
 
     async sendEmailVerification(userEmail: EmailAddress, verifyToken: string) {
         try {
-            const imagePath = resolve(__dirname, "/../mailStuff/images/Img4_2x.png");
+            const imagePath = resolve(__dirname, "../../../mailStuff/images/Img4_2x.png");
             const imageContent = readFileSync(imagePath);
             const html = `
     <div>
