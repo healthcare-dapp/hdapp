@@ -58,7 +58,7 @@ export class MailService {
 
     async sendEmailVerification(userEmail: EmailAddress, verifyToken: string) {
         try {
-            const url = "https://drive.google.com/file/d/1qe9MovzkceaqhjtaDCNxIdKkS1p4o6Uz/view?usp=share_link";
+            const url = "https://drive.google.com/file/d/1qe9MovzkceaqhjtaDCNxIdKkS1p4o6Uz/view";
             const html = `
     <div>
       <p>Here's an image:</p>
