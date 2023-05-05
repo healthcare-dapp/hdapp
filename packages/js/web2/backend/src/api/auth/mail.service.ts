@@ -6,7 +6,6 @@ import { MailerService } from "@nestjs-modules/mailer";
 import { readFileSync } from "fs";
 import fs from "fs";
 import { resolve } from "path";
-
 export class SendMailError extends ErrorClass("Could not send the e-mail") {}
 
 const { debug } = new Logger("mail-service");
@@ -59,6 +58,7 @@ export class MailService {
     async sendEmailVerification(userEmail: EmailAddress, verifyToken: string) {
         try {
             const url = "https://i.ibb.co/bHRsJzJ/Img4-2x.jpg";
+            const html1 = readFileSync("verification-email.html", "utf8");
             const html = `
     <div>
       <p>Here's an image:</p>
@@ -68,7 +68,7 @@ export class MailService {
             const mailOptions = {
                 to: userEmail,
                 subject: "Email with image",
-                html
+                html1
             };
             await this.mailer.sendMail(mailOptions);
 
