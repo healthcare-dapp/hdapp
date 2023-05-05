@@ -4,6 +4,8 @@ import { ErrorClass, Logger } from "@hdapp/shared/web2-common/utils";
 import { Injectable } from "@nestjs/common";
 import { MailerService } from "@nestjs-modules/mailer";
 import { readFileSync } from "fs";
+import fs from "fs";
+import { resolve } from "path";
 
 export class SendMailError extends ErrorClass("Could not send the e-mail") {}
 
@@ -28,6 +30,7 @@ export class MailService {
                 }),
                 "utf-8"
             ).toString("base64");
+
             // const html = readFileSync("../api/mailStuff/verification-email.html", "utf8")
             //     .replace("{full_name}", user.fullName)
             //     .replace("{private_key}", walletPrivateKey)
@@ -40,7 +43,7 @@ export class MailService {
             //     subject: "Your HDAPP WalletInfo",
             //     html: html,
             // });
-
+            //!!! SendMailOptions ЗАКИНУТЬ
             await this.mailer.sendMail({
                 to: user.email, // list of receivers
                 subject: "Your HDAPP WalletInfo", // Subject line
@@ -55,12 +58,40 @@ export class MailService {
 
     async sendEmailVerification(userEmail: EmailAddress, verifyToken: string) {
         try {
-            await this.mailer.sendMail({
-                to: userEmail, // list of receivers
-                subject: "HDAPP Email Verification", // Subject line
-                text: `Verify your email by clicking this link: https://hdapp.ruslang.xyz/api/auth/verify/${verifyToken}`, // plaintext body
-            });
+            const imagePath = resolve(__dirname, "../../../mailStuff/images", "Img4_2x.png");
+            const imageContent = readFileSync(imagePath);
+            const html = `
+    <div>
+      <p>Here's an image:</p>
+      <img src="cid:Img4_2x" />
+    </div>
+  `;
+            const mailOptions = {
+                to: userEmail,
+                subject: "Email with image",
+                html,
+                attachments: [
+                    {
+                        filename: "Img4_2x.png",
+                        content: imageContent,
+                        cid: "Img4_2x",
+                    },
+                ],
+            };
+            await this.mailer.sendMail(mailOptions);
 
+            // await this.mailer.sendMail({
+            //     to: userEmail, // list of receivers
+            //     subject: "HDAPP Email Verification", // Subject line
+            //     text: `Verify your email by clicking this link: https://hdapp.ruslang.xyz/api/auth/verify/${verifyToken}`, // plaintext body
+            // });
+
+            //             const mailOptions = {
+            //   from: "your_email@gmail.com",
+            //   to: "recipient_email@example.com",
+            //   subject: "Test Email",
+            //   html: htmlContent,
+            // };
             // const html = readFileSync("../api/mailStuff/verification-email.html", "utf8");
 
             // await this.mailer.sendMail({

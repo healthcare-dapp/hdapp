@@ -270,8 +270,8 @@ export class Registration extends React.Component<{}, {
                 });
                 console.log("Files are succesfully uploaded");
                 alert("Files are succesfully uploaded");
-                return ["1", "2"];
-                //return files.map(file => file.id);
+                //return ["1", "2"];
+                return files.map(file => file.id);
             } 
             alert("Cannot upload right now. Server is busy!");
         } catch (e) {
