@@ -196,7 +196,9 @@ export const UsersPage = observer(forwardRef((props, ref) => {
             const userid = (await UsersService.createNewUserAdmin(newuser)).id;
 
             if (role === "Moderator")
-                await UsersService.updateUser({ has_moderator_capabilities: true }, userid);
+                await UsersService.updateUser({ has_moderator_capabilities: true }, userid.toString());
+            if (role === "Administrator")
+                await UsersService.updateUser({has_administrator_capabilities: true, has_moderator_capabilities: true }, userid.toString());
             handleClose();
         };
 
