@@ -272,7 +272,7 @@ export class Registration extends React.Component<{}, {
                 alert("Files are succesfully uploaded");
                 //return ["1", "2"];
                 return files.map(file => file.id);
-            } 
+            }
             alert("Cannot upload right now. Server is busy!");
         } catch (e) {
             console.log("Upload Exception:");
@@ -305,13 +305,14 @@ export class Registration extends React.Component<{}, {
                 // if (!CreateUserDto.email.toLocaleLowerCase().match(
                 //     /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/))
                 //     throw new IllegalArgumentException("Email is incorrect");
-
-                const fileIds = await this.uploadFiles();
-                if (!fileIds.length && this.state.isDoctor) {
-                    alert("You need to upload your medical files to confirm your specialty");
-                    throw new IllegalArgumentException("No files?!");
+                if (this.state.isDoctor) {
+                    const fileIds = await this.uploadFiles();
+                    if (!fileIds.length) {
+                        alert("You need to upload your medical files to confirm your specialty");
+                        throw new IllegalArgumentException("No files?!");
+                    }
                 }
-
+                
                 const data: CreateUserDto = {
                     email: this.state.mailValue as EmailAddress,
                     full_name: this.state.nameValue,

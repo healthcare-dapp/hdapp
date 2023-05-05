@@ -1,6 +1,7 @@
 import { setJwtToken } from "@hdapp/shared/web2-common/api/http";
 import { UsersService } from "@hdapp/shared/web2-common/api/services";
 import { CreateUserDto, UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
+import { EmailAddress, emailAddressType } from "@hdapp/shared/web2-common/types/email-address.type";
 import { Add, AdminPanelSettings, LocalPolice, MedicalInformation, Person, Refresh, Search, Tune } from "@mui/icons-material";
 import { AppBar, Box, Button, Checkbox, FormHelperText, IconButton, InputAdornment, MenuItem, Select, Stack, TextField, Toolbar, Typography } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
@@ -12,7 +13,6 @@ import { DataGrid, GridColDef, GridRenderCellParams, useGridApiContext, useGridA
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
-import { EmailAddress, emailAddressType } from "@hdapp/shared/web2-common/types/email-address.type";
 
 const saveClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
@@ -128,7 +128,7 @@ const columns: GridColDef[] = [
                 <Stack direction="row" justifyContent="space-around" style={{ width: "100%" }}
                        onClick={e => e.stopPropagation()}>
                     <Button variant="contained" size="small" color="primary" onClick={() =>saveClick(params)}>save</Button>
-                    <Button variant="contained" size="small" color="error" onClick={() =>discardClick(params)}>{params.row.is_banned ? "UNBAN" : "BAN"}</Button>
+                    <Button variant="contained" size="small" color="error" onClick={() =>discardClick(params)}>{ params.row.is_banned ? "UNBAN" : "BAN" }</Button>
                 </Stack>
             );
         }
@@ -183,27 +183,20 @@ export const UsersPage = observer(forwardRef((props, ref) => {
             setRole(event.target.value);
         };
 
-        const handleCreateUser = () => {
+        const handleCreateUser = async () => {
             console.log(email, name, dateOfBirth, password, role);
-            const newuser: UserDto = {
+            const newuser: CreateUserDto = {
                 email: email as EmailAddress,
                 full_name: name,
                 birth_date: dateOfBirth,
-                id: users.length,
-                web3_address: null,
-                confirmation_documents: undefined,
-                medical_organization_name: undefined,
-                has_doctor_capabilities: false,
-                has_moderator_capabilities: false,
-                has_administrator_capabilities: false,
-                has_organization_capabilities: false,
-                has_verified_email: false,
-                is_verified_doctor: false,
-                is_banned: false,
-                organization_details: undefined,
-                public_profile: undefined
+                medical_organization_name: "",
+                has_doctor_capabilities: role === "Doctor",
+                confirmation_document_ids: []
             };
-            setUsers(users.concat([newuser]));
+            const userid = (await UsersService.createNewUserAdmin(newuser)).id;
+
+            if (role === "Moderator")
+                await UsersService.updateUser({ has_moderator_capabilities: true }, userid);
             handleClose();
         };
 

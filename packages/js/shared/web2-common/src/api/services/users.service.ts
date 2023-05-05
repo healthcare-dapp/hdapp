@@ -2,7 +2,7 @@ import { UpdateUserDto } from "@hdapp/shared/web2-common/dto";
 import { UserPublicProfileDto } from "../../dto/user/public-profile.dto";
 import { UpdatePublicProfileDto } from "../../dto/user/update-public-profile.dto";
 import { UserFiltersDto } from "../../dto/user-filters.dto";
-import { PublicUserDto, PublicUserSearchFiltersDto, UserDto } from "../../dto/user.dto";
+import { CreateUserDto, PublicUserDto, PublicUserSearchFiltersDto, UserDto } from "../../dto/user.dto";
 import { PagedResponse } from "../../types/paged-response.type";
 import { Web3Address } from "../../types/web3-address.type";
 import { endpoints } from "../endpoints";
@@ -37,7 +37,7 @@ export const UsersService = new (class {
         });
     }
 
-    updateUser(user: UserDto, id: string): Promise<UserDto> {
+    updateUser(user: UpdateUserDto, id: string): Promise<UserDto> {
         console.log("received:");
         console.log(user);
         return http.request({
@@ -93,6 +93,17 @@ export const UsersService = new (class {
             url: endpoints.users.find_public_profile_by_web3_address
                 .replace(":address", address),
             type: PublicUserDto
+        });
+    }
+
+    createNewUserAdmin(user: CreateUserDto): Promise<UserDto> {
+        console.log("Request to create new User");
+        console.log(user);
+        return http.request({
+            data: user,
+            url: endpoints.users.create_one,
+            type: UserDto,
+            method: "PATCH"
         });
     }
 
