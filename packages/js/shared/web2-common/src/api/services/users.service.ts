@@ -103,7 +103,7 @@ export const UsersService = new (class {
             data: user,
             url: endpoints.users.create_one,
             type: UserDto,
-            method: "POST"
+            method: "PUT"
         });
     }
 

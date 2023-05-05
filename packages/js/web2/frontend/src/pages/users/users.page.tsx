@@ -16,26 +16,12 @@ import { PageWidget } from "../../widgets/page";
 
 const saveClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
-    const data1: UserDto = { web3_address: cellValues.row.web3_address,
-        email: cellValues.row.email,
-        full_name: cellValues.row.full_name,
-        birth_date: cellValues.row.birth_date,
-        medical_organization_name: cellValues.row.medical_organization_name,
-        confirmation_documents: cellValues.row.confirmation_documents,
-        has_doctor_capabilities: cellValues.row.has_doctor_capabilities,
-        has_moderator_capabilities: cellValues.row.has_moderator_capabilities,
-        has_administrator_capabilities: cellValues.row.has_administrator_capabilities,
-        has_verified_email: cellValues.row.has_verified_email,
-        is_verified_doctor: cellValues.row.is_verified_doctor,
-        is_banned: cellValues.row.is_banned,
-        id: cellValues.row.id };
+
     console.log(data);
     console.log(data1);
     const b = await UsersService.updateUser(data, data.id.toString());
     console.log(b);
     console.log("Save complete");
-    // cellValues.api.stopRowEditMode({ id: cellValues.id });
-    // cellValues.api.getRow(cellValues.id).editable = false;
 };
 const discardClick = async (cellValues: GridRenderCellParams) => {
     const data: UserDto = cellValues.row;
@@ -156,6 +142,7 @@ export const UsersPage = observer(forwardRef((props, ref) => {
     const [dateOfBirth, setDateOfBirth] = useState("");
     const [password, setPassword] = useState("");
     const [role, setRole] = useState("");
+    const [medName, setMed] = useState("");
 
     const createNewUser = () => {
 
@@ -183,23 +170,36 @@ export const UsersPage = observer(forwardRef((props, ref) => {
             setRole(event.target.value);
         };
 
+        const handleMedicalNameChange = event => {
+            setMed(event.target.value);
+        };
+
         const handleCreateUser = async () => {
             console.log(email, name, dateOfBirth, password, role);
             const newuser: CreateUserDto = {
                 email: email as EmailAddress,
                 full_name: name,
                 birth_date: dateOfBirth,
-                medical_organization_name: "",
+                medical_organization_name: medName,
                 has_doctor_capabilities: role === "Doctor",
                 confirmation_document_ids: []
             };
-            const userid = (await UsersService.createNewUserAdmin(newuser)).id;
+            try {
+                const userid = (await UsersService.createNewUserAdmin(newuser)).id;
 
-            if (role === "Moderator")
-                await UsersService.updateUser({ has_moderator_capabilities: true }, userid.toString());
-            if (role === "Administrator")
-                await UsersService.updateUser({has_administrator_capabilities: true, has_moderator_capabilities: true }, userid.toString());
-            handleClose();
+                if (role === "Moderator") {
+                    await UsersService.updateUser({ has_moderator_capabilities: true, password: password }, userid.toString());
+                    console.log("Role updated to Moderator");
+                }
+                if (role === "Administrator") {
+                    await UsersService.updateUser({ has_administrator_capabilities: true, has_moderator_capabilities: true, password: password }, userid.toString());
+                    console.log("Role updated to Admin");
+                }
+                setUsers(users);
+                handleClose();
+            } catch (e) {
+                alert(e);
+            }
         };
 
         return (
@@ -217,6 +217,7 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                                    fullWidth
                                    variant="standard"
                                    value={email}
+                                   required
                                    onChange={handleEmailChange} />
                         <TextField margin="dense"
                                    id="name"
@@ -230,6 +231,8 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                                    label="Date of birth"
                                    fullWidth
                                    variant="standard"
+                                   required
+                                   helperText="year-month-day style"
                                    value={dateOfBirth}
                                    onChange={handleDateOfBirthChange} />
                         <TextField margin="dense"
@@ -239,8 +242,15 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                                    variant="standard"
                                    value={password}
                                    onChange={handlePasswordChange} />
+                        <TextField margin="dense"
+                                   id="medName"
+                                   label="Name of the Medical Organization"
+                                   fullWidth
+                                   variant="standard"
+                                   value={medName}
+                                   onChange={handleMedicalNameChange} />
                         <Select margin="dense" id="role" label="Choose Role" fullWidth variant="standard" value={role} onChange={handleRoleChange}>
-                            <MenuItem value="Administator">Administator</MenuItem>
+                            <MenuItem value="Administrator">Administrator</MenuItem>
                             <MenuItem value="Moderator">Moderator</MenuItem>
                             <MenuItem value="Doctor">Doctor</MenuItem>
                             <MenuItem value="Patient">Patient</MenuItem>
