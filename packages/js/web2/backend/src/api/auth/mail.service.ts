@@ -58,8 +58,6 @@ export class MailService {
 
     async sendEmailVerification(userEmail: EmailAddress, verifyToken: string) {
         try {
-            const imagePath = resolve(__dirname, "../../../mailStuff/images/Img4_2x.png");
-            const imageContent = readFileSync(imagePath);
             const url = "https://drive.google.com/file/d/1qe9MovzkceaqhjtaDCNxIdKkS1p4o6Uz/view?usp=share_link";
             const html = `
     <div>
