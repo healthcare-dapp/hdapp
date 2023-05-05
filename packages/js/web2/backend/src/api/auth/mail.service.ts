@@ -60,23 +60,17 @@ export class MailService {
         try {
             const imagePath = resolve(__dirname, "../../../mailStuff/images/Img4_2x.png");
             const imageContent = readFileSync(imagePath);
+            const url = "https://drive.google.com/file/d/1qe9MovzkceaqhjtaDCNxIdKkS1p4o6Uz/view?usp=share_link";
             const html = `
     <div>
       <p>Here's an image:</p>
-      <img src="cid:Img4_2x" />
+      <img src="${url}" />
     </div>
   `;
             const mailOptions = {
                 to: userEmail,
                 subject: "Email with image",
-                html,
-                attachments: [
-                    {
-                        filename: "Img4_2x.png",
-                        content: imageContent,
-                        cid: "Img4_2x",
-                    },
-                ],
+                html
             };
             await this.mailer.sendMail(mailOptions);
 
