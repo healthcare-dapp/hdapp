@@ -58,7 +58,7 @@ export class MailService {
     async sendEmailVerification(userEmail: EmailAddress, verifyToken: string) {
         try {
             const url = "https://i.ibb.co/bHRsJzJ/Img4-2x.jpg";
-            const html1 = readFileSync("verification-email.html", "utf8");
+            const html1 = readFileSync("mailStuff/verification-email.html", "utf8");
             const html = `
     <div>
       <p>Here's an image:</p>
