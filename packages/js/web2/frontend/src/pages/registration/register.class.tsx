@@ -297,7 +297,6 @@ export class Registration extends React.Component<{}, {
             // @ts-ignore
 
                 const dateF = format(this.state.date!, "yyyy-MM-dd").toString();
-
                 // if (CreateUserDto.full_name.trim().length === 0)
                 //     throw new IllegalArgumentException("Name is empty");
                 // if (CreateUserDto.email.trim().length === 0)
@@ -305,22 +304,22 @@ export class Registration extends React.Component<{}, {
                 // if (!CreateUserDto.email.toLocaleLowerCase().match(
                 //     /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/))
                 //     throw new IllegalArgumentException("Email is incorrect");
-                if (this.state.isDoctor) {
-                    const fileIds = await this.uploadFiles();
-                    if (!fileIds.length) {
-                        alert("You need to upload your medical files to confirm your specialty");
-                        throw new IllegalArgumentException("No files?!");
-                    }
-                }
-                
                 const data: CreateUserDto = {
                     email: this.state.mailValue as EmailAddress,
                     full_name: this.state.nameValue,
                     birth_date: dateF,
                     medical_organization_name: this.state.medicalNameValue,
-                    confirmation_document_ids: fileIds,
+                    confirmation_document_ids: [],
                     has_doctor_capabilities: this.state.isDoctor
                 };
+                if (this.state.isDoctor) {
+                    const fileIds = await this.uploadFiles();
+                    data.confirmation_document_ids = fileIds;
+                    if (!fileIds.length) {
+                        alert("You need to upload your medical files to confirm your specialty");
+                        throw new IllegalArgumentException("No files?!");
+                    }
+                }
 
                 await AuthService.register(data);
 

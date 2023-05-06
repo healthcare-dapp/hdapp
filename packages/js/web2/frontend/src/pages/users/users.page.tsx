@@ -185,17 +185,18 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                 confirmation_document_ids: []
             };
             try {
-                const userid = (await UsersService.createNewUserAdmin(newuser)).id;
+                const newUser = (await UsersService.createNewUserAdmin(newuser));
 
                 if (role === "Moderator") {
-                    await UsersService.updateUser({ has_moderator_capabilities: true, password: password }, userid.toString());
+                    await UsersService.updateUser({ has_moderator_capabilities: true, password: password }, newUser.id.toString());
                     console.log("Role updated to Moderator");
                 }
                 if (role === "Administrator") {
-                    await UsersService.updateUser({ has_administrator_capabilities: true, has_moderator_capabilities: true, password: password }, userid.toString());
+                    await UsersService.updateUser({ has_administrator_capabilities: true, has_moderator_capabilities: true, password: password }, newUser.id.toString());
                     console.log("Role updated to Admin");
                 }
-                setUsers(users);
+                users.push(newUser);
+                //setUsers(users);
                 handleClose();
             } catch (e) {
                 alert(e);

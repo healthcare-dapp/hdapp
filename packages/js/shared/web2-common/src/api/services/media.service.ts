@@ -1,3 +1,4 @@
+import { Response as ExpressResponse } from "express";
 import { array } from "io-ts";
 import { FileDto } from "../../dto/file.dto";
 import { endpoints } from "../endpoints";
@@ -12,4 +13,12 @@ export const MediaService = new (class {
             type: array(FileDto)
         });
     }
+
+    download(id: string): Promise<Blob> {
+        return http.request({
+          method: "GET",
+          url: `${endpoints.file.download}/${id}`,
+          responseType: "blob"
+        }).then(response => response.data);
+      }
 });

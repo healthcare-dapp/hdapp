@@ -1,3 +1,4 @@
+import { UsersService } from "@hdapp/shared/web2-common/api/services";
 import { StatisticsService } from "@hdapp/shared/web2-common/api/services/statistics.service";
 import { StatisticsDto } from "@hdapp/shared/web2-common/dto/statistics.dto";
 import { BadgeOutlined, List, People } from "@mui/icons-material";
@@ -9,7 +10,6 @@ import { PageWidget } from "../../widgets/page";
 export const DashboardPage = observer(forwardRef((props, ref) => {
     const theme = useTheme();
     const [statistics, setStatistics] = useState<StatisticsDto>();
-
     useEffect(() => {
         (async () => {
             const response = await StatisticsService.get();
@@ -21,7 +21,7 @@ export const DashboardPage = observer(forwardRef((props, ref) => {
         <PageWidget>
             <Container maxWidth="md">
                 <Stack spacing={3} sx={{ pt: 5, pb: 3 }}>
-                    <Typography variant="h4">Welcome, Alexander!</Typography>
+                    <Typography variant="h4">Welcome, Administrator!</Typography>
                     <Stack spacing={2} direction="row">
                         <Typography variant="h6">Users statistics</Typography>
                         <Button startIcon={<BadgeOutlined />} style={{ marginLeft: "auto" }}>Manage requests</Button>

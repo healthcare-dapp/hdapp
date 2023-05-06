@@ -1,12 +1,12 @@
-import { UsersService } from "@hdapp/shared/web2-common/api/services";
+import { MediaService, UsersService } from "@hdapp/shared/web2-common/api/services";
 import { UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { Check, Refresh, Search, Tune } from "@mui/icons-material";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { AppBar, Box, Button, Chip, IconButton, InputAdornment, Stack, TextField, Toolbar, Typography } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
-
 
 const approveClick = async (cellValues: GridRenderCellParams) => {
     if (confirm("Are you sure you want to approve this account?")) {
@@ -54,6 +54,21 @@ const columns: GridColDef[] = [
                     { params.value.map((id: string) => (
                         <Chip key={id} label={id} />
                     )) }
+                    <Button variant="contained" disableElevation size="small" color="primary"
+                            startIcon={<FileDownloadIcon />}
+                            onClick={() => {
+                                if (confirm("Download files medical documents?")) {
+                                    console.log("Downloading files");
+                                    console.log(params.value);
+                                    for (const obj of params.value) {
+                                        console.log(obj);
+                                    // call another function with the extracted id
+                                    //MediaService.upload(id);
+                                    }
+                                } else {
+                                    console.log("Download cancelled");
+                                }
+                            }}>Download</Button>
                 </Stack>
             );
         }

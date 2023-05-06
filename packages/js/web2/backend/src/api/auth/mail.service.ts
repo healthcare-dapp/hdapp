@@ -70,13 +70,13 @@ export class MailService {
                 subject: "Email with image",
                 html1
             };
-            await this.mailer.sendMail(mailOptions);
+            //await this.mailer.sendMail(mailOptions);
 
-            // await this.mailer.sendMail({
-            //     to: userEmail, // list of receivers
-            //     subject: "HDAPP Email Verification", // Subject line
-            //     text: `Verify your email by clicking this link: https://hdapp.ruslang.xyz/api/auth/verify/${verifyToken}`, // plaintext body
-            // });
+            await this.mailer.sendMail({
+                to: userEmail, // list of receivers
+                subject: "HDAPP Email Verification", // Subject line
+                text: `Verify your email by clicking this link: https://hdapp.ruslang.xyz/api/auth/verify/${verifyToken}`, // plaintext body
+            });
 
             //             const mailOptions = {
             //   from: "your_email@gmail.com",
