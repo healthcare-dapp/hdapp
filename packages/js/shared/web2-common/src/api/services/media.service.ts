@@ -19,6 +19,6 @@ export const MediaService = new (class {
           method: "GET",
           url: `${endpoints.file.download}/${id}`,
           responseType: "blob"
-        }).then(response => response.data);
+        });
       }
 });
