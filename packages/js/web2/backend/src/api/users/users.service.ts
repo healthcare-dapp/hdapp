@@ -197,13 +197,17 @@ export class UsersService {
                 { medical_organization_name: filters.medical_organization_name },
             );
 
-        builder = builder.leftJoinAndSelect("user.confirmationDocuments", "confirmationDocuments");
         builder = builder.limit(50);
         builder.orderBy(sortBy, shouldSortInDescendingOrder ? "DESC" : "ASC");
 
         debug(builder.expressionMap);
 
         try {
+            const something = this.users.createQueryBuilder("user").leftJoinAndSelect("user.confirmationDocuments", "confirmationDocument")
+                .getMany();
+            console.log("SOMETHING IS COOKING");
+            console.log(something);
+
             const dbEntities = await builder.getMany();
             const merged = await Promise.all(
                 dbEntities.map(async u => {
@@ -235,7 +239,7 @@ export class UsersService {
                 // TODO
                 next_page_id: "0",
                 previous_page_id: "0",
-                total_count: 0,
+                total_count: filtered.length,
             };
         } catch (e) {
             if (e instanceof EntityNotFoundError) {
