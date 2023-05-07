@@ -203,11 +203,11 @@ export class UsersService {
         debug(builder.expressionMap);
 
         try {
-            const something = this.users.createQueryBuilder("user").leftJoinAndSelect("user.confirmationDocuments", "confirmationDocument")
+            const something = await this.users.createQueryBuilder("user").leftJoinAndSelect("user.confirmationDocuments", "confirmationDocument")
                 .getMany();
             console.log("SOMETHING IS COOKING");
             console.log(something);
-
+            console.log("COOKED");
             const dbEntities = await builder.getMany();
             const merged = await Promise.all(
                 dbEntities.map(async u => {
