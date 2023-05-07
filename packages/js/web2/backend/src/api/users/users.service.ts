@@ -116,7 +116,9 @@ export class UsersService {
 
     async createOne(user: CreateUserEntity): Promise<UserEntity> {
         try {
-            await this.users.insert(user);
+          const response = await this.users.save(user);
+          console.log("Response");
+          console.log(response);
         } catch (e) {
             if (e instanceof QueryFailedError) {
                 error(e);
