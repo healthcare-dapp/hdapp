@@ -17,7 +17,7 @@ export class FileEntity {
     @ApiProperty({ description: "File name." })
         fileName: string;
 
-    @Column({ select: false })
+    @Column()
     @ApiProperty({ description: "File size in bytes." })
         fileSize: number;
 }
