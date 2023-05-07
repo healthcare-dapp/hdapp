@@ -1,6 +1,6 @@
 import { setJwtToken } from "@hdapp/shared/web2-common/api/http";
 import { UsersService } from "@hdapp/shared/web2-common/api/services";
-import { CreateUserDto, UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
+import { CreateUserDto, UpdateUserDto, UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { EmailAddress, emailAddressType } from "@hdapp/shared/web2-common/types/email-address.type";
 import { Add, AdminPanelSettings, LocalPolice, MedicalInformation, Person, Refresh, Search, Tune } from "@mui/icons-material";
 import { AppBar, Box, Button, Checkbox, FormHelperText, IconButton, InputAdornment, MenuItem, Select, Stack, TextField, Toolbar, Typography } from "@mui/material";
@@ -15,11 +15,10 @@ import { forwardRef, useEffect, useState } from "react";
 import { PageWidget } from "../../widgets/page";
 
 const saveClick = async (cellValues: GridRenderCellParams) => {
-    const data: UserDto = cellValues.row;
+    const data: UpdateUserDto = cellValues.row;
 
     console.log(data);
-    console.log(data1);
-    const b = await UsersService.updateUser(data, data.id.toString());
+    const b = await UsersService.updateUser(data, cellValues.row.id.toString());
     console.log(b);
     console.log("Save complete");
 };

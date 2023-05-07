@@ -54,6 +54,7 @@ export class AuthService {
         console.log("Service received");
         console.log(user);
         const fullUser = await this.users.createOne(user);
+        console.log("What was saved to DB");
         console.log(fullUser);
         const token = this._generateEmailVerificationJwtToken(fullUser);
         await this.mail.sendEmailVerification(user.email, token);
