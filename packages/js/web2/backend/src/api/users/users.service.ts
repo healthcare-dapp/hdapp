@@ -116,9 +116,9 @@ export class UsersService {
 
     async createOne(user: CreateUserEntity): Promise<UserEntity> {
         try {
-          const response = await this.users.save(user);
-          console.log("Response");
-          console.log(response);
+            const response = await this.users.save(user);
+            console.log("Response");
+            console.log(response);
         } catch (e) {
             if (e instanceof QueryFailedError) {
                 error(e);
@@ -197,6 +197,7 @@ export class UsersService {
                 { medical_organization_name: filters.medical_organization_name },
             );
 
+        builder = builder.leftJoinAndSelect("user.confirmationDocuments", "confirmationDocuments");
         builder = builder.limit(50);
         builder.orderBy(sortBy, shouldSortInDescendingOrder ? "DESC" : "ASC");
 
