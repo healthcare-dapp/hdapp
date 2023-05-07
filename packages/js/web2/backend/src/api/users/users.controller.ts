@@ -46,7 +46,8 @@ export class UsersController {
         console.log("get Users:")
         console.log(pagedEntities.items);
         console.log("Transformed Users:")
-        console.log(await UserAdapter.transformToDto);
+        console.log(pagedEntities.items[0].confirmationDocuments);
+        //console.log(await UserAdapter.transformToDto(pagedEntities.items));
         console.log("Paged feedback")
         console.log(await pagedEntities.items.map(
             UserAdapter.transformToDto,

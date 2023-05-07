@@ -206,7 +206,7 @@ export class UsersService {
             const something = await this.users.createQueryBuilder("user").leftJoinAndSelect("user.confirmationDocuments", "confirmationDocument")
                 .getMany();
             console.log("SOMETHING IS COOKING");
-            console.log(something);
+            console.log(something[0].confirmationDocuments);
             console.log("COOKED");
 
             const dbEntities = await builder.getMany();
