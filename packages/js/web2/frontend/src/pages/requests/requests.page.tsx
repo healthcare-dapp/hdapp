@@ -57,6 +57,7 @@ const columns: GridColDef[] = [
                     <Button variant="contained" disableElevation size="small" color="primary"
                             startIcon={<FileDownloadIcon />}
                             onClick={() => {
+                                console.log(params);
                                 if (confirm("Download files medical documents?")) {
                                     console.log("Downloading files");
                                     console.log(params.value);
@@ -82,13 +83,11 @@ const columns: GridColDef[] = [
                 <Stack direction="row" justifyContent="space-around" style={{ width: "100%" }}
                        onClick={e => e.stopPropagation()}>
                     <Button variant="outlined" size="small" color="error" onClick={() => {
-                        console.log("LCLIC");
                         rejectClick(params);
                     }}>Reject</Button>
                     <Button variant="contained" disableElevation size="small" color="success"
                             startIcon={<Check />}
                             onClick={() => {
-                                console.log("LCLIC");
                                 approveClick(params);
                             }}>Approve</Button>
                 </Stack>
@@ -103,6 +102,7 @@ export const RequestsPage = observer(forwardRef((props, ref) => {
         (async () => {
             const response = await UsersService.findPaged({ has_doctor_capabilities: true, has_web3_address: false });
             setRequests(response.items);
+            console.log(response.items);
         })();
     }, []);
     return (

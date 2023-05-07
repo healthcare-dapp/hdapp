@@ -320,7 +320,7 @@ export class Registration extends React.Component<{}, {
                         throw new IllegalArgumentException("No files?!");
                     }
                 }
-
+                console.log(data);
                 await AuthService.register(data);
 
                 this.setState({ isSubmitted: true });

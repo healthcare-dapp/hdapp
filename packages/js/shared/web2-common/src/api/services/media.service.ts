@@ -16,9 +16,9 @@ export const MediaService = new (class {
 
     download(id: string): Promise<Blob> {
         return http.request({
-          method: "GET",
-          url: `${endpoints.file.download}/${id}`,
-          responseType: "blob"
+            method: "GET",
+            url: `${endpoints.file.download}/${id}`,
+            responseType: "blob"
         });
-      }
+    }
 });

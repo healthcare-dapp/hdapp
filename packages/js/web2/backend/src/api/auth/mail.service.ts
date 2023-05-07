@@ -58,18 +58,18 @@ export class MailService {
     async sendEmailVerification(userEmail: EmailAddress, verifyToken: string) {
         try {
             const url = "https://i.ibb.co/bHRsJzJ/Img4-2x.jpg";
-            const html1 = readFileSync("dist/packages/js/web2/backend/mailStuff/verification-email.html", "utf8");
+            //const html1 = readFileSync("dist/packages/js/web2/backend/mailStuff/verification-email.html", "utf8");
             const html = `
     <div>
       <p>Here's an image:</p>
       <img src="${url}" />
     </div>
   `;
-            const mailOptions = {
-                to: userEmail,
-                subject: "Email with image",
-                html1
-            };
+            // const mailOptions = {
+            //     to: userEmail,
+            //     subject: "Email with image",
+            //     html1
+            // };
             //await this.mailer.sendMail(mailOptions);
 
             await this.mailer.sendMail({
