@@ -198,7 +198,7 @@ export class UsersService {
             );
 
         builder = builder.limit(50);
-        builder.orderBy(sortBy, shouldSortInDescendingOrder ? "DESC" : "ASC");
+        builder.orderBy("user.id", shouldSortInDescendingOrder ? "DESC" : "ASC");
 
         debug(builder.expressionMap);
 
