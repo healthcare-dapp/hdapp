@@ -162,7 +162,7 @@ export class UsersService {
         sortBy: keyof UserEntity,
         shouldSortInDescendingOrder: boolean,
     ): Promise<PagedResponse<UserFullEntity>> {
-        let builder = this.users.createQueryBuilder("user");
+        let builder = this.users.createQueryBuilder("user").leftJoinAndSelect("user.confirmationDocuments", "confirmationDocument");
 
         builder = builder.where("user.id > :from_id", { from_id: fromId });
 
