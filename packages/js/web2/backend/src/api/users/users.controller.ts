@@ -43,6 +43,8 @@ export class UsersController {
             /* sort_by ??  */"id",
             shouldBeInDescendingOrder,
         );
+        console.log("get Users:")
+        console.log(pagedEntities);
         return {
             next_page_id: pagedEntities.next_page_id,
             previous_page_id: pagedEntities.previous_page_id,
