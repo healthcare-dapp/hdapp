@@ -208,6 +208,7 @@ export class UsersService {
             console.log("SOMETHING IS COOKING");
             console.log(something);
             console.log("COOKED");
+
             const dbEntities = await builder.getMany();
             const merged = await Promise.all(
                 dbEntities.map(async u => {

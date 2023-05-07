@@ -44,7 +44,13 @@ export class UsersController {
             shouldBeInDescendingOrder,
         );
         console.log("get Users:")
-        console.log(pagedEntities);
+        console.log(pagedEntities.items);
+        console.log("Transformed Users:")
+        console.log(await UserAdapter.transformToDto);
+        console.log("Paged feedback")
+        console.log(await pagedEntities.items.map(
+            UserAdapter.transformToDto,
+        ));
         return {
             next_page_id: pagedEntities.next_page_id,
             previous_page_id: pagedEntities.previous_page_id,
