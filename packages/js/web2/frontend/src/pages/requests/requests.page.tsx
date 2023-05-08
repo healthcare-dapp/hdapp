@@ -1,4 +1,5 @@
 import { MediaService, UsersService } from "@hdapp/shared/web2-common/api/services";
+import { FileDto } from "@hdapp/shared/web2-common/dto";
 import { UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
 import { Check, Refresh, Search, Tune } from "@mui/icons-material";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
@@ -23,6 +24,27 @@ const rejectClick = async (cellValues: GridRenderCellParams) => {
     console.log("Idk, should we delete account?");
 };
 
+const downloadClick = async (cellValues: FileDto) => {
+    try {
+        console.log("Downloading file");
+        console.log(cellValues.file_name);
+        const responses = await MediaService.download(cellValues.id, cellValues.file_name);
+        console.log("RESULT");
+        console.log(responses);
+        const url = window.URL.createObjectURL(responses.data);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", cellValues.file_name);
+    link.setAttribute("target", "_blank");
+    link.setAttribute("rel", "noopener noreferrer");
+    link.setAttribute("directory", "");
+    document.body.appendChild(link);
+    link.click();
+
+    } catch (e) {
+        console.error("Error downloading file: ", e);
+    }
+};
 const columns: GridColDef[] = [
     {
         field: "email",
@@ -49,11 +71,11 @@ const columns: GridColDef[] = [
         headerName: "Confirmation Documents",
         flex: 1,
         renderCell(params) {
+            const ids = params.value.map(file => file.id);
+
             return (
                 <Stack direction="row" spacing={1}>
-                    { params.value.map((id: string) => (
-                        <Chip key={id} label={id} />
-                    )) }
+
                     <Button variant="contained" disableElevation size="small" color="primary"
                             startIcon={<FileDownloadIcon />}
                             onClick={() => {
@@ -62,14 +84,17 @@ const columns: GridColDef[] = [
                                     console.log("Downloading files");
                                     console.log(params.value);
                                     for (const obj of params.value) {
-                                        console.log(obj);
-                                    // call another function with the extracted id
-                                    //MediaService.upload(id);
+                                        downloadClick(obj as FileDto).catch(e =>
+                                            console.log(e));
+
                                     }
                                 } else {
                                     console.log("Download cancelled");
                                 }
                             }}>Download</Button>
+                    { params.value.map(name => (
+                        <Chip key={name.file_name} label={name.file_name} />
+                    )) }
                 </Stack>
             );
         }

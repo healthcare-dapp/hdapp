@@ -14,10 +14,10 @@ export const MediaService = new (class {
         });
     }
 
-    download(id: string): Promise<Blob> {
+    download(id: string, fileName: string): Promise<Blob> {
         return http.request({
             method: "GET",
-            url: `${endpoints.file.download}/${id}`,
+            url: endpoints.file.download.replace(":id", id).replace(":name", fileName),
             responseType: "blob"
         });
     }
