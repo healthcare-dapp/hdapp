@@ -22,6 +22,7 @@ import { useNavigate } from "react-router";
 import { ModalProvider } from "../../App2";
 import { QrCodeDialog } from "../../dialogs/qr-code.dialog";
 import { ScanQrCodeDialog } from "../../dialogs/scan-qr-code.dialog";
+import { SendReportDialog } from "../../dialogs/send-report.dialog";
 import { SessionManager, sessionManager } from "../../managers/session.manager";
 import { ProfileEntry } from "../../services/profile.service";
 import { useDatabase } from "../../utils/use-database";
@@ -149,8 +150,8 @@ export const DashboardPage = observer(() => {
                                 <MyChatsWidget />
                                 <LogsWidget />
                                 <Typography fontSize={12} color="text.secondary">
-                                    This version of the application can only be used for testing purposes.<br /><br />
-                                    <a href="/tos" style={{ color: "grey" }}>Terms of Service</a> • <a href="/privacy_policy" style={{ color: "grey" }}>Privacy Policy</a> • <a style={{ color: theme.palette.primary.main }} href="/">2023 Healthcare DApp</a>
+                                    <span onClick={e => { e.preventDefault(); ModalProvider.show(SendReportDialog); }} style={{ color: "#dd0000", textDecoration: "underline" }}>Send a report</span> • <a href="/tos" style={{ color: "grey" }}>Terms of Service</a> • <a href="/privacy_policy" style={{ color: "grey" }}>Privacy Policy</a><br />
+                                    <a style={{ color: theme.palette.primary.main }} href="/">2023 Healthcare DApp</a>
                                 </Typography>
                             </Stack>
                         </Grid>

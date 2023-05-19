@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import { Response as ExpressResponse } from "express";
 import { array } from "io-ts";
 import { FileDto } from "../../dto/file.dto";
@@ -14,11 +15,12 @@ export const MediaService = new (class {
         });
     }
 
-    download(id: string, fileName: string): Promise<Blob> {
-        return http.request({
+    async download(id: string, fileName: string): Promise<Blob> {
+        const response = await http.request<AxiosResponse<Blob>>({
             method: "GET",
             url: endpoints.file.download.replace(":id", id).replace(":name", fileName),
             responseType: "blob"
         });
+        return response.data;
     }
 });

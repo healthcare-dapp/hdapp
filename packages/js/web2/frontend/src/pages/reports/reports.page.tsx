@@ -1,17 +1,17 @@
 import { MediaService, UsersService } from "@hdapp/shared/web2-common/api/services";
-import { FileDto } from "@hdapp/shared/web2-common/dto";
-import { UserDto } from "@hdapp/shared/web2-common/dto/user.dto";
+import { FileDto, UserDto } from "@hdapp/shared/web2-common/dto";
+import { ReportDto } from "@hdapp/shared/web2-common/dto/report";
 import { Check, Refresh, Search, Tune } from "@mui/icons-material";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import { AppBar, Box, Button, Chip, IconButton, InputAdornment, Stack, TextField, Toolbar, Typography } from "@mui/material";
+import { AppBar, Avatar, Box, Button, Chip, IconButton, InputAdornment, Stack, TextField, Toolbar, Typography } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
-import { PageWidget } from "../../widgets/page";
+import { PageWidget } from "../../widgets/page/index";
 
 const approveClick = async (cellValues: GridRenderCellParams) => {
     if (confirm("Are you sure you want to approve this account?")) {
-        const data: UserDto = cellValues.row;
+        const data: ReportDto = cellValues.row;
         const b = await UsersService.approveDoctor(data.id.toString());
         console.log(b);
     } else {
@@ -45,30 +45,23 @@ const downloadClick = async (cellValues: FileDto) => {
 };
 const columns: GridColDef[] = [
     {
-        field: "email",
+        field: "user",
         width: 200,
-        headerName: "E-mail"
+        headerName: "User",
+        renderCell(params: GridRenderCellParams<ReportDto[], UserDto | undefined>) {
+            return <Chip key={params.value!.id} label={params.value!.full_name} avatar={<Avatar />} />;
+        }
     },
     {
-        field: "full_name",
-        width: 200,
-        headerName: "Full name"
-    },
-    {
-        field: "birth_date",
-        width: 120,
-        headerName: "Date of birth"
-    },
-    {
-        field: "medical_organization_name",
-        width: 220,
-        headerName: "Medical Organization"
-    },
-    {
-        field: "confirmation_documents",
-        headerName: "Confirmation Documents",
+        field: "description",
         flex: 1,
-        renderCell(params: GridRenderCellParams<UserDto, FileDto[]>) {
+        headerName: "Description"
+    },
+    {
+        field: "attachments",
+        headerName: "Attachments",
+        width: 150,
+        renderCell(params: GridRenderCellParams<ReportDto[], FileDto[]>) {
             return (
                 <Stack direction="row" spacing={1}>
 
@@ -79,8 +72,8 @@ const columns: GridColDef[] = [
                                 if (confirm("Download files medical documents?")) {
                                     console.log("Downloading files");
                                     console.log(params.value);
-                                    for (const file of params.value!) {
-                                        downloadClick(file).catch(e =>
+                                    for (const obj of params.value!) {
+                                        downloadClick(obj as FileDto).catch(e =>
                                             console.log(e));
 
                                     }
@@ -88,42 +81,56 @@ const columns: GridColDef[] = [
                                     console.log("Download cancelled");
                                 }
                             }}>Download</Button>
-                    { params.value!.map(file => (
-                        <Chip key={file.file_name} label={file.file_name} />
+                    { params.value!.map(name => (
+                        <Chip key={name.file_name} label={name.file_name} />
                     )) }
                 </Stack>
             );
         }
     },
     {
+        field: "status",
+        width: 150,
+        headerName: "Status",
+        renderCell(params) {
+            return <b>{ params.value }</b>;
+        }
+    },
+    {
         field: "actions",
         headerName: "",
-        width: 220,
+        width: 300,
         renderCell(params) {
             return (
                 <Stack direction="row" justifyContent="space-around" style={{ width: "100%" }}
                        onClick={e => e.stopPropagation()}>
-                    <Button variant="outlined" size="small" color="error" onClick={() => {
-                        rejectClick(params);
-                    }}>Reject</Button>
-                    <Button variant="contained" disableElevation size="small" color="success"
-                            startIcon={<Check />}
-                            onClick={() => {
-                                approveClick(params);
-                            }}>Approve</Button>
+                    <Button variant="outlined" size="small" color="primary">Change status</Button>
+                    <Button variant="contained" disableElevation size="small" color="primary"
+                            startIcon={<Check />}>Mark as resolved</Button>
                 </Stack>
             );
         }
     },
 ];
 
-export const RequestsPage = observer(forwardRef((props, ref) => {
-    const [requests, setRequests] = useState<UserDto[]>([]);
+export const ReportsPage = observer(forwardRef((props, ref) => {
+    const [reports, setReports] = useState<ReportDto[]>([]);
     useEffect(() => {
         (async () => {
-            const response = await UsersService.findPaged({ has_doctor_capabilities: true, has_web3_address: false });
-            setRequests(response.items);
-            console.log(response.items);
+            setReports([
+                {
+                    id: 1,
+                    description: "Doctor Anna has provided with harmful prescription...",
+                    attachment_ids: [],
+                    attachments: [],
+                    status: "Processing",
+                    user_id: 1,
+                    user: {
+                        id: 1,
+                        full_name: "Ruslan Garifullin"
+                    }
+                }
+            ]);
         })();
     }, []);
     return (
@@ -131,21 +138,9 @@ export const RequestsPage = observer(forwardRef((props, ref) => {
             <AppBar variant="outlined" position="static" color="inherit" sx={{ backgroundColor: "#eee", border: 0 }}>
                 <Toolbar variant="dense">
                     <Typography variant="h6" color="inherit" component="div">
-                        Registration requests
+                        User Reports
                     </Typography>
                     <Box sx={{ flex: 1, ml: 3 }} />
-                    <Box sx={{ py: 1, mx: "auto", maxWidth: 450, width: "100%", flexGrow: 1 }}>
-                        <TextField size="small" variant="outlined" placeholder="Search..."
-                                   sx={{ width: "100%" }}
-                                   InputProps={{
-                                       startAdornment: (
-                                           <InputAdornment position="start">
-                                               <Search />
-                                           </InputAdornment>
-                                       )
-                                   }} />
-                    </Box>
-                    <Box sx={{ flex: 1 }} />
                     <IconButton color="inherit" sx={{ ml: 1 }}>
                         <Tune />
                     </IconButton>
@@ -156,7 +151,7 @@ export const RequestsPage = observer(forwardRef((props, ref) => {
             </AppBar>
             <DataGrid checkboxSelection
                       columns={columns}
-                      rows={requests}
+                      rows={reports}
                       style={{ border: 0 }} />
         </PageWidget>
     );

@@ -4,6 +4,7 @@ import { DashboardPage } from "./pages/dashboard";
 import { HomePage } from "./pages/home";
 import { LoginPage } from "./pages/login";
 import { RegistrationPage } from "./pages/registration";
+import { ReportsPage } from "./pages/reports";
 import { RequestsPage } from "./pages/requests";
 import { UsersPage } from "./pages/users";
 
@@ -31,6 +32,10 @@ export const router = createHashRouter([
     {
         path: "/admin/requests",
         element: <RequestsPage />
+    },
+    {
+        path: "/admin/reports",
+        element: <ReportsPage />
     },
     {
         path: "/admin/administration",

@@ -1,4 +1,4 @@
-import { AdminPanelSettingsOutlined, BadgeOutlined, Dashboard, People } from "@mui/icons-material";
+import { AdminPanelSettingsOutlined, BadgeOutlined, Dashboard, People, ReportOutlined } from "@mui/icons-material";
 import { Avatar, Card, Link, List, ListItemButton, Stack, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { alpha } from "@mui/system";
@@ -101,6 +101,11 @@ export const SidebarWidget = observer(() => {
                                     selected={location.pathname === "/admin/requests"}>
                         <BadgeOutlined />
                         <Typography>Registration requests</Typography>
+                    </ListItemButton>
+                    <ListItemButton onClick={() => navigate("/admin/reports")}
+                                    selected={location.pathname === "/admin/reports"}>
+                        <ReportOutlined />
+                        <Typography>Reports</Typography>
                     </ListItemButton>
                     <ListItemButton onClick={() => navigate("/admin/administration")}
                                     selected={location.pathname === "/admin/administration"}>

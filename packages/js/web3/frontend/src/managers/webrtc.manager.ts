@@ -114,6 +114,12 @@ export const PeerMessageSigned = intersection([
 ]);
 export type PeerMessageSigned = TypeOf<typeof PeerMessageSigned>;
 
+export type WebRtcPeerMessage<T> = {
+    type: string
+    data: T
+    signature: string // EIP-191 of json[data]
+};
+
 export class Peer {
     #device: DeviceEntry;
     private _dataChannel: RTCDataChannel | null = null;

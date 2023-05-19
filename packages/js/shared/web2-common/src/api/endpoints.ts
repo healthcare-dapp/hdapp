@@ -12,6 +12,12 @@ export namespace endpoints {
         upload: "/api/media/upload"
     } as const;
 
+    export const reports = {
+        send: "/api/reports",
+        find_paged: "/api/reports",
+        patch_by_id: "/api/reports/by_id/:id",
+    } as const;
+
     export const users = {
         create_one: "/api/users",
         find_paged: "/api/users",
