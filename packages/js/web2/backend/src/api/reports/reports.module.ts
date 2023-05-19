@@ -1,4 +1,4 @@
-import { FileEntity, UserEntity } from "@hdapp/shared/db-common/entities";
+import { FileEntity, ReportEntity, UserEntity } from "@hdapp/shared/db-common/entities";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Web3Module } from "../../web3/web3.module";
@@ -13,7 +13,7 @@ import { ReportsService } from "./reports.service";
     imports: [
         Web3Module,
         UsersModule,
-        TypeOrmModule.forFeature([FileEntity, UserEntity]),
+        TypeOrmModule.forFeature([FileEntity, ReportEntity, UserEntity]),
     ],
 })
 export class ReportsModule {}
