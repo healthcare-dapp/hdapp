@@ -6,7 +6,6 @@ import { MailerService } from "@nestjs-modules/mailer";
 import { readFileSync } from "fs";
 import fs from "fs";
 import { resolve } from "path";
-import VerificationEmail from "../../../mailStuff/verification-email.html";
 
 export class SendMailError extends ErrorClass("Could not send the e-mail") {}
 
