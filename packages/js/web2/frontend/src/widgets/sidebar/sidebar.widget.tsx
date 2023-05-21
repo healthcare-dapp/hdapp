@@ -76,7 +76,7 @@ export const SidebarWidget = observer(() => {
                 <Stack direction="row" spacing={2} alignItems="center">
                     <Avatar />
                     <Stack spacing={0}>
-                        <Typography>Alexander Mironov</Typography>
+                        <Typography>Administrator</Typography>
                         <Typography fontSize={13} fontWeight={500}>
                             <Link href="#" color="info.main" sx={{ textDecoration: "none" }}>
                                 Sign out

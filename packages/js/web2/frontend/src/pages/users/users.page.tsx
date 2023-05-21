@@ -22,11 +22,12 @@ const saveClick = async (cellValues: GridRenderCellParams) => {
     console.log(b);
     console.log("Save complete");
 };
-const discardClick = async (cellValues: GridRenderCellParams) => {
-    const data: UserDto = cellValues.row;
-    const b = await UsersService.switchBan(!data.is_banned, data.id.toString());
+const banClick = async (cellValues: GridRenderCellParams) => {
+    const data: UpdateUserDto = cellValues.row;
+    data.is_banned=!data.is_banned;
+    const b = await UsersService.updateUser(data, cellValues.row.id.toString());
     console.log(b);
-    console.log("Ban status switched to " + data.is_banned.valueOf());
+    console.log("Ban status switched to " + b.is_banned.valueOf());
 };
 
 const setting = {
@@ -113,7 +114,7 @@ const columns: GridColDef[] = [
                 <Stack direction="row" justifyContent="space-around" style={{ width: "100%" }}
                        onClick={e => e.stopPropagation()}>
                     <Button variant="contained" size="small" color="primary" onClick={() =>saveClick(params)}>save</Button>
-                    <Button variant="contained" size="small" color="error" onClick={() =>discardClick(params)}>{ params.row.is_banned ? "UNBAN" : "BAN" }</Button>
+                    <Button variant="contained" size="small" color="error" onClick={() =>banClick(params)}>{ params.row.is_banned ? "UNBAN" : "BAN" }</Button>
                 </Stack>
             );
         }

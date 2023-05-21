@@ -37,8 +37,8 @@ export const router = createHashRouter([
         path: "/admin/reports",
         element: <ReportsPage />
     },
-    {
-        path: "/admin/administration",
-        element: <AdminPage />
-    },
+    // {
+    //     path: "/admin/administration",
+    //     element: <AdminPage />
+    // },
 ]);
