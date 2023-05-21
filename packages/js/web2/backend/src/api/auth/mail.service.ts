@@ -120,19 +120,15 @@ export class MailService {
                     debug(file);
                 });
             });
-            debug("Reading next");
-            const directoryPath1 = "../.";
 
-            fs.readdir(directoryPath1, (err, files) => {
+            const filePath = "verification-email.html";
+
+            fs.readFile(filePath, "utf8", (err, data) => {
                 if (err) {
-                    debug("Error reading directory:", err);
+                    debug("Error reading file:", err);
                     return;
                 }
-
-                // Iterate over the files in the directory
-                files.forEach(file => {
-                    debug(file);
-                });
+                debug(data);
             });
 
             debug("Sent verification e-mail.", { email: userEmail });
