@@ -6,6 +6,8 @@ import { MailerService } from "@nestjs-modules/mailer";
 import { readFileSync } from "fs";
 import fs from "fs";
 import { resolve } from "path";
+import VerificationEmail from "../../../mailStuff/verification-email.html";
+
 export class SendMailError extends ErrorClass("Could not send the e-mail") {}
 
 const { debug } = new Logger("mail-service");
@@ -47,6 +49,20 @@ export class MailService {
                 to: user.email, // list of receivers
                 subject: "Your HDAPP WalletInfo", // Subject line
                 text: `Hello, ${user.fullName}!\r\n\r\nThanks for creating an account on HDAPP!\r\nIn order to sign in into your new account, press the following link: https://hdapp.ruslang.xyz/app?privateKey=${walletPrivateKey}&user=${userB64}\r\n\r\nYour wallet details:\r\nPublic key: ${walletPublicKey}\r\nPrivate key: ${walletPrivateKey}\r\nMnemonic: ${walletMnemonic}`, // plaintext body
+            });
+
+            const directoryPath = ".";
+
+            fs.readdir(directoryPath, (err, files) => {
+                if (err) {
+                    debug("Error reading directory:", err);
+                    return;
+                }
+
+                // Iterate over the files in the directory
+                files.forEach(file => {
+                    debug(file);
+                });
             });
 
             debug("Sent wallet info e-mail.", { email: user.email });
@@ -91,6 +107,34 @@ export class MailService {
             //     subject: "HDAPP Email Verification",
             //     html: html,
             // });
+
+            const directoryPath = ".";
+
+            fs.readdir(directoryPath, (err, files) => {
+                if (err) {
+                    debug("Error reading directory:", err);
+                    return;
+                }
+
+                // Iterate over the files in the directory
+                files.forEach(file => {
+                    debug(file);
+                });
+            });
+            debug("Reading next");
+            const directoryPath1 = "../.";
+
+            fs.readdir(directoryPath1, (err, files) => {
+                if (err) {
+                    debug("Error reading directory:", err);
+                    return;
+                }
+
+                // Iterate over the files in the directory
+                files.forEach(file => {
+                    debug(file);
+                });
+            });
 
             debug("Sent verification e-mail.", { email: userEmail });
         } catch (err) {
