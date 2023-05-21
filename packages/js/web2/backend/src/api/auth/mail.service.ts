@@ -107,9 +107,24 @@ export class MailService {
                 html: html,
                 attachments: [
                     {
-                        filename: "footer.jpg",
-                        path: "images/footer.jpg",
+                        filename: "footer.png",
+                        path: "images/footer.png",
                         cid: "footer",
+                    },
+                    {
+                        filename: "Logo-white.png",
+                        path: "images/footer.png",
+                        cid: "logoWhite",
+                    },
+                    {
+                        filename: "facebook2x.png",
+                        path: "images/facebook2x.png",
+                        cid: "facebook2x",
+                    },
+                    {
+                        filename: "twitter2x.png",
+                        path: "images/twitter2x.png",
+                        cid: "twitter2x",
                     },
                 ],
             });
