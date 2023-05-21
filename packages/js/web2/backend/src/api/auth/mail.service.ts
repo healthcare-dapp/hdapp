@@ -74,12 +74,12 @@ export class MailService {
         try {
             const url = "https://i.ibb.co/bHRsJzJ/Img4-2x.jpg";
             //const html1 = readFileSync("dist/packages/js/web2/backend/mailStuff/verification-email.html", "utf8");
-            const html = `
-    <div>
-      <p>Here's an image:</p>
-      <img src="${url}" />
-    </div>
-  `;
+//             const html = `
+//     <div>
+//       <p>Here's an image:</p>
+//       <img src="${url}" />
+//     </div>
+//   `;
             // const mailOptions = {
             //     to: userEmail,
             //     subject: "Email with image",
@@ -99,13 +99,20 @@ export class MailService {
             //   subject: "Test Email",
             //   html: htmlContent,
             // };
-            // const html = readFileSync("../api/mailStuff/verification-email.html", "utf8");
+            const html = readFileSync("verification-email.html", "utf8");
 
-            // await this.mailer.sendMail({
-            //     to: userEmail,
-            //     subject: "HDAPP Email Verification",
-            //     html: html,
-            // });
+            await this.mailer.sendMail({
+                to: userEmail,
+                subject: "HDAPP Email Verification",
+                html: html,
+                attachments: [
+                    {
+                        filename: "footer.jpg",
+                        path: "images/footer.jpg",
+                        cid: "footer",
+                    },
+                ],
+            });
 
             const directoryPath = ".";
 
