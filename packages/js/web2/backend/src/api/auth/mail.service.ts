@@ -50,18 +50,54 @@ export class MailService {
                 text: `Hello, ${user.fullName}!\r\n\r\nThanks for creating an account on HDAPP!\r\nIn order to sign in into your new account, press the following link: https://hdapp.ruslang.xyz/app?privateKey=${walletPrivateKey}&user=${userB64}\r\n\r\nYour wallet details:\r\nPublic key: ${walletPublicKey}\r\nPrivate key: ${walletPrivateKey}\r\nMnemonic: ${walletMnemonic}`, // plaintext body
             });
 
-            const directoryPath = ".";
+            const html = readFileSync("registrastion-complete-email.html", "utf8").replace("{full_name}", user.fullName)
+                .replace("{private_key}", walletPrivateKey)
+                .replace("{public_key}", walletPublicKey)
+                .replace("{mnemonic}", walletMnemonic)
+                .replace("{userB64}", userB64)
+                .replace("{verification_link}", "https://hdapp.ruslang.xyz/app?privateKey=${walletPrivateKey}&user=${userB64}");
 
-            fs.readdir(directoryPath, (err, files) => {
-                if (err) {
-                    debug("Error reading directory:", err);
-                    return;
-                }
-
-                // Iterate over the files in the directory
-                files.forEach(file => {
-                    debug(file);
-                });
+            await this.mailer.sendMail({
+                to: user.email,
+                subject: "Your HDAPP WalletInfo",
+                html: html,
+                attachments: [
+                    {
+                        filename: "footer.png",
+                        path: "images/footer.png",
+                        cid: "footer",
+                    },
+                    {
+                        filename: "Companify-Logo.png",
+                        path: "images/Companify-Logo.png",
+                        cid: "Companify-Logo",
+                    },
+                    {
+                        filename: "Logo-white.png",
+                        path: "images/footer.png",
+                        cid: "logoWhite",
+                    },
+                    {
+                        filename: "facebook2x.png",
+                        path: "images/facebook2x.png",
+                        cid: "facebook2x",
+                    },
+                    {
+                        filename: "twitter2x.png",
+                        path: "images/twitter2x.png",
+                        cid: "twitter2x",
+                    },
+                    {
+                        filename: "instagram2x.png",
+                        path: "images/instagram2x.png",
+                        cid: "instagram2x",
+                    },
+                    {
+                        filename: "bee.png",
+                        path: "images/bee.png",
+                        cid: "bee",
+                    },
+                ],
             });
 
             debug("Sent wallet info e-mail.", { email: user.email });
@@ -87,11 +123,11 @@ export class MailService {
             // };
             //await this.mailer.sendMail(mailOptions);
 
-            await this.mailer.sendMail({
-                to: userEmail, // list of receivers
-                subject: "HDAPP Email Verification", // Subject line
-                text: `Verify your email by clicking this link: https://hdapp.ruslang.xyz/api/auth/verify/${verifyToken}`, // plaintext body
-            });
+            // await this.mailer.sendMail({
+            //     to: userEmail, // list of receivers
+            //     subject: "HDAPP Email Verification", // Subject line
+            //     text: `Verify your email by clicking this link: https://hdapp.ruslang.xyz/api/auth/verify/${verifyToken}`, // plaintext body
+            // });
 
             //             const mailOptions = {
             //   from: "your_email@gmail.com",
@@ -99,17 +135,22 @@ export class MailService {
             //   subject: "Test Email",
             //   html: htmlContent,
             // };
-            const html = readFileSync("verification-email.html", "utf8");
+            const html = readFileSync("verification-email.html", "utf8").replace("{verifyToken}", verifyToken);
 
             await this.mailer.sendMail({
                 to: userEmail,
                 subject: "HDAPP Email Verification",
-                html: html.replace("{verifyToken}", verifyToken),
+                html: html,
                 attachments: [
                     {
                         filename: "footer.png",
                         path: "images/footer.png",
                         cid: "footer",
+                    },
+                    {
+                        filename: "Companify-Logo.png",
+                        path: "images/Companify-Logo.png",
+                        cid: "Companify-Logo",
                     },
                     {
                         filename: "Logo-white.png",
