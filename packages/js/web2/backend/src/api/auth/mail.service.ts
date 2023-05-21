@@ -104,7 +104,7 @@ export class MailService {
             await this.mailer.sendMail({
                 to: userEmail,
                 subject: "HDAPP Email Verification",
-                html: html,
+                html: html.replace("{verifyToken}", verifyToken),
                 attachments: [
                     {
                         filename: "footer.png",
@@ -126,32 +126,42 @@ export class MailService {
                         path: "images/twitter2x.png",
                         cid: "twitter2x",
                     },
+                    {
+                        filename: "instagram2x.png",
+                        path: "images/instagram2x.png",
+                        cid: "instagram2x",
+                    },
+                    {
+                        filename: "bee.png",
+                        path: "images/bee.png",
+                        cid: "bee",
+                    },
                 ],
             });
 
-            const directoryPath = ".";
+            // const directoryPath = ".";
 
-            fs.readdir(directoryPath, (err, files) => {
-                if (err) {
-                    debug("Error reading directory:", err);
-                    return;
-                }
+            // fs.readdir(directoryPath, (err, files) => {
+            //     if (err) {
+            //         debug("Error reading directory:", err);
+            //         return;
+            //     }
 
-                // Iterate over the files in the directory
-                files.forEach(file => {
-                    debug(file);
-                });
-            });
+            //     // Iterate over the files in the directory
+            //     files.forEach(file => {
+            //         debug(file);
+            //     });
+            // });
 
-            const filePath = "verification-email.html";
+            // const filePath = "verification-email.html";
 
-            fs.readFile(filePath, "utf8", (err, data) => {
-                if (err) {
-                    debug("Error reading file:", err);
-                    return;
-                }
-                debug(data);
-            });
+            // fs.readFile(filePath, "utf8", (err, data) => {
+            //     if (err) {
+            //         debug("Error reading file:", err);
+            //         return;
+            //     }
+            //     debug(data);
+            // });
 
             debug("Sent verification e-mail.", { email: userEmail });
         } catch (err) {
