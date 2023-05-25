@@ -15,9 +15,8 @@ const approveClick = async (cellValues: GridRenderCellParams) => {
         const b = await UsersService.approveDoctor(data.id.toString());
         console.log(b);
     } else {
-        console.log("The doctor is not approved");
+        console.log("The doctor was not approved");
     }
-
 };
 
 const rejectClick = async (cellValues: GridRenderCellParams) => {
@@ -76,7 +75,7 @@ const columns: GridColDef[] = [
                             startIcon={<FileDownloadIcon />}
                             onClick={() => {
                                 console.log(params);
-                                if (confirm("Download files medical documents?")) {
+                                if (confirm("Download files from this user?")) {
                                     console.log("Downloading files");
                                     console.log(params.value);
                                     for (const file of params.value!) {

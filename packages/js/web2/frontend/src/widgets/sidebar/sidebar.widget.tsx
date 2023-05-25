@@ -107,11 +107,7 @@ export const SidebarWidget = observer(() => {
                         <ReportOutlined />
                         <Typography>Reports</Typography>
                     </ListItemButton>
-                    <ListItemButton onClick={() => navigate("/admin/administration")}
-                                    selected={location.pathname === "/admin/administration"}>
-                        <AdminPanelSettingsOutlined />
-                        <Typography>Administration</Typography>
-                    </ListItemButton>
+                   
                 </FancyList>
             </Card>
         </Stack>
