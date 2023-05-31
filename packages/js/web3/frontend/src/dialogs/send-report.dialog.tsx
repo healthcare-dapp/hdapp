@@ -1,3 +1,7 @@
+import { MediaService, ReportService } from "@hdapp/shared/web2-common/api/services";
+import { CreateReportDto, ReportDto, SendReportDto } from "@hdapp/shared/web2-common/dto/report";
+import { Web3Address } from "@hdapp/shared/web2-common/types/web3-address.type";
+import { Instant } from "@js-joda/core";
 import { Add, ArrowBack, Send } from "@mui/icons-material";
 import {
     Dialog,
@@ -16,14 +20,46 @@ import { observer } from "mobx-react-lite";
 import { FC, useState } from "react";
 import { ModalProvider } from "../App2";
 import { sessionManager } from "../managers/session.manager";
+import { Web3Manager } from "../managers/web3.manager";
 import { ProfileEntry } from "../services/profile.service";
 import { useDatabase } from "../utils/use-database";
 
-const sendReport = async (profile: ProfileEntry, description: string, attachments: File[]) => {
-    try {
+const { account, db, encryption, wallet, web3 } = sessionManager;
 
+const uploadFiles = async (attachments: File[]) => {
+    try {
+        console.log("Uploading");
+        const formData = new FormData();
+        attachments.forEach(file => formData.append("files", file));
+        const files = await MediaService.upload(formData);
+        console.log(files);
+        alert("Files are succesfully uploaded");
+        return files.map(file => file.id);
     } catch (e) {
-        console.error("Error downloading file: ", e);
+        console.log("Upload Exception:");
+        console.log(e);
+    }
+    return [];
+};
+
+const sendReport = async (profile: ProfileEntry | undefined, description: string, attachments: File[]) => {
+    try {
+        const fileIDs = await uploadFiles(attachments);
+        const cr: CreateReportDto = {
+            description: description,
+            attachment_ids: fileIDs
+        };
+        const message = JSON.stringify({ timestamp: Instant.now().toString() });
+
+        const data: SendReportDto = {
+            address: profile?.address as Web3Address,
+            message: message,
+            signed: await web3.signer.signMessage(message),
+            report: cr
+        };
+        await ReportService.sendReport(data);
+    } catch (e) {
+        alert("Error when sending report", e);
     }
 };
 

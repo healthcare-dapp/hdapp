@@ -46,10 +46,6 @@ export class AuthController {
     @ApiOperation({ description: "Creates a new user account." })
     @ApiBody({ description: "Registration details." })
     async register(@Body(new IoTsValidationPipe(CreateUserDto)) u: CreateUserDto) {
-        console.log("AUth controller receied: ")
-        console.log(u);
-        console.log("Transformer got: ")
-        console.log(UserAdapter.transformCreateDtoToEntity(u));
         await this.auth.register(
             UserAdapter.transformCreateDtoToEntity(u),
         );

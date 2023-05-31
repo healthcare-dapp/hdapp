@@ -38,8 +38,6 @@ export const UsersService = new (class {
     }
 
     updateUser(user: UpdateUserDto, id: string): Promise<UserDto> {
-        console.log("received:");
-        console.log(user);
         return http.request({
             data: user,
             url: endpoints.users.patch_by_id.replace(":id", id),
@@ -49,7 +47,6 @@ export const UsersService = new (class {
     }
 
     switchBan(ban: boolean, id: string): Promise<UserDto> {
-        console.log(ban);
         return http.request({
             data: { is_banned: ban },
             url: endpoints.users.patch_by_id.replace(":id", id),
@@ -97,8 +94,6 @@ export const UsersService = new (class {
     }
 
     createNewUserAdmin(user: CreateUserDto): Promise<UserDto> {
-        console.log("Request to create new User");
-        console.log(user);
         return http.request({
             data: user,
             url: endpoints.users.create_one,
