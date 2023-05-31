@@ -19,6 +19,14 @@ import { sessionManager } from "../managers/session.manager";
 import { ProfileEntry } from "../services/profile.service";
 import { useDatabase } from "../utils/use-database";
 
+const sendReport = async (profile: ProfileEntry, description: string, attachments: File[]) => {
+    try {
+
+    } catch (e) {
+        console.error("Error downloading file: ", e);
+    }
+};
+
 export const SendReportDialog: FC<{ onClose(): void }> = observer(x => {
     const { db, wallet, encryption } = sessionManager;
     const theme = useTheme();
@@ -39,7 +47,7 @@ export const SendReportDialog: FC<{ onClose(): void }> = observer(x => {
                             onClick={() => x.onClose()}>
                     <ArrowBack />
                 </IconButton>
-                Send a report
+                Write a report
             </DialogTitle>
             <Stack spacing={2} sx={{ px: 2, pb: 2 }}>
                 { profile && (
@@ -72,7 +80,11 @@ export const SendReportDialog: FC<{ onClose(): void }> = observer(x => {
                 </Card>
                 <Stack spacing={1} justifyContent="center" direction="row">
                     <Button color="error" onClick={() => x.onClose()}>Discard</Button>
-                    <Button variant="contained" color="error" disableElevation startIcon={<Send />}>Send report</Button>
+                    <Button variant="contained" color="error" disableElevation startIcon={<Send />}
+                            onClick={async () => {
+                                await sendReport(profile, description, attachments);
+                                x.onClose();
+                            }}>Send report</Button>
                 </Stack>
             </Stack>
         </Dialog>
