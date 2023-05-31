@@ -57,7 +57,7 @@ const sendReport = async (profile: ProfileEntry | undefined, description: string
             signed: await web3.signer.signMessage(message),
             report: cr
         };
-        await ReportService.sendReport(data);
+        await ReportService.sendReport(data, profile?.address);
     } catch (e) {
         alert("Error when sending report", e);
     }

@@ -10,15 +10,9 @@ import { endpoints } from "../endpoints";
 import { http } from "../http";
 
 export const ReportService = new (class {
-    sendReport(report: SendReportDto): Promise<PagedResponse<UserDto>> {
+    sendReport(report: SendReportDto, id: string): Promise<PagedResponse<UserDto>> {
         return http.request({
-            url: endpoints.reports.patch_by_id, //Нужно вставить id пользователя
-            params: {
-                filters: btoa(JSON.stringify(filters)),
-                from_id: options?.from_id,
-                sort_by: options?.sort_by,
-                sort_desc: !!options?.sort_desc,
-            },
+            url: endpoints.reports.patch_by_id.replace(":id", id),
             type: PagedResponse(UserDto)
         });
     }

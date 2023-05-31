@@ -25,7 +25,7 @@ export class ReportsController {
     async receiveReport(@Body(new IoTsValidationPipe(ReportDto))
         data: ReportDto): Promise<ReportDto> {
         try {
-            
+            return data;
         } catch (e) {
             if (e instanceof UserNotFoundError)
                 throw new NotFoundException(e.message);
