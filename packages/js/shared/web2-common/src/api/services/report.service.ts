@@ -1,4 +1,5 @@
-import { SendReportDto } from "@hdapp/shared/web2-common/dto/report";
+
+import { SendReportDto } from "../../dto/report";
 import { endpoints } from "../endpoints";
 import { http } from "../http";
 
