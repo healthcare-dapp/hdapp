@@ -49,12 +49,31 @@ export class ReportsService {
             throw e;
         }
     }
+
+    async updateReport(id: number, newStatus: string, messageToUser: string): Promise<{ success: boolean }> { //messageToUser - Для почты
+        try {
+            const reportToUpdate = await this.reports.findOne({ where: { id } });
+            if (!reportToUpdate) 
+                throw new Error("Report not found!");
+            reportToUpdate.status = newStatus;
+            const response = await this.reports.save(reportToUpdate);
+            debug("Response");
+            debug(response);
+            return { success: true };
+        } catch (e) {
+            if (e instanceof QueryFailedError) {
+                error(e);
+                throw new UserUpdateDetailsNotUniqueError(e, "Provided details are not unique");
+            }
+
+            throw e;
+        }
+    }
+
     async getReports(): Promise<ReportDto[]> {
         const builder = this.reports.createQueryBuilder("reports").leftJoinAndSelect("reports.attachments", "attachments");
         builder.orderBy("reports.id");
-
         debug(builder.expressionMap);
-
         try {
             const dbEntities = await builder.getMany();
             const reportDtos = dbEntities.map(report => {
@@ -73,7 +92,6 @@ export class ReportsService {
             if (e instanceof ReportNotFoundError) {
                 throw new ReportNotFoundError(e);
             }
-
             throw e;
         }
     }

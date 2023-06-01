@@ -18,3 +18,10 @@ export const ReportDto = type({
 });
 
 export type ReportDto = TypeOf<typeof ReportDto>;
+
+export const UpdateReportDto = type({
+    newStatus: string,
+    messageToUser: string
+});
+
+export type UpdateReportDto = TypeOf<typeof UpdateReportDto>;

@@ -1,9 +1,9 @@
 import { endpoints } from "@hdapp/shared/web2-common/api";
 import { UserDto, UserFiltersDto } from "@hdapp/shared/web2-common/dto";
-import { CreateReportDto, ReportDto, SendReportDto } from "@hdapp/shared/web2-common/dto/report";
+import { CreateReportDto, ReportDto, SendReportDto, UpdateReportDto } from "@hdapp/shared/web2-common/dto/report";
 import { web3AddressType, Web3Address, PagedResponse } from "@hdapp/shared/web2-common/types";
 import { FriendlyErrorClass, Logger } from "@hdapp/shared/web2-common/utils";
-import { Body, Controller, Get, NotFoundException, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { UserAdapter } from "../../adapters/user.adapter";
 import { JwtAuthGuard } from "../../guards/jwt.guard";
@@ -47,6 +47,25 @@ export class ReportsController {
     async getAllReports(): Promise<ReportDto[]> {
         const result = await this.reports.getReports();
         return result;
+    }
+   
+    @UserMatcher({ hasModeratorCapabilities: true })
+    @UseGuards(JwtAuthGuard, UserGuard)
+    @Patch(endpoints.reports.patch_by_id)
+    @ApiBearerAuth()
+    @ApiOperation({ description: "Update report status and send an email" })
+    async updateReport(
+      @Param("id") id: string,
+      @Body() updateReportDto: UpdateReportDto,
+    ): Promise<{ success: boolean }> {
+      try {
+        const { newStatus, messageToUser } = updateReportDto;
+        await this.reports.updateReport(Number(id), newStatus, messageToUser);
+        return { success: true };
+      } catch (error) {
+        console.log(error);
+        return { success: false };
+      }
     }
 
     // @UserMatcher({ hasModeratorCapabilities: true })
