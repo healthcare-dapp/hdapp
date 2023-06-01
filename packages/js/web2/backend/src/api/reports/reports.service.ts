@@ -5,6 +5,7 @@ import { FriendlyErrorClass, Logger } from "@hdapp/shared/web2-common/utils";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { QueryFailedError, Repository } from "typeorm";
+import { FileAdapter } from "../../adapters/file.adapter";
 import { Web3AccountManagerService } from "../../web3/account-manager.service";
 import { MailService } from "../auth/mail.service";
 import { UserUpdateDetailsNotUniqueError, UsersService } from "../users/users.service";
@@ -57,13 +58,13 @@ export class ReportsService {
         try {
             const dbEntities = await builder.getMany();
             const reportDtos = dbEntities.map(report => {
-                const attachmentIds = report.attachments?.map(attachment => attachment.id) ?? [];
+                const attachments = report.attachments?.map(file => FileAdapter.transformToDto(file));
 
                 return {
                     id: report.id,
-                    user_id: parseInt(report.user.id),
+                    user_id: report.user.id,
                     description: report.description,
-                    attachment_ids: attachmentIds,
+                    attachment_ids: attachments,
                     status: report.status,
                 };
             });

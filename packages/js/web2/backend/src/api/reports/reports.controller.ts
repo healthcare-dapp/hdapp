@@ -31,7 +31,7 @@ export class ReportsController {
         @Param("id") id: string,
             @Body() report: SendReportDto,
     ): Promise<{ success: boolean }> {
-        await this.reports.createRequest(report);
+        await this.reports.createReport(report);
         return { success: true };
     }
     catch(e: typeof FriendlyErrorClass) {
