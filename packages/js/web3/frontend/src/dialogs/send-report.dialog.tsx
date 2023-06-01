@@ -57,10 +57,10 @@ const sendReport = async (profile: ProfileEntry | undefined, description: string
             signed: await web3.signer.signMessage(message),
             report: cr
         };
-       const response = await ReportService.sendReport(data, profile?.address);
-       console.log(response);
+        const response = await ReportService.sendReport(data, profile?.address);
+        console.log(response);
     } catch (e) {
-        alert("Error when sending report: " + e.message);
+        alert("Error when sending report: ");
     }
 };
 

@@ -12,6 +12,7 @@ import { IoTsValidationPipe } from "../../utils/io-ts.pipe";
 import { Web3AccountManagerService } from "../../web3/account-manager.service";
 import { UserNotFoundError, UsersService } from "../users/users.service";
 import { ReportsService } from "./reports.service";
+import { UserMatcher } from "../../guards/user-matcher.decorator";
 
 @ApiTags("Reports management")
 @Controller()
@@ -37,5 +38,22 @@ export class ReportsController {
         console.log(e);
         return { success: false };
     }
+
+    // @UserMatcher({ hasModeratorCapabilities: true })
+    // @UseGuards(JwtAuthGuard, UserGuard)
+    // @Get(endpoints.users.find_by_id)
+    // @ApiOperation({ description: "Retrieve a user by their ID." })
+    // async getUserById(@Param("id") id: string): Promise<UserDto> {
+    //     try {
+    //         return UserAdapter.transformToDto(
+    //             await this.users.findOneById(id),
+    //         );
+    //     } catch (e) {
+    //         if (e instanceof UserNotFoundError)
+    //             throw new NotFoundException(e.message);
+
+    //         throw e;
+    //     }
+    // }
 }
 

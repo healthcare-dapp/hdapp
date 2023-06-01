@@ -23,17 +23,6 @@ export class ReportsService {
         private web3: Web3AccountManagerService,
     ) { }
 
-    // transformCreateDtoToEntity(entity: SendReportDto): ReportEntity {
-    //     return {
-    //         email: entity.email,
-    //         birthDate: LocalDate.parse(entity.birth_date),
-    //         confirmationDocuments: entity.confirmation_document_ids.map(id => ({ id })),
-    //         fullName: entity.full_name,
-    //         hasDoctorCapabilities: entity.has_doctor_capabilities,
-    //         medicalOrganizationName: entity.medical_organization_name,
-    //     };
-    // }
-
     async createRequest(user: SendReportDto): Promise<{ success: boolean }> {
         try {
             const sender = await this.users.findOneByWeb3Address(user.address);
@@ -57,8 +46,6 @@ export class ReportsService {
 
             throw e;
         }
-
-        //return await this.findOneByEmail(user.email);
     }
 
 }
