@@ -1,5 +1,6 @@
 import { FileEntity, ReportEntity } from "@hdapp/shared/db-common/entities";
 import { ReportDto, SendReportDto } from "@hdapp/shared/web2-common/dto/report";
+import { PagedResponse } from "@hdapp/shared/web2-common/types";
 import { FriendlyErrorClass, Logger } from "@hdapp/shared/web2-common/utils";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -23,7 +24,7 @@ export class ReportsService {
         private web3: Web3AccountManagerService,
     ) { }
 
-    async createRequest(user: SendReportDto): Promise<{ success: boolean }> {
+    async createReport(user: SendReportDto): Promise<{ success: boolean }> {
         try {
             const sender = await this.users.findOneByWeb3Address(user.address);
             const report = {
@@ -42,6 +43,34 @@ export class ReportsService {
             if (e instanceof QueryFailedError) {
                 error(e);
                 throw new UserUpdateDetailsNotUniqueError(e, "Provided details are not unique");
+            }
+
+            throw e;
+        }
+    }
+    async getReports(): Promise<ReportDto[]> {
+        const builder = this.reports.createQueryBuilder("reports").leftJoinAndSelect("reports.attachments", "attachments");
+        builder.orderBy("reports.id");
+
+        debug(builder.expressionMap);
+
+        try {
+            const dbEntities = await builder.getMany();
+            const reportDtos = dbEntities.map(report => {
+                const attachmentIds = report.attachments?.map(attachment => attachment.id) ?? [];
+
+                return {
+                    id: report.id,
+                    user_id: parseInt(report.user.id),
+                    description: report.description,
+                    attachment_ids: attachmentIds,
+                    status: report.status,
+                };
+            });
+            return reportDtos;
+        } catch (e) {
+            if (e instanceof ReportNotFoundError) {
+                throw new ReportNotFoundError(e);
             }
 
             throw e;
