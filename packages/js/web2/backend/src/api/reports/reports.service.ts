@@ -1,4 +1,4 @@
-import { ReportEntity } from "@hdapp/shared/db-common/entities";
+import { FileEntity, ReportEntity } from "@hdapp/shared/db-common/entities";
 import { ReportDto, SendReportDto } from "@hdapp/shared/web2-common/dto/report";
 import { FriendlyErrorClass, Logger } from "@hdapp/shared/web2-common/utils";
 import { Injectable } from "@nestjs/common";
@@ -37,12 +37,14 @@ export class ReportsService {
     async createRequest(user: SendReportDto): Promise<{ success: boolean }> {
         try {
             const sender = await this.users.findOneByWeb3Address(user.address);
-            const report = new ReportEntity();
-            report.user = sender;
-            report.description = user.report.description;
-            report.status = "Unresolved";
-            //report.attachments = user.report.attachment_ids;
+            const report = {
+                user: sender,
+                description: user.report.description,
+                status: "Unresolved",
+                attachments: user.report.attachment_ids.map(id =>({ id }))
+            };
             const response = await this.reports.save(report);
+            //await this.reports.save(user);
 
             debug("Response");
             debug(response);
