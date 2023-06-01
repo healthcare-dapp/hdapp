@@ -1,11 +1,4 @@
-import { UpdateUserDto } from "@hdapp/shared/web2-common/dto";
-import { CreateReportDto, SendReportDto } from "../../dto/report";
-import { UserPublicProfileDto } from "../../dto/user/public-profile.dto";
-import { UpdatePublicProfileDto } from "../../dto/user/update-public-profile.dto";
-import { UserFiltersDto } from "../../dto/user-filters.dto";
-import { CreateUserDto, PublicUserDto, PublicUserSearchFiltersDto, UserDto } from "../../dto/user.dto";
-import { PagedResponse } from "../../types/paged-response.type";
-import { Web3Address } from "../../types/web3-address.type";
+import { SendReportDto } from "@hdapp/shared/web2-common/dto/report";
 import { endpoints } from "../endpoints";
 import { http } from "../http";
 

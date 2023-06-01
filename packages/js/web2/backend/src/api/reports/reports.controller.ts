@@ -7,12 +7,12 @@ import { Body, Controller, Get, NotFoundException, Param, Post, UseGuards } from
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { UserAdapter } from "../../adapters/user.adapter";
 import { JwtAuthGuard } from "../../guards/jwt.guard";
+import { UserMatcher } from "../../guards/user-matcher.decorator";
 import { UserGuard } from "../../guards/user.guard";
 import { IoTsValidationPipe } from "../../utils/io-ts.pipe";
 import { Web3AccountManagerService } from "../../web3/account-manager.service";
 import { UserNotFoundError, UsersService } from "../users/users.service";
 import { ReportsService } from "./reports.service";
-import { UserMatcher } from "../../guards/user-matcher.decorator";
 
 @ApiTags("Reports management")
 @Controller()
@@ -29,8 +29,7 @@ export class ReportsController {
     async receiveReport(
         @Param("id") id: string,
             @Body() report: SendReportDto,
-    ): Promise<{ success: boolean }> 
-    {
+    ): Promise<{ success: boolean }> {
         await this.reports.createRequest(report);
         return { success: true };
     }
