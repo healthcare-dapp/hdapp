@@ -10,10 +10,12 @@ import { endpoints } from "../endpoints";
 import { http } from "../http";
 
 export const ReportService = new (class {
-    sendReport(report: SendReportDto, id: string): Promise<PagedResponse<UserDto>> {
+    sendReport(report: SendReportDto, id: string | undefined): Promise<void> {
+        if (id === undefined)
+            id = "";
         return http.request({
             url: endpoints.reports.patch_by_id.replace(":id", id),
-            type: PagedResponse(UserDto)
+            data: report,
         });
     }
 

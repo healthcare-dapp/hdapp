@@ -7,8 +7,6 @@ import { FileAdapter } from "./file.adapter";
 
 export const UserAdapter = new (class {
     transformToDto(entity: UserFullEntity): UserDto {
-        console.log("Transforming DTO");
-        console.log(entity.confirmationDocuments);
         if (entity.hasDoctorCapabilities)
             console.log(entity.confirmationDocuments?.map(FileAdapter.transformToDto)); 
         return {
