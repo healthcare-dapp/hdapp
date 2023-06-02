@@ -83,7 +83,7 @@ export const SendReportDialog: FC<{ onClose(): void }> = observer(x => {
                             onClick={() => x.onClose()}>
                     <ArrowBack />
                 </IconButton>
-                Write a report
+                Send a report
             </DialogTitle>
             <Stack spacing={2} sx={{ px: 2, pb: 2 }}>
                 { profile && (

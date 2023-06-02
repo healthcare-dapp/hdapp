@@ -61,7 +61,7 @@ export class MailService {
                     {
                         filename: "Logo-white.png",
                         path: "images/footer.png",
-                        cid: "logoWhite",
+                        cid: "Logo-white",
                     },
                     {
                         filename: "facebook2x.png",
@@ -77,11 +77,6 @@ export class MailService {
                         filename: "instagram2x.png",
                         path: "images/instagram2x.png",
                         cid: "instagram2x",
-                    },
-                    {
-                        filename: "bee.png",
-                        path: "images/bee.png",
-                        cid: "bee",
                     },
                 ],
             });
@@ -116,22 +111,7 @@ export class MailService {
                         filename: "Logo-white.png",
                         path: "images/footer.png",
                         cid: "logoWhite",
-                    },
-                    {
-                        filename: "facebook2x.png",
-                        path: "images/facebook2x.png",
-                        cid: "facebook2x",
-                    },
-                    {
-                        filename: "twitter2x.png",
-                        path: "images/twitter2x.png",
-                        cid: "twitter2x",
-                    },
-                    {
-                        filename: "instagram2x.png",
-                        path: "images/instagram2x.png",
-                        cid: "instagram2x",
-                    },
+                    }
                 ],
             });
             debug("Sent verification e-mail.", { email: userEmail });
@@ -162,7 +142,7 @@ export class MailService {
                     {
                         filename: "Logo-white.png",
                         path: "images/footer.png",
-                        cid: "logoWhite",
+                        cid: "Logo-white",
                     },
                     {
                         filename: "facebook2x.png",
@@ -178,11 +158,6 @@ export class MailService {
                         filename: "instagram2x.png",
                         path: "images/instagram2x.png",
                         cid: "instagram2x",
-                    },
-                    {
-                        filename: "bee.png",
-                        path: "images/bee.png",
-                        cid: "bee",
                     },
                 ],
             });
@@ -222,7 +197,7 @@ export class MailService {
                     {
                         filename: "Logo-white.png",
                         path: "images/footer.png",
-                        cid: "logoWhite",
+                        cid: "Logo-white",
                     },
                     {
                         filename: "facebook2x.png",
@@ -238,11 +213,6 @@ export class MailService {
                         filename: "instagram2x.png",
                         path: "images/instagram2x.png",
                         cid: "instagram2x",
-                    },
-                    {
-                        filename: "bee.png",
-                        path: "images/bee.png",
-                        cid: "bee",
                     },
                 ],
             });
