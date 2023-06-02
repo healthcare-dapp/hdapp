@@ -1,5 +1,5 @@
 import { MediaService, ReportService } from "@hdapp/shared/web2-common/api/services";
-import { CreateReportDto, ReportDto, SendReportDto } from "@hdapp/shared/web2-common/dto/report";
+import { CreateReportDto, SendReportDto } from "@hdapp/shared/web2-common/dto/report";
 import { Web3Address } from "@hdapp/shared/web2-common/types/web3-address.type";
 import { Instant } from "@js-joda/core";
 import { Add, ArrowBack, Send } from "@mui/icons-material";
@@ -16,33 +16,33 @@ import {
     Chip,
     Card,
 } from "@mui/material";
+import { Signer } from "ethers";
 import { observer } from "mobx-react-lite";
 import { FC, useState } from "react";
 import { ModalProvider } from "../App2";
 import { sessionManager } from "../managers/session.manager";
-import { Web3Manager } from "../managers/web3.manager";
 import { ProfileEntry } from "../services/profile.service";
 import { useDatabase } from "../utils/use-database";
 
-const { account, db, encryption, wallet, web3 } = sessionManager;
-
 const uploadFiles = async (attachments: File[]) => {
     try {
-        console.log("Uploading");
         const formData = new FormData();
         attachments.forEach(file => formData.append("files", file));
         const files = await MediaService.upload(formData);
-        console.log(files);
         alert("Files are succesfully uploaded");
         return files.map(file => file.id);
     } catch (e) {
-        console.log("Upload Exception:");
-        console.log(e);
+        console.error("Upload Exception:", e);
     }
     return [];
 };
 
-const sendReport = async (profile: ProfileEntry | undefined, description: string, attachments: File[]) => {
+const sendReport = async (
+    profile: ProfileEntry | undefined,
+    description: string,
+    attachments: File[],
+    signer: Signer
+) => {
     try {
         const fileIDs = await uploadFiles(attachments);
         const cr: CreateReportDto = {
@@ -54,18 +54,17 @@ const sendReport = async (profile: ProfileEntry | undefined, description: string
         const data: SendReportDto = {
             address: profile?.address as Web3Address,
             message: message,
-            signed: await web3.signer.signMessage(message),
+            signed: await signer.signMessage(message),
             report: cr
         };
-        const response = await ReportService.sendReport(data, profile?.address);
-        console.log(response);
+        await ReportService.fileNewReport(data, profile?.address);
     } catch (e) {
         alert("Error when sending report: ");
     }
 };
 
 export const SendReportDialog: FC<{ onClose(): void }> = observer(x => {
-    const { db, wallet, encryption } = sessionManager;
+    const { db, encryption, wallet, web3 } = sessionManager;
     const theme = useTheme();
     const isMobileView = useMediaQuery(theme.breakpoints.down("md"));
     const [description, setDescription] = useState("");
@@ -119,7 +118,7 @@ export const SendReportDialog: FC<{ onClose(): void }> = observer(x => {
                     <Button color="error" onClick={() => x.onClose()}>Discard</Button>
                     <Button variant="contained" color="error" disableElevation startIcon={<Send />}
                             onClick={async () => {
-                                await sendReport(profile, description, attachments);
+                                await sendReport(profile, description, attachments, web3.signer);
                                 x.onClose();
                             }}>Send report</Button>
                 </Stack>
