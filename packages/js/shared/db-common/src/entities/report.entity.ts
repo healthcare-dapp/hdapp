@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 import { ApiProperty } from "@nestjs/swagger";
 import { Column, Entity, JoinTable, ManyToMany, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
 import { FileEntity } from "./file.entity";
