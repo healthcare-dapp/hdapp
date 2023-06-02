@@ -22,6 +22,7 @@ import { format } from "date-fns";
 import React, { ChangeEvent, FormEvent } from "react";
 import FileUpload from "react-mui-fileuploader";
 import { ExtendedFileProps } from "react-mui-fileuploader/dist/types/index.types";
+import { toast } from "react-toastify";
 import { Logo } from "../../widgets/sidebar";
 
 export class Registration extends React.Component<{}, {
@@ -269,11 +270,29 @@ export class Registration extends React.Component<{}, {
                     isBusy: false
                 });
                 console.log("Files are succesfully uploaded");
-                alert("Files are succesfully uploaded");
+                toast.error("Your documents are successfully uploaded", {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
                 //return ["1", "2"];
                 return files.map(file => file.id);
             }
-            alert("Cannot upload right now. Server is busy!");
+            toast.error("Cannot upload right now. Server is busy!", {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            });
         } catch (e) {
             console.log("Upload Exception:");
             console.log(e);
@@ -290,9 +309,27 @@ export class Registration extends React.Component<{}, {
         try {
 
             if (!this.state.isAgreed)
-                alert("You have to agree with our Privacy Policy and Terms of Service");
+                toast.error("You have to agree with our Privacy Policy and Terms of Service", {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
             else if (this.state.fileIDs === undefined)
-                alert("Upload your medical files");
+                toast.error("Upload your medical files", {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
             else {
             // @ts-ignore
 
@@ -315,8 +352,17 @@ export class Registration extends React.Component<{}, {
                 if (this.state.isDoctor) {
                     const fileIds = await this.uploadFiles();
                     data.confirmation_document_ids = fileIds;
-                    if (!fileIds.length) {
-                        alert("You need to upload your medical files to confirm your specialty");
+                    if (fileIds.length < 1) {
+                        toast.error("You need to upload your medical files to confirm your specialty", {
+                            position: "top-right",
+                            autoClose: 5000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            theme: "light",
+                        });
                         throw new IllegalArgumentException("No files?!");
                     }
                 }

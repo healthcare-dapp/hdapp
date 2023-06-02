@@ -48,24 +48,24 @@ export class ReportsController {
         const result = await this.reports.getReports();
         return result;
     }
-   
+
     @UserMatcher({ hasModeratorCapabilities: true })
     @UseGuards(JwtAuthGuard, UserGuard)
     @Patch(endpoints.reports.patch_by_id)
     @ApiBearerAuth()
     @ApiOperation({ description: "Update report status and send an email" })
     async updateReport(
-      @Param("id") id: string,
-      @Body() updateReportDto: UpdateReportDto,
+        @Param("id") id: string,
+            @Body() updateReportDto: UpdateReportDto,
     ): Promise<{ success: boolean }> {
-      try {
-        const { newStatus, messageToUser } = updateReportDto;
-        await this.reports.updateReport(Number(id), newStatus, messageToUser);
-        return { success: true };
-      } catch (error) {
-        console.log(error);
-        return { success: false };
-      }
+        try {
+            const { newStatus, messageToUser } = updateReportDto;
+            await this.reports.updateReport(Number(id), newStatus, messageToUser);
+            return { success: true };
+        } catch (error) {
+            console.log(error);
+            return { success: false };
+        }
     }
 
     // @UserMatcher({ hasModeratorCapabilities: true })

@@ -12,7 +12,9 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { DataGrid, GridColDef, GridRenderCellParams, useGridApiContext, useGridApiRef } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
+import { toast, ToastContainer } from "react-toastify";
 import { PageWidget } from "../../widgets/page";
+import "react-toastify/dist/ReactToastify.css";
 
 const saveClick = async (cellValues: GridRenderCellParams) => {
     const data: UpdateUserDto = cellValues.row;
@@ -21,13 +23,33 @@ const saveClick = async (cellValues: GridRenderCellParams) => {
     const b = await UsersService.updateUser(data, cellValues.row.id.toString());
     console.log(b);
     console.log("Save complete");
+    toast.success("User was saved successfully", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+    });
 };
 const banClick = async (cellValues: GridRenderCellParams) => {
     const data: UpdateUserDto = cellValues.row;
-    data.is_banned=!data.is_banned;
+    data.is_banned = !data.is_banned;
     const b = await UsersService.updateUser(data, cellValues.row.id.toString());
     console.log(b);
     console.log("Ban status switched to " + b.is_banned.valueOf());
+    toast.info("User's ban status was switched to " + b.is_banned.valueOf(), {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+    });
 };
 
 const setting = {
@@ -186,7 +208,7 @@ export const UsersPage = observer(forwardRef((props, ref) => {
             };
             try {
                 const newUser = (await UsersService.createNewUserAdmin(newuser));
-
+              
                 if (role === "Moderator") {
                     await UsersService.updateUser({ has_moderator_capabilities: true, password: password }, newUser.id.toString());
                     console.log("Role updated to Moderator");
@@ -195,6 +217,16 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                     await UsersService.updateUser({ has_administrator_capabilities: true, has_moderator_capabilities: true, password: password }, newUser.id.toString());
                     console.log("Role updated to Admin");
                 }
+                toast.success("New user was successfully created", {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
                 users.push(newUser);
                 //setUsers(users);
                 handleClose();
@@ -268,7 +300,8 @@ export const UsersPage = observer(forwardRef((props, ref) => {
     };
 
     return (
-        <PageWidget>
+        <><PageWidget>
+
             <Stack height="100%">
                 <AppBar variant="outlined" position="static" color="inherit" sx={{ backgroundColor: "#eee", border: 0 }}>
                     <Toolbar variant="dense" style={{ paddingRight: "16px" }}>
@@ -310,6 +343,8 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                 { createNewUser() }
             </Stack>
         </PageWidget>
+        <ToastContainer>
+            </ToastContainer></>
     );
 }));
 

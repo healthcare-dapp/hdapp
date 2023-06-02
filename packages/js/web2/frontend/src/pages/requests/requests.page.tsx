@@ -7,12 +7,23 @@ import { AppBar, Box, Button, Chip, IconButton, InputAdornment, Stack, TextField
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import { PageWidget } from "../../widgets/page";
 
 const approveClick = async (cellValues: GridRenderCellParams) => {
     if (confirm("Are you sure you want to approve this account?")) {
         const data: UserDto = cellValues.row;
         const b = await UsersService.approveDoctor(data.id.toString());
+        toast.success("Doctor was approved!", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        });
         console.log(b);
     } else {
         console.log("The doctor was not approved");
@@ -21,11 +32,31 @@ const approveClick = async (cellValues: GridRenderCellParams) => {
 
 const rejectClick = async (cellValues: GridRenderCellParams) => {
     console.log("Idk, should we delete account?");
+    toast.error("Doctor was rejected!", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+    });
 };
 
 const downloadClick = async (cellValues: FileDto) => {
     try {
         console.log("Downloading file");
+        toast.info("Downloading file " + cellValues.file_name, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        });
         console.log(cellValues.file_name);
         const blob = await MediaService.download(cellValues.id, cellValues.file_name);
         const url = window.URL.createObjectURL(blob);

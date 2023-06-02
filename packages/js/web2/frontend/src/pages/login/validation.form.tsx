@@ -8,6 +8,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import axios, { isAxiosError } from "axios";
 import { FormEvent, useState } from "react";
+import { toast } from "react-toastify";
 import { ValidateName } from "../../pages/registration/form.control";
 import { router } from "../../router";
 
@@ -26,13 +27,40 @@ export function AdminLogin() {
         try {
             const response = await axios.post("https://hdapp.ruslang.xyz/api/auth/login", form);
             console.log(response.data);
-            alert("Sign Up succesfull. Welcome administrator");
+            toast.success("Sign Up succesfull. Welcome to the panel administrator", {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            });
             void router.navigate("/admin");
         } catch (e) {
             if (!isAxiosError(e))
-                return alert(e);
+                toast.error(e, {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
             if (e.response?.status === 401)
-                alert("Unauthorized access. You are not an administrator");
+                toast.error("Unauthorized access. You are not an administrator", {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
             else
                 alert(e);
         }

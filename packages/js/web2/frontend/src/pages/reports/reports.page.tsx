@@ -7,6 +7,7 @@ import { AppBar, Avatar, Box, Button, Chip, IconButton, InputAdornment, Stack, T
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { observer } from "mobx-react-lite";
 import { forwardRef, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import { PageWidget } from "../../widgets/page/index";
 
 const approveClick = async (cellValues: GridRenderCellParams) => {
@@ -27,6 +28,16 @@ const rejectClick = async (cellValues: GridRenderCellParams) => {
 const downloadClick = async (cellValues: FileDto) => {
     try {
         console.log("Downloading file");
+        toast.info("Downloading file", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        });
         console.log(cellValues.file_name);
         const blob = await MediaService.download(cellValues.id, cellValues.file_name);
         const url = window.URL.createObjectURL(blob);

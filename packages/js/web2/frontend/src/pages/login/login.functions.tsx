@@ -1,5 +1,5 @@
+import { setJwtToken } from "@hdapp/shared/web2-common/api/http";
 import { AuthService } from "@hdapp/shared/web2-common/api/services";
-import { LoginUserDto, LoginUserSuccessDto } from "../../dto/login-user.dto";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -11,9 +11,9 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/system/Stack";
 import axios, { isAxiosError } from "axios";
 import { FormEvent, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import { LoginUserDto, LoginUserSuccessDto } from "../../dto/login-user.dto";
 import { router } from "../../router";
-import { setJwtToken } from "@hdapp/shared/web2-common/api/http";
-
 export function AdminLogin() {
     const [email, changeEmail] = useState(" ");
     const [password, changePass] = useState(" ");
@@ -47,11 +47,29 @@ export function AdminLogin() {
             const response = await AuthService.login(form);
             console.log(response);
             setJwtToken(response.access_token);
-            alert("Sign Up succesfull. Welcome back administrator");
+            toast.success("Sign Up succesfull. Welcome to the panel administrator", {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            });
             void router.navigate("/admin");
         } catch (e) {
             if (e.response?.status === 401)
-                alert("Unauthorized access. You are not an administrator");
+                toast.error("Unauthorized access. You are not an administrator", {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                });
             else
                 alert(e);
         }
@@ -69,7 +87,7 @@ export function AdminLogin() {
                 <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
                 </Avatar>
                 <Typography component="h1" variant="h5">
-                    Admin Login
+                    Administrator Panel Login
                 </Typography>
                 <Card variant="outlined" sx={{ maxWidth: 650, marginTop: 5, p: 2, width: 1, alignItems: "center" }}>{
                     <Box component="form" onSubmit={login} noValidate sx={{ mt: 3 }}>
