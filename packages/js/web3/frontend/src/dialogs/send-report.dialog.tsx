@@ -19,6 +19,7 @@ import {
 import { Signer } from "ethers";
 import { observer } from "mobx-react-lite";
 import { FC, useState } from "react";
+import { toast } from "react-toastify";
 import { ModalProvider } from "../App2";
 import { sessionManager } from "../managers/session.manager";
 import { ProfileEntry } from "../services/profile.service";
@@ -49,6 +50,16 @@ const sendReport = async (
             description: description,
             attachment_ids: fileIDs
         };
+        toast.success("Files are successfully uploaded", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        });
         const message = JSON.stringify({ timestamp: Instant.now().toString() });
 
         const data: SendReportDto = {
@@ -58,8 +69,27 @@ const sendReport = async (
             report: cr
         };
         await ReportService.fileNewReport(data, profile?.address);
+        toast.success("Report has been sent", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        });
     } catch (e) {
-        alert("Error when sending report: ");
+        toast.error("An error occured when sending a report", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        });
     }
 };
 
