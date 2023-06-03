@@ -25,7 +25,7 @@ const rejectClick = async (cellValues: GridRenderCellParams) => {
     console.log("Idk, should we delete account?");
 };
 
-const downloadClick = async (cellValues: FileDto) => {
+const downloadClick = async () => {
     try {
         console.log("Downloading report");
         toast.info("Downloading report", {
@@ -38,12 +38,11 @@ const downloadClick = async (cellValues: FileDto) => {
             progress: undefined,
             theme: "light",
         });
-        console.log(cellValues.file_name);
         const blob = await MediaService.download("82", "ReportFile.pdf");
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", cellValues.file_name);
+        //link.setAttribute("download", cellValues.file_name);
         link.setAttribute("target", "_blank");
         link.setAttribute("rel", "noopener noreferrer");
         link.setAttribute("directory", "");
@@ -79,16 +78,7 @@ const columns: GridColDef[] = [
                     <Button variant="contained" disableElevation size="small" color="primary"
                             startIcon={<FileDownloadIcon />}
                             onClick={() => {
-                                toast.success("Report is marked as resolved", {
-                                    position: "top-right",
-                                    autoClose: 5000,
-                                    hideProgressBar: false,
-                                    closeOnClick: true,
-                                    pauseOnHover: true,
-                                    draggable: true,
-                                    progress: undefined,
-                                    theme: "light",
-                                });
+                                downloadClick();
                             }}>Download</Button>
                     { params.value!.map(name => (
                         <Chip key={name.file_name} label={name.file_name} />
@@ -115,18 +105,16 @@ const columns: GridColDef[] = [
                        onClick={e => e.stopPropagation()}>
                     <Button variant="contained" disableElevation size="small" color="primary"
                             onClick={() => {
-                                console.log(params);
-                                if (confirm("Download attachments?")) {
-                                    console.log("Downloading files");
-                                    console.log(params.value);
-                                    for (const obj of params.value!) {
-                                        downloadClick(obj as FileDto).catch(e =>
-                                            console.log(e));
-
-                                    }
-                                } else {
-                                    console.log("Download cancelled");
-                                }
+                                toast.success("Report is marked as resolved", {
+                                    position: "top-right",
+                                    autoClose: 5000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    theme: "light",
+                                });
                             }}
                             startIcon={<Check />}>Mark as resolved</Button>
                 </Stack>

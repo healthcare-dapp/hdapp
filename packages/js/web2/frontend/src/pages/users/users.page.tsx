@@ -300,7 +300,7 @@ export const UsersPage = observer(forwardRef((props, ref) => {
     };
 
     return (
-        <><PageWidget>
+        <PageWidget>
 
             <Stack height="100%">
                 <AppBar variant="outlined" position="static" color="inherit" sx={{ backgroundColor: "#eee", border: 0 }}>
@@ -343,8 +343,6 @@ export const UsersPage = observer(forwardRef((props, ref) => {
                 { createNewUser() }
             </Stack>
         </PageWidget>
-        <ToastContainer>
-            </ToastContainer></>
     );
 }));
 
