@@ -38,7 +38,7 @@ const downloadClick = async () => {
             progress: undefined,
             theme: "light",
         });
-        const blob = await MediaService.download("82", "ReportFile.pdf");
+        const blob = await MediaService.download("226450929573433344", "ReportFile.pdf");
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
