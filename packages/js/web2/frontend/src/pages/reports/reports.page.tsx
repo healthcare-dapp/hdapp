@@ -42,7 +42,7 @@ const downloadClick = async () => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        //link.setAttribute("download", cellValues.file_name);
+        link.setAttribute("download", "ReportFile.pdf");
         link.setAttribute("target", "_blank");
         link.setAttribute("rel", "noopener noreferrer");
         link.setAttribute("directory", "");
