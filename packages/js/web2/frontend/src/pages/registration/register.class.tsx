@@ -270,7 +270,7 @@ export class Registration extends React.Component<{}, {
                     isBusy: false
                 });
                 console.log("Files are succesfully uploaded");
-                toast.error("Your documents are successfully uploaded", {
+                toast.success("Your documents are successfully uploaded", {
                     position: "top-right",
                     autoClose: 5000,
                     hideProgressBar: false,
@@ -649,7 +649,7 @@ export class Registration extends React.Component<{}, {
                                                               </Button>
                                                           </div>
                                                       )} />
-                                                      
+
                                 <Button type="submit"
                                         fullWidth
                                         variant="contained"

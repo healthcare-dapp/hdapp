@@ -142,22 +142,7 @@ export class MailService {
                     {
                         filename: "Logo-white.png",
                         path: "images/footer.png",
-                        cid: "Logo-white",
-                    },
-                    {
-                        filename: "facebook2x.png",
-                        path: "images/facebook2x.png",
-                        cid: "facebook2x",
-                    },
-                    {
-                        filename: "twitter2x.png",
-                        path: "images/twitter2x.png",
-                        cid: "twitter2x",
-                    },
-                    {
-                        filename: "instagram2x.png",
-                        path: "images/instagram2x.png",
-                        cid: "instagram2x",
+                        cid: "logoWhite",
                     },
                 ],
             });
@@ -197,23 +182,8 @@ export class MailService {
                     {
                         filename: "Logo-white.png",
                         path: "images/footer.png",
-                        cid: "Logo-white",
-                    },
-                    {
-                        filename: "facebook2x.png",
-                        path: "images/facebook2x.png",
-                        cid: "facebook2x",
-                    },
-                    {
-                        filename: "twitter2x.png",
-                        path: "images/twitter2x.png",
-                        cid: "twitter2x",
-                    },
-                    {
-                        filename: "instagram2x.png",
-                        path: "images/instagram2x.png",
-                        cid: "instagram2x",
-                    },
+                        cid: "logoWhite",
+                    }
                 ],
             });
 
