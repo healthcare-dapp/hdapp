@@ -376,6 +376,31 @@ export class Registration extends React.Component<{}, {
         }
     }
 
+    termsOfServiceNotification() {
+        toast.info("Our terms of service notification...", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        });
+    }
+    privacyPolicyNotification() {
+        toast.info("You are not allowed to copy or distribute other user's data without their consent", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        });
+    }
+
     switchToDoctor() {
         const doctor = !this.state.isDoctor;
         this.setState({
@@ -513,7 +538,20 @@ export class Registration extends React.Component<{}, {
                                                 title="Upload your medical documents here" />
 
                                     <FormControlLabel control={<Checkbox value={this.state.isAgreed} onChange={this.updateCheckbox} color="primary" />}
-                                                      label={<div>I have read and agree with { this.link1 } and { this.link2 }.</div>} />
+                                                      label={(
+                                                          <div>
+                                                              I have read and agree with the <span> </span>
+                                                              <Button onClick={this.termsOfServiceNotification}
+                                                                      style={{ textDecoration: "underline", textTransform: "none", padding: 0 }}>
+                                                                  Terms of Service
+                                                              </Button>
+                                                              <span> </span> and   <span> </span>
+                                                              <Button onClick={this.privacyPolicyNotification}
+                                                              style={{ textDecoration: "underline", textTransform: "none", padding: 0 }}>
+                                                                  Privacy Policy
+                                                              </Button>
+                                                          </div>
+                                                      )} />
 
                                     <Button type="submit"
                                             fullWidth
@@ -597,8 +635,21 @@ export class Registration extends React.Component<{}, {
                                 </FormControl>
 
                                 <FormControlLabel control={<Checkbox value={this.state.isAgreed} onChange={this.updateCheckbox} color="primary" />}
-                                                  label={<div>I have read and agree with { this.link1 } and { this.link2 }.</div>} />
-
+                                                      label={(
+                                                          <div>
+                                                              I have read and agree with the <span> </span>
+                                                              <Button onClick={this.termsOfServiceNotification}
+                                                                      style={{ textDecoration: "underline", textTransform: "none", padding: 0 }}>
+                                                                  Terms of Service
+                                                              </Button>
+                                                              <span> </span> and   <span> </span>
+                                                              <Button onClick={this.privacyPolicyNotification}
+                                                              style={{ textDecoration: "underline", textTransform: "none", padding: 0 }}>
+                                                                  Privacy Policy
+                                                              </Button>
+                                                          </div>
+                                                      )} />
+                                                      
                                 <Button type="submit"
                                         fullWidth
                                         variant="contained"

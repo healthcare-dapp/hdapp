@@ -131,7 +131,7 @@ export const ReportsPage = observer(forwardRef((props, ref) => {
             setReports([
                 {
                     id: 1,
-                    description: "Doctor Anna has provided with harmful prescription...",
+                    description: "My first report",
                     attachment_ids: [],
                     attachments: [],
                     status: "Processing",
