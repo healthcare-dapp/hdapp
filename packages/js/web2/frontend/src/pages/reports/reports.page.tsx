@@ -139,6 +139,30 @@ export const ReportsPage = observer(forwardRef((props, ref) => {
                         id: 1,
                         full_name: "Alexander Mironov"
                     }
+                },
+                {
+                    id: 2,
+                    description: "The report system seems rather buggy, the email won't arrive!",
+                    attachment_ids: [],
+                    attachments: [],
+                    status: "Resolved",
+                    user_id: "2",
+                    user: {
+                        id: 2,
+                        full_name: "Doctor X"
+                    }
+                },
+                {
+                    id: 3,
+                    description: "How do I identify uniquele to my patiens? They seem to confuse me with some other docotors. Are there any features to help?",
+                    attachment_ids: [],
+                    attachments: [],
+                    status: "Resolved",
+                    user_id: "3",
+                    user: {
+                        id: 3,
+                        full_name: "Anna Cutemon"
+                    }
                 }
             ]);
         })();
