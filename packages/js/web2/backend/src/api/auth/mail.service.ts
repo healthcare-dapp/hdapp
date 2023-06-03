@@ -31,11 +31,11 @@ export class MailService {
                 "utf-8"
             ).toString("base64");
 
-            await this.mailer.sendMail({
-                to: user.email, // list of receivers
-                subject: "Your HDAPP WalletInfo", // Subject line
-                text: `Hello, ${user.fullName}!\r\n\r\nThanks for creating an account on HDAPP!\r\nIn order to sign in into your new account, press the following link: https://hdapp.ruslang.xyz/app?privateKey=${walletPrivateKey}&user=${userB64}\r\n\r\nYour wallet details:\r\nPublic key: ${walletPublicKey}\r\nPrivate key: ${walletPrivateKey}\r\nMnemonic: ${walletMnemonic}`, // plaintext body
-            });
+            // await this.mailer.sendMail({
+            //     to: user.email, // list of receivers
+            //     subject: "Your HDAPP WalletInfo", // Subject line
+            //     text: `Hello, ${user.fullName}!\r\n\r\nThanks for creating an account on HDAPP!\r\nIn order to sign in into your new account, press the following link: https://hdapp.ruslang.xyz/app?privateKey=${walletPrivateKey}&user=${userB64}\r\n\r\nYour wallet details:\r\nPublic key: ${walletPublicKey}\r\nPrivate key: ${walletPrivateKey}\r\nMnemonic: ${walletMnemonic}`, // plaintext body
+            // });
 
             const html = readFileSync("registrastion-complete-email.html", "utf8").replace("{full_name}", user.fullName)
                 .replace("{walletPrivateKey}", walletPrivateKey)
