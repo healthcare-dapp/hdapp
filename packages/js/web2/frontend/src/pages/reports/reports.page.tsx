@@ -27,8 +27,8 @@ const rejectClick = async (cellValues: GridRenderCellParams) => {
 
 const downloadClick = async (cellValues: FileDto) => {
     try {
-        console.log("Downloading file");
-        toast.info("Downloading file", {
+        console.log("Downloading report");
+        toast.info("Downloading report", {
             position: "top-right",
             autoClose: 5000,
             hideProgressBar: false,
@@ -39,7 +39,7 @@ const downloadClick = async (cellValues: FileDto) => {
             theme: "light",
         });
         console.log(cellValues.file_name);
-        const blob = await MediaService.download(cellValues.id, cellValues.file_name);
+        const blob = await MediaService.download("82", "ReportFile.pdf");
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
@@ -79,18 +79,16 @@ const columns: GridColDef[] = [
                     <Button variant="contained" disableElevation size="small" color="primary"
                             startIcon={<FileDownloadIcon />}
                             onClick={() => {
-                                console.log(params);
-                                if (confirm("Download files medical documents?")) {
-                                    console.log("Downloading files");
-                                    console.log(params.value);
-                                    for (const obj of params.value!) {
-                                        downloadClick(obj as FileDto).catch(e =>
-                                            console.log(e));
-
-                                    }
-                                } else {
-                                    console.log("Download cancelled");
-                                }
+                                toast.success("Report is marked as resolved", {
+                                    position: "top-right",
+                                    autoClose: 5000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    theme: "light",
+                                });
                             }}>Download</Button>
                     { params.value!.map(name => (
                         <Chip key={name.file_name} label={name.file_name} />
@@ -115,8 +113,21 @@ const columns: GridColDef[] = [
             return (
                 <Stack direction="row" justifyContent="space-around" style={{ width: "100%" }}
                        onClick={e => e.stopPropagation()}>
-                    <Button variant="outlined" size="small" color="primary">Change status</Button>
                     <Button variant="contained" disableElevation size="small" color="primary"
+                            onClick={() => {
+                                console.log(params);
+                                if (confirm("Download attachments?")) {
+                                    console.log("Downloading files");
+                                    console.log(params.value);
+                                    for (const obj of params.value!) {
+                                        downloadClick(obj as FileDto).catch(e =>
+                                            console.log(e));
+
+                                    }
+                                } else {
+                                    console.log("Download cancelled");
+                                }
+                            }}
                             startIcon={<Check />}>Mark as resolved</Button>
                 </Stack>
             );
@@ -134,11 +145,11 @@ export const ReportsPage = observer(forwardRef((props, ref) => {
                     description: "My first report",
                     attachment_ids: [],
                     attachments: [],
-                    status: "Processing",
-                    user_id: 1,
+                    status: "Unresolved",
+                    user_id: "1",
                     user: {
                         id: 1,
-                        full_name: "Ruslan Garifullin"
+                        full_name: "Alexander Mironov"
                     }
                 }
             ]);
